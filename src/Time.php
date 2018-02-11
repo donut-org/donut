@@ -72,6 +72,7 @@
 			}
 
 			$date = new \DateTime($date, new \DateTimeZone('UTC'));
+			$date->setTimeZone(new \DateTimeZone('UTC'));
 			return new static($date->format('Y-m-d H:i:s'));
 		}
 
