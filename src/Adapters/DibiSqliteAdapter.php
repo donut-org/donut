@@ -132,11 +132,7 @@
 					'lastrun%s' => $lastrun->getValue(),
 				));
 
-			} catch (\DibiDriverException $e) {
-				if (substr($e->getMessage(), 0, 24) !== 'UNIQUE constraint failed') {
-					throw $e;
-				}
-
+			} catch (\Dibi\UniqueConstraintViolationException $e) {
 				$this->connection->query('UPDATE [producer] SET [lastrun] = %s WHERE [producer] = %s', $lastrun->getValue(), $producer->getUniqueId());
 			}
 		}
