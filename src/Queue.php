@@ -120,6 +120,67 @@
 
 
 		/**
+		 * @param  string
+		 * @param  string
+		 * @return static
+		 */
+		public function atomFeedFetchNewItems($url, $period)
+		{
+			$this->processor->addProducer(
+				new AtomFeed\FetchNewItems($this->queue, $url),
+				Period::every($period)
+			);
+			return $this;
+		}
+
+
+		/**
+		 * @param  string|callback
+		 * @param  string|Queue
+		 * @return static
+		 */
+		public function atomFeedConvertItemToInstagramPost($mask, $queue)
+		{
+			$this->processor->addWorker(
+				$this->queue,
+				new AtomFeed\ConvertItemToInstagramPost($mask, $this->getQueueName($queue))
+			);
+			return $this;
+		}
+
+
+		/**
+		 * @param  string|callback
+		 * @param  string|Queue
+		 * @param  bool
+		 * @return static
+		 */
+		public function atomFeedConvertItemToFacebookPost($mask, $queue, $enabledGallery = FALSE)
+		{
+			$this->processor->addWorker(
+				$this->queue,
+				new AtomFeed\ConvertItemToFacebookPost($mask, $this->getQueueName($queue), $enabledGallery)
+			);
+			return $this;
+		}
+
+
+		/**
+		 * @param  string|callback
+		 * @param  string|Queue
+		 * @return static
+		 */
+		public function atomFeedConvertItemToTweet($mask, $queue)
+		{
+			$this->processor->addWorker(
+				$this->queue,
+				new AtomFeed\ConvertItemToTweet($mask, $this->getQueueName($queue))
+			);
+			return $this;
+		}
+
+
+		/**
 		 * @return static
 		 */
 		public function twitterPublishTweet($consumerKey, $consumerSecret, $accessToken, $accessTokenSecret)
