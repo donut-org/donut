@@ -61,7 +61,7 @@
 			}
 
 			if ($fbPost->getPicture() !== NULL) {
-				$data['picture'] = $fbPost->getPicture();
+				// $data['picture'] = $fbPost->getPicture();
 			}
 
 			$data['access_token'] = $this->facebookApi->getAccessToken();
