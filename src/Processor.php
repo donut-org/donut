@@ -93,6 +93,7 @@
 				try {
 					$this->logger->log('Run producer ' . $producer->getUniqueId());
 					$producer->run($this->manager, $this->adapter->getProducerLastRun($producer));
+					$this->adapter->saveProducerLastRun($producer, $this->currentTimeFactory->createTime());
 					$this->logger->log('Producer done.');
 
 				} catch (\Exception $e) {
@@ -106,8 +107,6 @@
 					);
 					$this->log('Producer ' . get_class($producer) . ' failed', implode("\n", $msg));
 				}
-
-				$this->adapter->saveProducerLastRun($producer, $this->currentTimeFactory->createTime());
 			}
 		}
 
