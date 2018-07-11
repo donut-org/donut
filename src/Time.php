@@ -67,12 +67,12 @@
 		 */
 		public static function create($date)
 		{
-			if ($date instanceof \DateTime) {
-				return new static($date->format('Y-m-d H:i:s'));
+			if (is_int($date)) { // timestamp
+				$date = new \DateTime('@' . $date, new \DateTimeZone('UTC'));
 			}
 
-			if (is_int($date)) { // timestamp
-				$date = date('Y-m-d H:i:sO', $date);
+			if ($date instanceof \DateTime) {
+				return new static($date->format('Y-m-d H:i:s'));
 			}
 
 			$date = new \DateTime($date, new \DateTimeZone('UTC'));
