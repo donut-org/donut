@@ -180,6 +180,68 @@
 		}
 
 
+
+		/**
+		 * @param  string
+		 * @param  string
+		 * @return static
+		 */
+		public function rssFeedFetchNewItems($url, $period)
+		{
+			$this->processor->addProducer(
+				new RssFeed\FetchNewItems($this->queue, $url),
+				Period::every($period)
+			);
+			return $this;
+		}
+
+
+		/**
+		 * @param  string|callback
+		 * @param  string|Queue
+		 * @return static
+		 */
+		public function rssFeedConvertItemToInstagramPost($mask, $queue)
+		{
+			$this->processor->addWorker(
+				$this->queue,
+				new RssFeed\ConvertItemToInstagramPost($mask, $this->getQueueName($queue))
+			);
+			return $this;
+		}
+
+
+		/**
+		 * @param  string|callback
+		 * @param  string|Queue
+		 * @param  bool
+		 * @return static
+		 */
+		public function rssFeedConvertItemToFacebookPost($mask, $queue, $enabledGallery = FALSE)
+		{
+			$this->processor->addWorker(
+				$this->queue,
+				new RssFeed\ConvertItemToFacebookPost($mask, $this->getQueueName($queue), $enabledGallery)
+			);
+			return $this;
+		}
+
+
+		/**
+		 * @param  string|callback
+		 * @param  string|Queue
+		 * @return static
+		 */
+		public function rssFeedConvertItemToTweet($mask, $queue)
+		{
+			$this->processor->addWorker(
+				$this->queue,
+				new RssFeed\ConvertItemToTweet($mask, $this->getQueueName($queue))
+			);
+			return $this;
+		}
+
+
 		/**
 		 * @return static
 		 */
