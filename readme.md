@@ -33,12 +33,12 @@ $processor = new Donut\Processor($adapter, function () {
 
 
 // prepare tasks
-$facebookQueue = Donut\Queue::create($processor, 'facebook-queue')
+$facebookQueue = $processor->createQueue('facebook-queue')
 	->facebookPublishFacebookPost($accountId, $appId, $appSecret, $userAccessToken);
 
-Donut\Queue::create($processor, 'blogposts-queue')
-	->postFeedFetchNewItems('https://example.com/feed/posts.json', '1h')
-	->postFeedConvertItemToFacebookPost('NEW BLOGPOST! %TITLE%', $facebookQueue);
+$processor->createQueue('blogposts-queue')
+	->rssFeedFetchNewItems('https://example.com/feed/rss', '1h')
+	->rssFeedConvertItemToFacebookPost('NEW BLOGPOST! %TITLE%', $facebookQueue);
 
 
 // RUN!

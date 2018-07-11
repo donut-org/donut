@@ -44,6 +44,16 @@
 
 
 		/**
+		 * @param  string
+		 * @return Queue
+		 */
+		public function createQueue($name)
+		{
+			return new Queue($this, $name);
+		}
+
+
+		/**
 		 * @return static
 		 */
 		public function addProducer(IProducer $producer, Period $period = NULL)
