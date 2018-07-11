@@ -20,7 +20,7 @@
 		private $manager;
 
 		/** @var callback|NULL */
-		private $noMessageHandler;
+		private $noActionHandler;
 
 		/** @var ProducerInfo[] */
 		private $producers = array();
@@ -33,13 +33,13 @@
 		 * @param  IAdapter
 		 * @param  callback|NULL
 		 */
-		public function __construct(IAdapter $adapter, $noMessageHandler = NULL, Logger\ILogger $logger = NULL)
+		public function __construct(IAdapter $adapter, $noActionHandler = NULL, Logger\ILogger $logger = NULL)
 		{
 			$this->logger = $logger ? $logger : new Logger\OutputLogger(Logger\ILogger::INFO);
 			$this->adapter = $adapter;
 			$this->currentTimeFactory = new DefaultCurrentTimeFactory;
 			$this->manager = new Manager($adapter, $this->currentTimeFactory, $this->logger);
-			$this->noMessageHandler = $noMessageHandler;
+			$this->noActionHandler = $noActionHandler;
 		}
 
 
@@ -79,8 +79,13 @@
 		public function run($cycles = 1)
 		{
 			while ($cycles) {
-				$this->processProducers();
-				$this->processMessage();
+				$wasAction = FALSE;
+				$wasAction |= $this->processProducers();
+				$wasAction |= $this->processMessage();
+
+				if (!$wasAction && $this->noActionHandler !== NULL) {
+					call_user_func($this->noActionHandler);
+				}
 
 				if (is_int($cycles)) {
 					$cycles--;
@@ -95,6 +100,9 @@
 		}
 
 
+		/**
+		 * @return bool
+		 */
 		private function processProducers()
 		{
 			$producer = $this->getProducerToRun();
@@ -117,7 +125,11 @@
 					);
 					$this->log('Producer ' . get_class($producer) . ' failed', implode("\n", $msg));
 				}
+
+				return TRUE;
 			}
+
+			return FALSE;
 		}
 
 
@@ -166,16 +178,16 @@
 		}
 
 
+		/**
+		 * @return bool
+		 */
 		private function processMessage()
 		{
 			$message = $this->adapter->fetchMessage();
 
 			if (!$message) {
 				$this->logger->log('No message to process.');
-				if ($this->noMessageHandler !== NULL) {
-					call_user_func($this->noMessageHandler);
-				}
-				return;
+				return FALSE;
 			}
 
 			$queue = $message->getQueue();
@@ -220,5 +232,7 @@
 				$this->logger->log('Message processing done.');
 				$this->adapter->markAsDone($message, $this->currentTimeFactory->createTime());
 			}
+
+			return TRUE;
 		}
 	}
