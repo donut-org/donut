@@ -48,11 +48,14 @@
 		/**
 		 * @return static
 		 */
-		public function instagramPublishInstagramPost($username, $password)
+		public function instagramPublishInstagramPost($username, $password, $tempDirectory = NULL)
 		{
+			$instagramApi = new Instagram\InstagramApi($username, $password);
+			$instagramApi->setTempDirectory($tempDirectory);
+
 			$this->processor->addWorker(
 				$this->queue,
-				new Instagram\PublishInstagramPost(new Instagram\InstagramApi($username, $password))
+				new Instagram\PublishInstagramPost($instagramApi)
 			);
 			return $this;
 		}
