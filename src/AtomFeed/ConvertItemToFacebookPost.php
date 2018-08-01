@@ -17,20 +17,15 @@
 		/** @var string */
 		private $queue;
 
-		/** @var string */
-		private $enabledGallery;
-
 
 		/**
 		 * @param  string|callback
 		 * @param  string
-		 * @param  bool
 		 */
-		public function __construct($mask, $queue, $enabledGallery = FALSE)
+		public function __construct($mask, $queue)
 		{
 			$this->mask = $mask;
 			$this->queue = $queue;
-			$this->enabledGallery = $enabledGallery;
 		}
 
 
@@ -47,12 +42,10 @@
 				'%IMAGE%' => $item->getImage(),
 			), $item);
 
-			$itemMeta = $item->getMeta();
 			$fbPost = new Facebook\FacebookPost(
 				$message,
 				$item->getUrl(),
-				$item->getImage(),
-				($this->enabledGallery && isset($itemMeta['gallery']) && is_array($itemMeta['gallery'])) ? $itemMeta['gallery'] : NULL
+				$item->getImage()
 			);
 			$manager->createMessage($this->queue, $fbPost->toArray());
 		}

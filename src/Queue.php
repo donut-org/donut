@@ -155,14 +155,13 @@
 		/**
 		 * @param  string|callback
 		 * @param  string|Queue
-		 * @param  bool
 		 * @return static
 		 */
-		public function atomFeedConvertItemToFacebookPost($mask, $queue, $enabledGallery = FALSE)
+		public function atomFeedConvertItemToFacebookPost($mask, $queue)
 		{
 			$this->processor->addWorker(
 				$this->queue,
-				new AtomFeed\ConvertItemToFacebookPost($mask, $this->getQueueName($queue), $enabledGallery)
+				new AtomFeed\ConvertItemToFacebookPost($mask, $this->getQueueName($queue))
 			);
 			return $this;
 		}
@@ -217,14 +216,13 @@
 		/**
 		 * @param  string|callback
 		 * @param  string|Queue
-		 * @param  bool
 		 * @return static
 		 */
-		public function rssFeedConvertItemToFacebookPost($mask, $queue, $enabledGallery = FALSE)
+		public function rssFeedConvertItemToFacebookPost($mask, $queue)
 		{
 			$this->processor->addWorker(
 				$this->queue,
-				new RssFeed\ConvertItemToFacebookPost($mask, $this->getQueueName($queue), $enabledGallery)
+				new RssFeed\ConvertItemToFacebookPost($mask, $this->getQueueName($queue))
 			);
 			return $this;
 		}
