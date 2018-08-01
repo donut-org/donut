@@ -17,7 +17,7 @@
 		/** @var string */
 		private $queue;
 
-		/** @var string */
+		/** @var bool */
 		private $enabledGallery;
 
 
