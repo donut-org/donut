@@ -56,7 +56,7 @@
 			$baseUrl = new Url($this->url);
 
 			foreach ($rss->item as $item) {
-				$postDate = Time::create($item->timestamp);
+				$postDate = Time::create((int) (string) $item->timestamp);
 
 				if ($postDate->isOlderThan($checkDate)) {
 					continue;
