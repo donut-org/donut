@@ -22,6 +22,9 @@
 		/** @var callback|NULL */
 		private $noActionHandler;
 
+		/** @var IErrorLogger|NULL */
+		private $errorLogger;
+
 		/** @var ProducerInfo[] */
 		private $producers = array();
 
@@ -40,6 +43,12 @@
 			$this->currentTimeFactory = new DefaultCurrentTimeFactory;
 			$this->manager = new Manager($adapter, $this->currentTimeFactory, $this->logger);
 			$this->noActionHandler = $noActionHandler;
+		}
+
+
+		public function setErrorLogger(IErrorLogger $errorLogger)
+		{
+			$this->errorLogger = $errorLogger;
 		}
 
 
@@ -116,14 +125,7 @@
 
 				} catch (\Exception $e) {
 					$this->logger->log('Producer failed.');
-					$msg = array(
-						$e->getMessage(),
-						'in file ' . $e->getFile(),
-						'on line' . $e->getLine(),
-						'-----------------------------',
-						$e->getTraceAsString(),
-					);
-					$this->log('Producer ' . get_class($producer) . ' failed', implode("\n", $msg));
+					$this->logError($e);
 				}
 
 				return TRUE;
@@ -205,14 +207,8 @@
 						$worker->processMessage($message, $this->manager);
 
 					} catch (\Exception $e) {
-						$msg = array(
-							$e->getMessage(),
-							'in file ' . $e->getFile(),
-							'on line' . $e->getLine(),
-							'-----------------------------',
-							$e->getTraceAsString(),
-						);
-						$this->log("Worker " . get_class($worker) . " for '$queue' failed", implode("\n", $msg), $message);
+						$this->logger->log('Worker ' . get_class($worker) . ' failed.');
+						$this->logError($e);
 						$messageFail = TRUE;
 					}
 				}
@@ -234,5 +230,13 @@
 			}
 
 			return TRUE;
+		}
+
+
+		private function logError($e)
+		{
+			if ($this->errorLogger !== NULL) {
+				$this->errorLogger->log($e);
+			}
 		}
 	}
