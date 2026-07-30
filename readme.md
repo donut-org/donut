@@ -1,7 +1,9 @@
-
 # Donut
 
-[![Build Status](https://travis-ci.org/donut-org/donut.svg?branch=master)](https://travis-ci.org/donut-org/donut)
+[![Build Status](https://github.com/donut-org/donut/workflows/Build/badge.svg)](https://github.com/donut-org/donut/actions)
+[![Downloads this Month](https://img.shields.io/packagist/dm/donut-org/donut.svg)](https://packagist.org/packages/donut-org/donut)
+[![Latest Stable Version](https://poser.pugx.org/donut-org/donut/v/stable)](https://github.com/donut-org/donut/releases)
+[![License](https://img.shields.io/badge/license-New%20BSD-blue.svg)](https://github.com/donut-org/donut/blob/master/license.md)
 
 <a href="https://www.janpecha.cz/donate/"><img src="https://buymecoffee.intm.org/img/donate-banner.v1.svg" alt="Donate" height="100"></a>
 
