@@ -1,21 +1,32 @@
 {
   "name": "workspace-finish",
   "description": "Commitne rozpracované změny a pushne větev. Bez repozitáře nedělá nic.",
-
   "command": "olw-workspace",
   "args": [
-    ["finish"],
-    ["--work-dir=%WORK_DIR%"],
-    ["--repo=%REPO%"],
-    ["--message=%MESSAGE%"]
+    [
+      "finish"
+    ],
+    [
+      "--work-dir=%WORK_DIR%"
+    ],
+    [
+      "--repo=%REPO%"
+    ],
+    [
+      "--message=%MESSAGE%"
+    ]
   ],
-
   "inputs": {
-    "WORK_DIR": { "required": true },
-    "REPO":     { "required": false },
-    "MESSAGE":  { "required": true, "description": "Text commitu" }
+    "WORK_DIR": {
+      "required": true
+    },
+    "REPO": {
+      "required": false
+    },
+    "MESSAGE": {
+      "required": true,
+      "description": "Text commitu"
+    }
   },
-
-  "output": { "type": "text" },
   "timeout": 300
 }

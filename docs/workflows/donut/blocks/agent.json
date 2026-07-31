@@ -1,21 +1,35 @@
 {
   "name": "agent",
   "description": "Spustí agenta se systémovým promptem. Prompt čte ze stdin, odpověď píše na stdout.",
-
   "command": "olw-agent",
   "args": [
-    ["--model=%MODEL%"],
-    ["--system-prompt-file=%SYSTEM_PROMPT%"],
-    ["--work-dir=%WORK_DIR%"]
+    [
+      "--model=%MODEL%"
+    ],
+    [
+      "--system-prompt-file=%SYSTEM_PROMPT%"
+    ],
+    [
+      "--work-dir=%WORK_DIR%"
+    ]
   ],
-
   "inputs": {
-    "MODEL":         { "required": true,  "description": "opus | sonnet | haiku | dummy" },
-    "SYSTEM_PROMPT": { "required": true,  "description": "Cesta k souboru se systémovým promptem" },
-    "WORK_DIR":      { "required": false, "description": "Adresář, ze kterého agent běží" }
+    "MODEL": {
+      "required": true,
+      "description": "opus | sonnet | haiku | dummy"
+    },
+    "SYSTEM_PROMPT": {
+      "required": true,
+      "description": "Cesta k souboru se systémovým promptem"
+    },
+    "WORK_DIR": {
+      "required": false,
+      "description": "Adresář, ze kterého agent běží"
+    }
   },
-  "stdin": { "required": true, "description": "Text promptu" },
-
-  "output": { "type": "text" },
+  "stdin": {
+    "required": true,
+    "description": "Text promptu"
+  },
   "timeout": 3600
 }

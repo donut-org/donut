@@ -30,10 +30,10 @@ Formát souborů: viz `format-specifikace.md`.
 | Šablony | `%KLIC%`, jeden průchod, neznámý vzor projde beze změny, `%%` = literál |
 | Čtení neexistujícího klíče | Tvrdá chyba, konec běhu |
 | `if` větev | Nemá vlastní scope. Zápis ve větvi je vidět i za `if`. |
-| Chyba kroku | Default stop. `allow_failure: true` pro `grep`/`test`. |
-| Výstup kroku | `result` (text nebo cesta), `stderr`, `exit_code` |
-| Soubory | Engine rezervuje cestu (`%OUTFILE%`), program zapíše, engine smaže |
-| Velká data | Stdin/stdout přes mapu. Soubor jen když si ho nástroj vyžádá. |
+| Chyba kroku | Default stop. `allow_failure: [0,1]` pro `grep`/`test`. |
+| Výstup kroku | `result` (stdout), `stderr`, `exit_code` |
+| Soubory | Engine žádné nevytváří. Cesty jsou vstupy zvenčí. |
+| Velká data | Stdin/stdout přes mapu. |
 | Vstup 1. kroku | STDIN CLI volání, v mapě jako `STDIN` |
 | Argumenty CLI | Pojmenované (`--ENV=prod`), podle `inputs` workflow |
 
@@ -52,18 +52,17 @@ a GUI z něj bude žít.
 
 ## Úklid temp souborů
 
-- Engine si eviduje soubory, které vytvořil
-- Maže po posledním použití klíče (spočítá statická analýza)
-- Maže i při přepsání klíče — v `foreach` se klíč přepisuje každou iterací
-- Maže i při pádu → `finally`
-- V debug režimu nemaže
+Odloženo. Přepis workflow ukázal, že po přechodu na stdin/stdout engine
+žádný soubor nevytváří, takže není co uklízet. Až budou souborové výstupy
+potřeba, vrátí se s nimi i evidence, analýza posledního použití klíče
+a mazání ve `finally`.
 
 ## Vědomě odloženo
 
 Neimplementovat, ale nezavřít si dveře:
 
 - rozpad řádku ve `foreach` na víc klíčů podle oddělovače
-- `allow_exit_codes: [0, 1]` místo booleanu `allow_failure`
+- kámen se souborovým výstupem a úklid temp souborů
 - `on_error: continue` / skok na krok
 - historie běhů (až s ní přijde DB)
 - paralelní větve

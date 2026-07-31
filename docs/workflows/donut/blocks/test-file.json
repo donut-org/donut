@@ -1,16 +1,22 @@
 {
   "name": "test-file",
   "description": "Ověří, že soubor existuje. Exit 0 ano, 1 ne.",
-
   "command": "/usr/bin/test",
   "args": [
-    ["-f"],
-    ["%PATH%"]
+    [
+      "-f"
+    ],
+    [
+      "%PATH%"
+    ]
   ],
-
   "inputs": {
-    "PATH": { "required": true }
+    "PATH": {
+      "required": true
+    }
   },
-
-  "allow_failure": true
+  "allow_failure": [
+    0,
+    1
+  ]
 }
