@@ -1,0 +1,18 @@
+{
+  "name": "curl-get",
+  "description": "HTTP GET. Tělo odpovědi jde na stdout.",
+
+  "command": "curl",
+  "args": [
+    ["-sS", "--fail"],
+    ["--config", "%CURLRC%"],
+    ["%URL%"]
+  ],
+
+  "inputs": {
+    "URL":    { "required": true,  "description": "Úplná adresa včetně query stringu" },
+    "CURLRC": { "required": false, "description": "Soubor s přihlašovací hlavičkou (curl --config)" }
+  },
+
+  "output": { "type": "text" }
+}

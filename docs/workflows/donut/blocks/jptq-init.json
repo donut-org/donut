@@ -1,0 +1,14 @@
+{
+  "name": "jptq-init",
+  "description": "Založí soubor s frontou úloh.",
+
+  "command": "jptq",
+  "args": [
+    ["init"],
+    ["%QUEUE_FILE%"]
+  ],
+
+  "inputs": {
+    "QUEUE_FILE": { "required": true }
+  }
+}
