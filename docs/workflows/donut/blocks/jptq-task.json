@@ -1,0 +1,37 @@
+{
+  "name": "jptq-task",
+  "description": "Zařadí do fronty zpracování jedné karty. Exit 1 znamená, že tam už je.",
+
+  "command": "jptq",
+  "args": [
+    ["task"],
+    ["%QUEUE_FILE%"],
+    ["%TASK_ID%"],
+    ["donut"],
+    ["%WORKFLOW%"],
+    ["--SHORT_ID=%SHORT_ID%"],
+    ["--EXPECT_STATUS=%EXPECT_STATUS%"],
+    ["--MODEL=%MODEL%"],
+    ["--SYSTEM_PROMPT=%SYSTEM_PROMPT%"],
+    ["--TARGET_LIST=%TARGET_LIST%"],
+    ["--TAG=%TAG%"],
+    ["--CURLRC=%CURLRC%"],
+    ["--WORK_ROOT=%WORK_ROOT%"]
+  ],
+
+  "inputs": {
+    "QUEUE_FILE":    { "required": true },
+    "TASK_ID":       { "required": true, "description": "Identita úlohy ve frontě, kvůli deduplikaci" },
+    "WORKFLOW":      { "required": true, "description": "card-dev | card-spec" },
+    "SHORT_ID":      { "required": true },
+    "EXPECT_STATUS": { "required": true },
+    "MODEL":         { "required": true },
+    "SYSTEM_PROMPT": { "required": true },
+    "TARGET_LIST":   { "required": true },
+    "TAG":           { "required": true },
+    "CURLRC":        { "required": false },
+    "WORK_ROOT":     { "required": true }
+  },
+
+  "allow_failure": true
+}

@@ -1,0 +1,79 @@
+# Zadání
+
+CLI nástroj pro workflow. Krok = spuštění externího příkazu.
+Formát souborů: viz `format-specifikace.md`.
+
+## Stack
+
+- PHP, Nette 3 (utils 4.1.4+)
+- `Nette\Utils\Process::runExecutable()` — **nikdy `runCommand()`**
+- Bez databáze
+- CLI = vlastní wrapper nad `$argv`, žádné contributte
+- GUI později, jako Nette app nad stejnými service třídami
+
+## Model
+
+- **Kámen** = 1 příkaz + deklarované vstupy. JSON v `blocks/`, odkaz jménem.
+- **Workflow** = JSON v `workflows/`. Lineární seznam kroků, `if` a `foreach`
+  mají vnořené `steps`.
+- **Krok** = `run`, `if`, `set` nebo `foreach`. Nic víc.
+- **Mapa enginu** = plochý key-value, **jen stringy**. Krok si řekne, co číst a kam zapsat.
+- Kámen o mapě neví. Workflow o vnitřku kamene neví.
+
+## Klíčová rozhodnutí
+
+| Věc | Rozhodnutí |
+|---|---|
+| Argumenty | Pole, ne string. Žádný shell. |
+| Skupiny argů | `[["-H","%HEADER%"]]` — skupina, v níž se proměnná vyhodnotí na prázdno, vypadne celá |
+| Nevyplněno vs `""` | Totéž. Krok nikdy nevyrobí „nevyplněno“ — viz sekce 6 specifikace |
+| Šablony | `%KLIC%`, jeden průchod, neznámý vzor projde beze změny, `%%` = literál |
+| Čtení neexistujícího klíče | Tvrdá chyba, konec běhu |
+| `if` větev | Nemá vlastní scope. Zápis ve větvi je vidět i za `if`. |
+| Chyba kroku | Default stop. `allow_failure: true` pro `grep`/`test`. |
+| Výstup kroku | `result` (text nebo cesta), `stderr`, `exit_code` |
+| Soubory | Engine rezervuje cestu (`%OUTFILE%`), program zapíše, engine smaže |
+| Velká data | Stdin/stdout přes mapu. Soubor jen když si ho nástroj vyžádá. |
+| Vstup 1. kroku | STDIN CLI volání, v mapě jako `STDIN` |
+| Argumenty CLI | Pojmenované (`--ENV=prod`), podle `inputs` workflow |
+
+## Pořadí prací
+
+0. ~~Přepsat existující bashová workflow → ověřit formát~~ — hotovo,
+   viz `workflows/donut/` a sekce 6 specifikace
+1. Parser + **validátor** (běží před spuštěním, viz sekce 5 specifikace)
+2. Runner
+3. CLI wrapper (`--list`, `--help`, běh)
+4. Přepsat `olw-*` skripty podle rozhraní v návrhu
+5. Teprve pak GUI
+
+Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi
+a GUI z něj bude žít.
+
+## Úklid temp souborů
+
+- Engine si eviduje soubory, které vytvořil
+- Maže po posledním použití klíče (spočítá statická analýza)
+- Maže i při přepsání klíče — v `foreach` se klíč přepisuje každou iterací
+- Maže i při pádu → `finally`
+- V debug režimu nemaže
+
+## Vědomě odloženo
+
+Neimplementovat, ale nezavřít si dveře:
+
+- rozpad řádku ve `foreach` na víc klíčů podle oddělovače
+- `allow_exit_codes: [0, 1]` místo booleanu `allow_failure`
+- `on_error: continue` / skok na krok
+- historie běhů (až s ní přijde DB)
+- paralelní větve
+- volání workflow jako kroku jiného workflow
+- odkazy na výstupy starších kroků než předchozího
+
+## Co nedělat
+
+- `sh -c`, skládání příkazu jako řetězce
+- `eval` v podmínkách — jen `{left, op, right}`
+- struktury v mapě (pole, objekty, čísla)
+- extrakční jazyk v enginu — od toho je kámen s `jq`
+- rekurzivní dosazování šablon
