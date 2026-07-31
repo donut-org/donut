@@ -52,10 +52,10 @@ nad `/usr/bin/false`).
 
 Zadání původně říkalo „velká data nikdy v mapě, souborem". Obráceno: co se
 vejde do paměti, ať zbytečně nechodí na disk. Reálné velikosti (task JSON
-s komentáři jednotky až stovky kB) to unesou. Soubor se použije jen tam, kde
-si ho vyžádá nástroj.
+s komentáři jednotky až stovky kB) to unesou.
 
-Důsledek: v celém přepisu nevznikne ani jeden engine-rezervovaný temp soubor.
+Důsledek je větší, než se čekalo: v celém přepisu nevznikne ani jeden
+engine-rezervovaný soubor, takže z v1 vypadl celý podsystém kolem nich.
 
 ### Credentials mimo engine
 
@@ -144,13 +144,17 @@ V `sync` je 37 kroků proto, že pět rolí (ToSpec, ReadyToDev,
 ReadyToDev-Haiku, Assistent, Assistent-Haiku) je rozepsaných po čtyřech
 skoro shodných krocích — `foreach` neumí rozdělit řádek na sloupce.
 
+## Co z v1 vypadlo
+
+**Souborové výstupy a úklid temp souborů.** Přepis žádný engine-rezervovaný
+soubor nevytvoří, takže je celé odložené — rezervace jmen, evidence vlastních
+souborů, statická analýza posledního použití klíče, mazání ve `finally`
+i výjimka pro debug režim. Klíč `output` tím zůstal s jedinou legální
+hodnotou a z formátu zmizel; `result` je vždy standardní výstup procesu.
+
 ## Co zůstává otevřené
 
-- `output.type: file` a úklid temp souborů zůstávají neověřené — tyto
-  workflow žádný engine-rezervovaný soubor nevytvoří. Pravidlo o mazání při
-  přepsání klíče je odvozené z chování `foreach`, ne vyzkoušené.
-- `allow_failure` jako boolean je hrubší než realita unixových nástrojů.
-  V `sync` se tím ztrácí rozlišení mezi „karta už je ve frontě" a skutečným
-  selháním, které bash měl. Zapsáno jako nález, neimplementuje se.
 - `foreach` neumí rozdělit řádek na sloupce, takže tabulka board × seznam ×
-  role v `sync` je rozepsaná do pěti skoro shodných bloků.
+  role v `sync` je rozepsaná do pěti skoro shodných čtyřkrokových bloků.
+- `%STDIN%` jako vstup prvního kroku zůstal neověřený — žádné z workflow
+  nečte CLI stdin.

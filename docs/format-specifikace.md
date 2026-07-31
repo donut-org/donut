@@ -28,8 +28,6 @@ které ho volá, ani o klíčích v mapě enginu.
     "CURLRC": { "required": false, "description": "Soubor s přihlašovací hlavičkou" }
   },
 
-  "output": { "type": "text" },
-
   "timeout": 60,
   "allow_failure": false
 }
@@ -49,9 +47,7 @@ Kámen čtoucí ze standardního vstupu:
     "FLAGS":  { "required": false, "description": "Volby jq v jednom tokenu: -r, -Rs …" },
     "FILTER": { "required": true,  "description": "Program jq" }
   },
-  "stdin": { "required": true },
-
-  "output": { "type": "text" }
+  "stdin": { "required": true }
 }
 ```
 
@@ -65,9 +61,27 @@ Kámen čtoucí ze standardního vstupu:
 | `args` | ano | Pole **skupin**. Každá skupina je pole řetězců. |
 | `inputs` | ne | Deklarace proměnných dosazovaných do `args`. |
 | `stdin` | ne | Přítomnost znamená, že kámen čte standardní vstup. |
-| `output` | ne | Default `{ "type": "text" }`. |
 | `timeout` | ne | Sekundy. Default 60 (viz `Nette\Utils\Process`). |
-| `allow_failure` | ne | Default `false` = nenulový exit code ukončí workflow. |
+| `allow_failure` | ne | Které exit kódy jsou v pořádku. Viz níže. |
+
+Výstupem kamene je vždy standardní výstup procesu. Kámen zapisující do
+souboru je odložený, viz sekce 6.
+
+### `allow_failure`
+
+```json
+"allow_failure": false      // jen 0; cokoliv jiného ukončí workflow (default)
+"allow_failure": true       // libovolný exit code je v pořádku
+"allow_failure": [0, 1]     // 0 a 1 jsou v pořádku, ostatní ukončí workflow
+```
+
+Seznam existuje proto, že unixové nástroje rozlišují víc než „povedlo se"
+a „nepovedlo": `grep` vrací 1 pro „nenalezeno" a 2 pro chybu, `test` a `diff`
+totéž, `jptq task` 1 pro „úloha už ve frontě". S booleanem se buď zastavíš
+na běžném stavu, nebo přehlédneš skutečné selhání.
+
+Exit code se dá bez ohledu na tohle nastavení uložit do mapy kanálem
+`exit_code` a rozhodovat se podle něj v `if`.
 
 ### Skupiny argumentů
 
@@ -132,36 +146,10 @@ enginu se vstupem CLI volání. Je to správně.)
 
 Bez `stdin` dostane proces prázdný standardní vstup.
 
-**Stdin je hlavní cesta pro velká data.** Prompt pro agenta, task JSON,
-tělo komentáře — to všechno teče stdin→stdout mezi kroky přes mapu. Soubor
-se použije, jen když si ho nástroj vyžádá (viz `output.type: file`).
-
-### `output`
-
-```json
-"output": { "type": "text" }
-"output": { "type": "file", "ext": "sql", "argument": "OUTFILE" }
-```
-
-| `type` | co se uloží |
-|---|---|
-| `text` | standardní výstup procesu |
-| `file` | cesta k temp souboru, který engine rezervoval |
-
-U `type: file`:
-
-- `argument` — jméno proměnné, pod kterou se cesta zpřístupní v `args`
-  (`%OUTFILE%`). Nesmí kolidovat s `inputs` ani se jmenovat `STDIN`.
-- `ext` — volitelná přípona. Použij, když se nástroj řídí příponou
-  (`ffmpeg`, `tar`, `convert`).
-- Engine soubor **nevytváří**, jen rezervuje jméno. Vytvoří ho spouštěný program.
-- Engine si ho eviduje jako vlastní a smaže po posledním použití klíče,
-  do kterého byla cesta uložena, **a také když se ten klíč přepíše** — i při
-  pádu workflow. V debug režimu nemaže.
-- Když příkaz selže a soubor nevznikne, klíč se přesto zapíše. V mapě pak
-  sedí cesta k neexistujícímu souboru; to je normální stav.
-- U `type: file` se standardní výstup procesu zahazuje. Chceš-li ho, přesměruj
-  ho v samotném nástroji.
+**Stdin je hlavní cesta pro data.** Prompt pro agenta, task JSON, tělo
+komentáře — to všechno teče stdin→stdout mezi kroky přes mapu. Engine
+nevytváří ani neuklízí žádné soubory; cesty, které ve workflow vystupují
+(`curlrc`, systémový prompt, queue soubor), jsou vstupy zvenčí.
 
 ---
 
@@ -224,12 +212,11 @@ je **tvrdá chyba a konec běhu**.
 
 | kanál | obsah |
 |---|---|
-| `result` | podle `output.type` kamene: text stdoutu, nebo cesta k souboru |
+| `result` | standardní výstup procesu |
 | `stderr` | chybový výstup |
 | `exit_code` | návratový kód jako text (`"0"`) |
 
-Krok tím nemusí vědět, jestli je kámen textový nebo souborový — kameny jdou
-zaměňovat. Neuvedený kanál se zahodí; krok bez `out` mapu nemění.
+Neuvedený kanál se zahodí; krok bez `out` mapu nemění.
 
 ### Krok `if`
 
@@ -345,16 +332,15 @@ je chyba před spuštěním prvního kroku.
 - šablona čte klíč, který **žádný krok nikdy nezapisuje** (překlep)
 - šablona čte klíč, který v žádné předchozí větvi nemohl vzniknout
 - podmínka nebo `foreach.over` čte klíč, který nemohl vzniknout
-- `output.argument` koliduje se jménem vstupu nebo se jmenuje `STDIN`
 - `%STDIN%` použito v `args`
 - neznámý operátor v podmínce
+- `allow_failure` není `true`, `false` ani pole celých čísel
 
 **Varování**
 - šablona čte klíč zapsaný jen v jedné větvi `if` nebo uvnitř `foreach`
   (může, ale nemusí existovat)
 - klíč se zapisuje a nikdy nečte
 - vstup workflow se nikde nepoužívá
-- kámen s `output.type: file`, jehož `result` se nikam neukládá (soubor osiří)
 
 Rozdíl mezi první a druhou odrážkou u chyb je podstatný: klíč, který nikdo
 nikdy nezapisuje, je překlep a musí spadnout. Klíč zapisovaný podmíněně je
@@ -376,8 +362,9 @@ vnořených v `if` a `foreach`. Nad 14 kameny.
 |---|---|
 | přibyl `foreach` | `sync` iteruje přes karty vrácené API |
 | přibyl `set` | složení komentáře z výsledku agenta a odkazu na PR |
-| úklid temp souboru i **při přepsání klíče** | v `foreach` se klíč přepisuje každou iterací |
+| `allow_failure` bere i pole exit kódů | `jptq task` vrací 1 pro „už ve frontě" a jiné kódy pro selhání |
 | **zrušen rozdíl mezi „nevyplněno" a `""`** | viz níže |
+| **odložen `output` a souborové výstupy** | přechod na stdin/stdout je učinil nepotřebnými |
 | do mapy přibylo `CWD`, nic jiného z prostředí | cesty patří na příkazovou řádku |
 
 ### Zrušení rozdílu „nevyplněno" vs `""`
@@ -403,31 +390,35 @@ zůstává v plné síle.
 
 1. **Stačí skupiny argumentů?** Ano, po sloučení prázdna s nevyplněním.
    Bez toho ne — viz výše.
-2. **Chybí kámen se dvěma soubory na výstupu?** Ne. `workspace-pr` musel
-   vrátit URL i příznak „vzniklo teď", a stačilo, aby URL vypisoval jen
-   tehdy, když PR sám vytvořil. Jeden kanál.
+2. **Chybí kámen se dvěma soubory na výstupu?** Ne — nechybí ani kámen
+   s jedním. `workspace-pr` musel vrátit URL i příznak „vzniklo teď",
+   a stačilo, aby URL vypisoval jen tehdy, když PR sám vytvořil. Jeden kanál.
 3. **Chybí krok, který jen nastaví klíč?** Ano, `set` přibyl.
 4. **Kolik kamenů na jeden nástroj?** `curl` dva (`get`, `send-json`),
    `jq` jeden. Skupiny argumentů to unesly.
 
+### Odložené souborové výstupy
+
+Verze 0.2 měla kámen se souborovým výstupem: engine rezervuje jméno, program
+soubor vytvoří, engine ho eviduje a po posledním použití klíče smaže.
+
+Po přechodu na stdin/stdout nevzniká v přepsaných workflow ani jeden takový
+soubor, takže je celé odložené — a s ním rezervace jmen, evidence, statická
+analýza posledního použití klíče, mazání ve `finally` i výjimka pro debug
+režim. Z v1 tím vypadává celý podsystém.
+
+Klíč `output` se tím scvrkl na jedinou legální hodnotu, a proto z formátu
+zmizel úplně. `result` je vždycky standardní výstup procesu. Až budou
+souborové výstupy potřeba, klíč se vrátí.
+
 ### Co přepis neověřil
 
-- `output.type: file` a s ním celá evidence a úklid temp souborů. Po přechodu
-  na stdin/stdout nevzniká v těchto workflow ani jeden engine-rezervovaný
-  soubor. Pravidlo o mazání při přepsání klíče je tedy odvozené, ne vyzkoušené.
 - `%STDIN%` jako vstup prvního kroku — žádné z workflow nečte CLI stdin.
 
-### Nálezy, které se zatím neimplementují
-
-**`allow_failure` je hrubší než realita.** Je to boolean, ale unixové nástroje
-rozlišují víc stavů: `jptq task` vrací 1 „už je ve frontě" a jiné kódy pro
-skutečné selhání, `grep` 1 „nenalezeno" a 2 „chyba", `test` a `diff` totéž.
-V `sync` se proto ztrácí rozlišení, které bash měl — s `allow_failure: true`
-projde i rozbitý queue soubor. Řešením by bylo `allow_exit_codes: [0, 1]`.
-Zapsáno jako doložený nález, neimplementuje se.
+### Nález, který se zatím neimplementuje
 
 **`foreach` neumí rozdělit řádek na sloupce.** Tabulku board × seznam × role
-v `sync` je proto nutné rozepsat — pět skoro shodných čtyřkrokových bloků.
-Únosné (29 kroků celkem), ale přidání role je copy-paste. Kdyby to začalo
+v `sync` je proto nutné rozepsat — pět skoro shodných čtyřkrokových bloků
+z celkových 37. Únosné, ale přidání role je copy-paste. Kdyby to začalo
 vadit, jde doplnit rozpad řádku podle oddělovače do víc klíčů; nic
 z dnešního návrhu se tím nezahazuje.

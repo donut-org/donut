@@ -1,23 +1,46 @@
 {
   "name": "curl-send-json",
   "description": "HTTP POST/PUT s JSON tělem ze stdin. Tělo odpovědi jde na stdout.",
-
   "command": "curl",
   "args": [
-    ["-sS", "--fail"],
-    ["--config", "%CURLRC%"],
-    ["-X", "%METHOD%"],
-    ["-H", "Content-Type: application/json"],
-    ["-d", "@-"],
-    ["%URL%"]
+    [
+      "-sS",
+      "--fail"
+    ],
+    [
+      "--config",
+      "%CURLRC%"
+    ],
+    [
+      "-X",
+      "%METHOD%"
+    ],
+    [
+      "-H",
+      "Content-Type: application/json"
+    ],
+    [
+      "-d",
+      "@-"
+    ],
+    [
+      "%URL%"
+    ]
   ],
-
   "inputs": {
-    "METHOD": { "required": true,  "description": "POST | PUT | PATCH | DELETE" },
-    "URL":    { "required": true },
-    "CURLRC": { "required": false }
+    "METHOD": {
+      "required": true,
+      "description": "POST | PUT | PATCH | DELETE"
+    },
+    "URL": {
+      "required": true
+    },
+    "CURLRC": {
+      "required": false
+    }
   },
-  "stdin": { "required": true, "description": "Tělo requestu (JSON)" },
-
-  "output": { "type": "text" }
+  "stdin": {
+    "required": true,
+    "description": "Tělo requestu (JSON)"
+  }
 }

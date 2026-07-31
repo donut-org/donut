@@ -1,17 +1,19 @@
 {
   "name": "repo-find",
   "description": "Najde GitHub repozitář odpovídající projektu. Když nic nenajde, nevypíše nic.",
-
   "command": "olw-task",
   "args": [
-    ["repo-find"],
-    ["--project=%PROJECT%"]
+    [
+      "repo-find"
+    ],
+    [
+      "--project=%PROJECT%"
+    ]
   ],
-
   "inputs": {
-    "PROJECT": { "required": true }
+    "PROJECT": {
+      "required": true
+    }
   },
-
-  "output": { "type": "text" },
   "timeout": 120
 }
