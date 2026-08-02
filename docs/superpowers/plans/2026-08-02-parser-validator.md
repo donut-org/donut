@@ -3008,12 +3008,18 @@ Celé `checkSteps()`:
 					$this->readStrict($step->condition->right, $at, 'podmínka', $result, $flow);
 				}
 
+				// Obě větve se odvíjejí od stavu PŘED ifem a jsou vzájemně
+				// vylučující: běží-li else, then neproběhl. Kdyby se then
+				// slučoval dřív, než vznikne else, viděl by else jeho zápisy
+				// jako „možná" — a čtení klíče z druhé větve by pak jen
+				// varovalo místo aby spadlo.
 				$then = $flow->branch();
-				$this->checkSteps($step->then, "{$at}.then", $result, $then);
-				$flow->mergeAsMaybe($then);
-
 				$else = $flow->branch();
+
+				$this->checkSteps($step->then, "{$at}.then", $result, $then);
 				$this->checkSteps($step->else, "{$at}.else", $result, $else);
+
+				$flow->mergeAsMaybe($then);
 				$flow->mergeAsMaybe($else);
 
 			} elseif ($step instanceof SetStep) {
