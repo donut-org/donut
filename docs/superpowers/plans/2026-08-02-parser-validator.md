@@ -14,7 +14,7 @@
 - `nette/utils` `^4.1.4`. JSON se dekóduje **jen** přes `Nette\Utils\Json::decode($s, forceArrays: true)`.
 - Žádná databáze. Žádné contributte balíčky. Žádný `nette/di`.
 - Namespace `Donut\`, PSR-4 na `src/`.
-- PHPStan level max nad `src` i `tests` musí projít.
+- PHPStan level max nad `src` i `tests` musí projít. **Pozor:** hodnoty z `Json::decode` jsou `mixed` a level max odmítne `(string) $mixed` s „Cannot cast mixed to string". Každé přetypování nepovinné hodnoty proto stojí za `\is_scalar()`, jak ukazuje kód parserů níže.
 - Testy jsou `.phpt` soubory pro nette/tester, spouštěné přes `make test`.
 - Jazyk kódu a identifikátorů je angličtina. Chybové hlášky pro uživatele česky, protože specifikace i workflow jsou česky.
 - **Referenční pravda je `docs/format-specifikace.md` verze 0.3.** Když se plán a specifikace rozejdou, platí specifikace a rozpor nahlas oznam.
@@ -809,8 +809,10 @@ final class JsonSource
 			$inputs[$name] = new Input(
 				name: $name,
 				required: isset($spec['required']) ? (bool) $spec['required'] : true,
-				default: isset($spec['default']) ? (string) $spec['default'] : null,
-				description: isset($spec['description']) ? (string) $spec['description'] : null,
+				default: isset($spec['default']) && \is_scalar($spec['default'])
+					? (string) $spec['default'] : null,
+				description: isset($spec['description']) && \is_scalar($spec['description'])
+					? (string) $spec['description'] : null,
 			);
 		}
 
@@ -944,7 +946,8 @@ final class BlockParser
 
 			$stdin = new StdinSpec(
 				required: isset($data['stdin']['required']) ? (bool) $data['stdin']['required'] : true,
-				description: isset($data['stdin']['description']) ? (string) $data['stdin']['description'] : null,
+				description: isset($data['stdin']['description']) && \is_scalar($data['stdin']['description'])
+					? (string) $data['stdin']['description'] : null,
 			);
 		}
 
@@ -968,7 +971,8 @@ final class BlockParser
 			allowFailure: isset($data['allow_failure'])
 				? JsonSource::parseAllowFailure($data['allow_failure'], $location, 'allow_failure')
 				: false,
-			description: isset($data['description']) ? (string) $data['description'] : null,
+			description: isset($data['description']) && \is_scalar($data['description'])
+				? (string) $data['description'] : null,
 		);
 	}
 
@@ -1519,7 +1523,8 @@ final class WorkflowParser
 			name: $data['name'],
 			inputs: JsonSource::parseInputs($data, $location),
 			steps: $this->parseSteps($data['steps'], $location, 'steps'),
-			description: isset($data['description']) ? (string) $data['description'] : null,
+			description: isset($data['description']) && \is_scalar($data['description'])
+				? (string) $data['description'] : null,
 		);
 	}
 
@@ -1557,7 +1562,7 @@ final class WorkflowParser
 			throw new ParseException("{$location}: {$path} nemá klíč 'type'.");
 		}
 
-		$name = isset($step['name']) ? (string) $step['name'] : null;
+		$name = isset($step['name']) && \is_scalar($step['name']) ? (string) $step['name'] : null;
 
 		return match ($type) {
 			'run' => $this->parseRun($step, $location, $path, $name),
