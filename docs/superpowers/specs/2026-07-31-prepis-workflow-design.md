@@ -111,9 +111,12 @@ komentáře z Trella, výstup agenta. To, že se výsledek dosazení dál
 nezpracovává, je přesně to, co brání komentáři obsahujícímu `%NECO%` cokoliv
 rozbít. V bashi to hlídá `jq --arg`, tady formát.
 
-**Procentové kódování v URL prošlo.** `%20` se nedosadí, protože `20` není
-klíč mapy. Pravidlo „neznámý vzor projde beze změny" se použije i mimo
-`date +%Y`.
+**Tvar jména klíče musel dostat pravidlo.** Sekce 3 slibovala, že neznámý
+vzor projde beze změny, sekce 5 dělala z nezapisovaného klíče chybu — na
+`%20%` v URL si to protiřečilo. Vyřešeno tím, že jméno klíče musí obsahovat
+aspoň jedno písmeno, takže `%20%` šablona není. Doloženo to ale není:
+v přepisu se percent-encoding nevyskytuje, všech 39 šablon je tvaru
+`VELKÁ_PÍSMENA`. Pravidlo je navržené proti očekávanému použití.
 
 **Zrušil se rozdíl mezi nevyplněno a `""`.** Podrobně v sekci 6 specifikace.
 Krátce: krok nikdy nemůže vyrobit „nevyplněnou" hodnotu, takže by skupiny

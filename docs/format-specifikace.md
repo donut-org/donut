@@ -297,10 +297,15 @@ Vnořování je povolené — `sync` iteruje přes boardy a uvnitř přes karty.
 ### Šablonování
 
 - Tvar `%KLIC%`. Vyžaduje oba delimitery.
-- **Neznámý vzor projde beze změny.** `date +%Y` i procentové kódování v URL
-  (`%20`) fungují, pokud `Y` a `20` nejsou klíče v mapě. (Proto ta velká
-  a delší jména.)
-- Literální procento: `%%`.
+- **Jméno klíče se skládá z písmen, číslic a podtržítek a musí obsahovat
+  aspoň jedno písmeno.** `%20%` tedy klíč není. Totéž pravidlo platí pro
+  klíče zapisované v `out`, `set` a `foreach.as` — jinak by šlo vyrobit
+  klíč, který se pak nedá přečíst.
+- **Co tvaru neodpovídá, projde beze změny.** `date +%Y` nemá druhý
+  delimiter, `printf '%d\n'` taky ne, `?path=%2Ffoo` taky ne.
+- Literální procento: `%%`. Potřeba u dvou percent-encoded sekvencí za sebou:
+  `%2F%3A` má mezi delimitery `2F`, což jako jméno klíče projde, takže se
+  to bez escapování zastaví při validaci. Píše se `%%2F%%3A`.
 - Dosazuje se **jedním průchodem**; výsledek se dál nezpracovává, takže data
   obsahující `%NECO%` se nevyhodnocují. Tohle pravidlo je to, co dovoluje
   protahovat mapou cizí text — komentáře z Trella, výstup agenta —
@@ -335,6 +340,7 @@ je chyba před spuštěním prvního kroku.
 - `%STDIN%` použito v `args`
 - neznámý operátor v podmínce
 - `allow_failure` není `true`, `false` ani pole celých čísel
+- klíč v `out`, `set.key` nebo `foreach.as` neobsahuje písmeno
 
 **Varování**
 - šablona čte klíč zapsaný jen v jedné větvi `if` nebo uvnitř `foreach`
