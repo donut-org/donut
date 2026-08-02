@@ -44,7 +44,8 @@ Assert::exception(
 // neexistující adresář
 Assert::exception(
 	fn() => new BlockRepository($dir . '/chybi'),
-	ParseException::class
+	ParseException::class,
+	"Adresář s kameny '{$dir}/chybi' neexistuje."
 );
 
 Nette\Utils\FileSystem::delete(TEMP_DIR);
