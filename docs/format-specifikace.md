@@ -216,7 +216,12 @@ je **tvrdá chyba a konec běhu**.
 | `stderr` | chybový výstup |
 | `exit_code` | návratový kód jako text (`"0"`) |
 
-Neuvedený kanál se zahodí; krok bez `out` mapu nemění.
+Kanál, který krok v `out` neuvede, se zahodí — krok mapující jen `result`
+zahazuje `stderr` i `exit_code`. Krok bez `out` mapu nemění.
+
+Něco jiného je jméno, které kanál **vůbec není** (`stdout`, `retcode`).
+Takový klíč by nikdo nikdy nezapsal, zatímco autor workflow počítá s tím,
+že vznikne. To je překlep a validace ho odmítne, viz sekce 5.
 
 ### Krok `if`
 
@@ -341,6 +346,7 @@ je chyba před spuštěním prvního kroku.
 - šablona čte klíč, který v žádné předchozí větvi nemohl vzniknout
 - podmínka nebo `foreach.over` čte klíč, který nemohl vzniknout
 - `{%STDIN%}` použito v `args`
+- `out` uvádí jméno, které není kanál (`result`, `stderr`, `exit_code`)
 - neznámý operátor v podmínce
 - `allow_failure` není `true`, `false` ani pole celých čísel
 - klíč v `out`, `set.key` nebo `foreach.as` není platné jméno
