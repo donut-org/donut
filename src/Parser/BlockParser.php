@@ -84,9 +84,7 @@ final class BlockParser
 
 			$stdin = new StdinSpec(
 				required: isset($data['stdin']['required']) ? (bool) $data['stdin']['required'] : true,
-				description: isset($data['stdin']['description']) && \is_scalar($data['stdin']['description'])
-					? (string) $data['stdin']['description']
-					: null,
+				description: JsonSource::optionalString($data['stdin'], 'description', $location, 'stdin.description'),
 			);
 		}
 
@@ -110,7 +108,7 @@ final class BlockParser
 			allowFailure: isset($data['allow_failure'])
 				? JsonSource::parseAllowFailure($data['allow_failure'], $location, 'allow_failure')
 				: false,
-			description: isset($data['description']) && \is_scalar($data['description']) ? (string) $data['description'] : null,
+			description: JsonSource::optionalString($data, 'description', $location, 'description'),
 		);
 	}
 

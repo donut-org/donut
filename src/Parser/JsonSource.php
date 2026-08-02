@@ -76,12 +76,34 @@ final class JsonSource
 			$inputs[$name] = new Input(
 				name: $name,
 				required: isset($spec['required']) ? (bool) $spec['required'] : true,
-				default: isset($spec['default']) && \is_scalar($spec['default']) ? (string) $spec['default'] : null,
-				description: isset($spec['description']) && \is_scalar($spec['description']) ? (string) $spec['description'] : null,
+				default: self::optionalString($spec, 'default', $location, "default vstupu '{$name}'"),
+				description: self::optionalString($spec, 'description', $location, "description vstupu '{$name}'"),
 			);
 		}
 
 		return $inputs;
+	}
+
+
+	/**
+	 * Nepovinná textová hodnota. Chybí -> null. Skalár -> text.
+	 * Pole nebo objekt -> chyba, protože v mapě jsou jen texty.
+	 *
+	 * @param  array<mixed> $data
+	 * @param  string $what jak se na hodnotu odkázat v hlášce
+	 * @throws ParseException
+	 */
+	public static function optionalString(array $data, string $key, string $location, string $what): ?string
+	{
+		if (!isset($data[$key])) {
+			return null;
+		}
+
+		if (!\is_scalar($data[$key])) {
+			throw new ParseException("{$location}: {$what} musí být řetězec.");
+		}
+
+		return (string) $data[$key];
 	}
 
 
