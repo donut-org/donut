@@ -89,11 +89,12 @@ final class Validator
 				}
 
 				$then = $flow->branch();
-				$this->checkSteps($step->then, "{$at}.then", $result, $then);
-				$flow->mergeAsMaybe($then);
-
 				$else = $flow->branch();
+
+				$this->checkSteps($step->then, "{$at}.then", $result, $then);
 				$this->checkSteps($step->else, "{$at}.else", $result, $else);
+
+				$flow->mergeAsMaybe($then);
 				$flow->mergeAsMaybe($else);
 
 			} elseif ($step instanceof SetStep) {
