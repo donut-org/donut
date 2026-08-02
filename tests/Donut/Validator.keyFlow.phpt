@@ -192,4 +192,60 @@ Assert::same([], $warnings([
 	'steps' => [],
 ]));
 
+// then a else jsou alternativy: klíč zapsaný jen v then nemůže existovat v else
+Assert::same(
+	['w.json:steps[0].else[0]: šablona čte klíč "A", který v tomto místě nemohl vzniknout'],
+	$errors([
+		'name' => 'w',
+		'inputs' => ['T' => []],
+		'steps' => [[
+			'type' => 'if',
+			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
+			'else' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']]],
+		]],
+	])
+);
+
+// a symetricky: klíč zapsaný jen v else nemůže existovat v then
+Assert::same(
+	['w.json:steps[0].then[0]: šablona čte klíč "B", který v tomto místě nemohl vzniknout'],
+	$errors([
+		'name' => 'w',
+		'inputs' => ['T' => []],
+		'steps' => [[
+			'type' => 'if',
+			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%B%}']]],
+			'else' => [['type' => 'set', 'key' => 'B', 'value' => 'x']],
+		]],
+	])
+);
+
+// set čte klíč, který nikdo nikdy nezapisuje
+Assert::same(
+	['w.json:steps[0]: set čte klíč "NENI", který žádný krok nezapisuje'],
+	$errors([
+		'name' => 'w',
+		'steps' => [['type' => 'set', 'key' => 'A', 'value' => '{%NENI%}']],
+	])
+);
+
+// set čte klíč zapsaný jen ve větvi if -> varování
+Assert::contains(
+	'w.json:steps[1]: set čte klíč "A", který nemusí existovat',
+	$warnings([
+		'name' => 'w',
+		'inputs' => ['T' => []],
+		'steps' => [
+			[
+				'type' => 'if',
+				'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
+				'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
+			],
+			['type' => 'set', 'key' => 'B', 'value' => '{%A%}'],
+		],
+	])
+);
+
 Nette\Utils\FileSystem::delete(TEMP_DIR);
