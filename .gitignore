@@ -1,6 +1,8 @@
 /vendor/
 composer.lock
 *.sublime-project
+/tests/tmp
+/tests/**/output
 
 # referenční bashová workflow, mají vlastní .git
 /docs/workflows/jpw/

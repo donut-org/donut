@@ -16,4 +16,4 @@ clean:
 		@rm -f $(coverage_name)
 
 phpstan:
-		@$(phpstan_bin)
+		@vendor/bin/phpstan analyse
