@@ -299,7 +299,7 @@ Vnořování je povolené — `sync` iteruje přes boardy a uvnitř přes karty.
 - Tvar `{%KLIC%}`. Jméno klíče je `[A-Za-z0-9_]+`.
 - **Co tvaru neodpovídá, projde beze změny.** Samotné procento nic neznamená,
   takže `date +%Y`, `printf '%d\n'`, `100% hotovo` i percent-encoding v URL
-  (`?path=%2Ffoo`, `{%2F%}3A`) fungují bez jakéhokoliv escapování.
+  (`?path=%2Ffoo`, `%2F%3A`) fungují bez jakéhokoliv escapování.
 - **Žádný escape neexistuje a není potřeba.** `{%` ani `%}` nevznikne
   percent-encodingem — byly by to `%7B` a `%7D`. Jediný text, který takhle
   nejde napsat, je literální `{%NECO%}`; kdyby to někdy bylo potřeba, escape
@@ -310,8 +310,9 @@ Vnořování je povolené — `sync` iteruje přes boardy a uvnitř přes karty.
   bez rizika, že se něco v datech vyhodnotí.
 
 Delimitery jsou dvouznakové právě kvůli tomu, aby se nesrážely s procentem
-v datech. Jednoznakové `{%KLIC%}` se s URL a formátovacími řetězci sráželo
-a vyžadovalo escapování i pravidlo o tvaru jména; obojí tímhle odpadá.
+v datech. Dřívější jednoznakový tvar `%KLIC%` se s URL a formátovacími
+řetězci srážel a vyžadoval escapování i pravidlo o tvaru jména; obojí
+tímhle odpadá.
 
 ---
 
