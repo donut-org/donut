@@ -18,7 +18,7 @@
 - Testy jsou `.phpt` soubory pro nette/tester, spouštěné přes `make test`.
 - Jazyk kódu a identifikátorů je angličtina. Chybové hlášky pro uživatele česky, protože specifikace i workflow jsou česky.
 - **Referenční pravda je `docs/format-specifikace.md` verze 0.3.** Když se plán a specifikace rozejdou, platí specifikace a rozpor nahlas oznam.
-- Jméno klíče mapy: `[A-Za-z0-9_]+`, musí obsahovat aspoň jedno písmeno. Regulární výraz pro šablonu: `%([A-Za-z0-9_]*[A-Za-z][A-Za-z0-9_]*)%`.
+- Šablona má tvar `{%KLIC%}`, jméno klíče je `[A-Za-z0-9_]+`. Regulární výraz: `\{%([A-Za-z0-9_]+)%\}`. **Escape neexistuje** — samotné procento nemá význam, takže `date +%Y`, `printf '%d\n'` i `?path=%2Ffoo` procházejí beze změny.
 - Tenhle plán **nedělá runner ani CLI**. Nic nespouští, `Nette\Utils\Process` se v něm neobjeví.
 
 ---
@@ -187,7 +187,9 @@ git commit -m "Vyprázdnit balíček pro runner workflow"
 
 ### Task 2: Template
 
-Šablona je text s `%KLIC%`. Rozparsuje se jednou při načtení souboru a pak umí říct, které klíče čte, a dosadit hodnoty **jedním průchodem** — výsledek se dál nezpracovává.
+Šablona je text s `{%KLIC%}`. Rozparsuje se jednou při načtení souboru a pak umí říct, které klíče čte, a dosadit hodnoty **jedním průchodem** — výsledek se dál nezpracovává.
+
+Dvouznakové delimitery jsou zvolené tak, aby se nesrazily s procentem v datech: `{%` ani `%}` nevznikne percent-encodingem (byly by to `%7B` a `%7D`). Proto tu není žádný escape — samotné `%` prochází beze změny.
 
 **Files:**
 - Create: `src/Template.php`
@@ -220,38 +222,46 @@ use Tester\Assert;
 require __DIR__ . '/../bootstrap.php';
 
 // prostý klíč
-Assert::same(['URL'], Template::parse('%URL%')->getKeys());
+Assert::same(['URL'], Template::parse('{%URL%}')->getKeys());
 
 // klíč v textu, víc klíčů, unikátnost a pořadí
 Assert::same(
 	['BRANCH', 'TITLE'],
-	Template::parse('%BRANCH%: %TITLE% (%BRANCH%)')->getKeys()
+	Template::parse('{%BRANCH%}: {%TITLE%} ({%BRANCH%})')->getKeys()
 );
 
 // text bez klíčů
 Assert::same([], Template::parse('curl -sS')->getKeys());
 
-// jméno klíče musí obsahovat písmeno -> %20% klíč není
+// samotné procento nic neznamená -> žádný escape není potřeba
 Assert::same([], Template::parse('?q=%20%')->getKeys());
-
-// chybí druhý delimiter
 Assert::same([], Template::parse('date +%Y')->getKeys());
+Assert::same([], Template::parse("printf '%d\\n'")->getKeys());
+Assert::same([], Template::parse('100% hotovo')->getKeys());
+Assert::same([], Template::parse('?path=%2Ffoo')->getKeys());
+Assert::same([], Template::parse('%2F%3A')->getKeys());
 
-// malá písmena jsou platné jméno (klíče jsou case-sensitive)
-Assert::same(['url'], Template::parse('%url%')->getKeys());
+// jq filtr s objektem není šablona
+Assert::same([], Template::parse('{text: .}')->getKeys());
 
-// %% je literální procento, ne delimitery
-Assert::same([], Template::parse('100%% hotovo')->getKeys());
-Assert::same([], Template::parse('%%2F%%3A')->getKeys());
+// malá písmena i samé číslice jsou platné jméno (klíče jsou case-sensitive)
+Assert::same(['url'], Template::parse('{%url%}')->getKeys());
+Assert::same(['20'], Template::parse('{%20%}')->getKeys());
+
+// sousedící šablony
+Assert::same(['A', 'B'], Template::parse('{%A%}{%B%}')->getKeys());
+
+// složená závorka kolem šablony je jen text
+Assert::same(['A'], Template::parse('{{%A%}}')->getKeys());
 
 // getSource vrací původní text
-Assert::same('%A% b', Template::parse('%A% b')->getSource());
+Assert::same('{%A%} b', Template::parse('{%A%} b')->getSource());
 
 // isKeyName
 Assert::true(Template::isKeyName('URL'));
 Assert::true(Template::isKeyName('A1'));
 Assert::true(Template::isKeyName('_A'));
-Assert::false(Template::isKeyName('20'));
+Assert::true(Template::isKeyName('20'));
 Assert::false(Template::isKeyName(''));
 Assert::false(Template::isKeyName('A-B'));
 Assert::false(Template::isKeyName('A B'));
@@ -306,15 +316,16 @@ namespace Donut;
 
 
 /**
- * Text s dosazovacími místy tvaru %KLIC%.
+ * Text s dosazovacími místy tvaru {%KLIC%}.
  *
- * Jméno klíče je [A-Za-z0-9_]+ a musí obsahovat aspoň jedno písmeno, aby
- * procentové kódování v URL (%20) nevypadalo jako šablona. Co tvaru
- * neodpovídá, projde beze změny. Literální procento se píše %%.
+ * Delimitery jsou dvouznakové, aby se nesrazily s procentem v datech: {% ani
+ * %} nevznikne percent-encodingem, byly by to %7B a %7D. Samotné procento
+ * proto nemá význam a žádný escape neexistuje — `date +%Y`, `printf '%d\n'`
+ * i `?path=%2Ffoo` projdou beze změny.
  */
 final class Template
 {
-	private const KeyPattern = '[A-Za-z0-9_]*[A-Za-z][A-Za-z0-9_]*';
+	private const KeyPattern = '[A-Za-z0-9_]+';
 
 	/** @param list<string|array{key: string}> $segments */
 	private function __construct(
@@ -327,7 +338,7 @@ final class Template
 	public static function parse(string $source): self
 	{
 		$parts = \preg_split(
-			'~(%%|%' . self::KeyPattern . '%)~',
+			'~(\{%' . self::KeyPattern . '%\})~',
 			$source,
 			-1,
 			PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY
@@ -340,10 +351,7 @@ final class Template
 		$segments = [];
 
 		foreach ($parts as $part) {
-			if ($part === '%%') {
-				$segments[] = '%';
-
-			} elseif (\preg_match('~^%(' . self::KeyPattern . ')%$~', $part, $m) === 1) {
+			if (\preg_match('~^\{%(' . self::KeyPattern . ')%\}$~D', $part, $m) === 1) {
 				$segments[] = ['key' => $m[1]];
 
 			} else {
@@ -382,7 +390,7 @@ final class Template
 
 	/**
 	 * Dosadí hodnoty jedním průchodem. Výsledek se dál nezpracovává, takže
-	 * data obsahující %NECO% se nevyhodnocují.
+	 * data obsahující {%NECO%} se nevyhodnocují.
 	 *
 	 * @param  array<string, string> $map
 	 * @throws MissingKeyException
@@ -437,37 +445,47 @@ use Tester\Assert;
 
 require __DIR__ . '/../bootstrap.php';
 
-Assert::same('abc', Template::parse('%A%')->render(['A' => 'abc']));
+Assert::same('abc', Template::parse('{%A%}')->render(['A' => 'abc']));
 
 Assert::same(
 	'task-1: Oprava (task-1)',
-	Template::parse('%BRANCH%: %TITLE% (%BRANCH%)')
+	Template::parse('{%BRANCH%}: {%TITLE%} ({%BRANCH%})')
 		->render(['BRANCH' => 'task-1', 'TITLE' => 'Oprava'])
 );
 
 // prázdná hodnota je platná hodnota, dosadí se
-Assert::same('x=', Template::parse('x=%A%')->render(['A' => '']));
+Assert::same('x=', Template::parse('x={%A%}')->render(['A' => '']));
 
-// jeden průchod: %B% v datech se nevyhodnotí
-Assert::same('%B%', Template::parse('%A%')->render(['A' => '%B%', 'B' => 'ne']));
+// jeden průchod: {%B%} v datech se nevyhodnotí
+Assert::same('{%B%}', Template::parse('{%A%}')->render(['A' => '{%B%}', 'B' => 'ne']));
 
-// literální procento
-Assert::same('100% hotovo', Template::parse('100%% hotovo')->render([]));
-Assert::same('%2F%3A', Template::parse('%%2F%%3A')->render([]));
-
-// co není šablona, projde beze změny
+// co není šablona, projde beze změny — bez jakéhokoliv escapování
+Assert::same('100% hotovo', Template::parse('100% hotovo')->render([]));
+Assert::same('%2F%3A', Template::parse('%2F%3A')->render([]));
 Assert::same('?q=%20%', Template::parse('?q=%20%')->render([]));
 Assert::same('date +%Y', Template::parse('date +%Y')->render([]));
+Assert::same("printf '%d\\n'", Template::parse("printf '%d\\n'")->render([]));
+
+// reálné případy z přepisu
+Assert::same(
+	'https://api.trello.com/1/cards/abc?list=true',
+	Template::parse('https://api.trello.com/1/cards/{%SHORT_ID%}?list=true')
+		->render(['SHORT_ID' => 'abc'])
+);
+Assert::same(
+	'{"idList": "5f2"}',
+	Template::parse('{"idList": "{%TARGET_LIST_ID%}"}')->render(['TARGET_LIST_ID' => '5f2'])
+);
 
 // chybějící klíč je tvrdá chyba
 Assert::exception(
-	fn() => Template::parse('%A%')->render([]),
+	fn() => Template::parse('{%A%}')->render([]),
 	MissingKeyException::class,
 	"Klíč 'A' v mapě neexistuje."
 );
 
 $e = Assert::exception(
-	fn() => Template::parse('%NECO%')->render([]),
+	fn() => Template::parse('{%NECO%}')->render([]),
 	MissingKeyException::class
 );
 Assert::same('NECO', $e->getKey());
@@ -487,7 +505,7 @@ Expected: `[OK] No errors`
 
 ```bash
 git add src/Template.php src/MissingKeyException.php tests/Donut/Template.parse.phpt tests/Donut/Template.render.phpt
-git commit -m "Template: parsování a dosazování %KLIC%"
+git commit -m "Template: parsování a dosazování {%KLIC%}"
 ```
 
 ---
@@ -533,8 +551,8 @@ $block = (new BlockParser)->parseArray([
 	'command' => 'curl',
 	'args' => [
 		['-sS', '--fail'],
-		['--config', '%CURLRC%'],
-		['%URL%'],
+		['--config', '{%CURLRC%}'],
+		['{%URL%}'],
 	],
 	'inputs' => [
 		'URL' => ['required' => true, 'description' => 'Adresa'],
@@ -546,7 +564,7 @@ Assert::same('curl-get', $block->name);
 Assert::same('HTTP GET.', $block->description);
 Assert::same('curl', $block->command);
 Assert::count(3, $block->args);
-Assert::same('%URL%', $block->args[2][0]->getSource());
+Assert::same('{%URL%}', $block->args[2][0]->getSource());
 Assert::same(['URL'], $block->args[2][0]->getKeys());
 
 Assert::same(['URL', 'CURLRC'], array_keys($block->inputs));
@@ -563,7 +581,7 @@ Assert::false($block->allowFailure);
 $block = (new BlockParser)->parseArray([
 	'name' => 'jq',
 	'command' => 'jq',
-	'args' => [['%FILTER%']],
+	'args' => [['{%FILTER%}']],
 	'inputs' => ['FILTER' => []],
 	'stdin' => ['required' => true],
 	'timeout' => 30,
@@ -1092,14 +1110,14 @@ $wf = (new WorkflowParser)->parseArray([
 			'type' => 'run',
 			'name' => 'stáhnout',
 			'block' => 'curl-get',
-			'in' => ['URL' => 'https://x/%ENV%'],
+			'in' => ['URL' => 'https://x/{%ENV%}'],
 			'out' => ['result' => 'BODY', 'exit_code' => 'RC'],
 			'timeout' => 5,
 			'allow_failure' => [0, 1],
 		],
 		[
 			'type' => 'if',
-			'condition' => ['left' => '%RC%', 'op' => 'eq', 'right' => '0'],
+			'condition' => ['left' => '{%RC%}', 'op' => 'eq', 'right' => '0'],
 			'then' => [
 				['type' => 'set', 'key' => 'OK', 'value' => 'ano'],
 			],
@@ -1109,10 +1127,10 @@ $wf = (new WorkflowParser)->parseArray([
 		],
 		[
 			'type' => 'foreach',
-			'over' => '%BODY%',
+			'over' => '{%BODY%}',
 			'as' => 'LINE',
 			'steps' => [
-				['type' => 'set', 'key' => 'LAST', 'value' => '%LINE%'],
+				['type' => 'set', 'key' => 'LAST', 'value' => '{%LINE%}'],
 			],
 		],
 	],
@@ -1167,7 +1185,7 @@ $wf = (new WorkflowParser)->parseArray([
 	'name' => 'e',
 	'steps' => [[
 		'type' => 'if',
-		'condition' => ['left' => '%A%', 'op' => 'not_empty'],
+		'condition' => ['left' => '{%A%}', 'op' => 'not_empty'],
 		'then' => [],
 	]],
 ], 'e.json');
@@ -1818,7 +1836,7 @@ $assertFails(
 );
 
 $assertFails(
-	['name' => 'w', 'steps' => [['type' => 'foreach', 'over' => '%A%', 'as' => 'B']]],
+	['name' => 'w', 'steps' => [['type' => 'foreach', 'over' => '{%A%}', 'as' => 'B']]],
 	"w.json: steps[0] nemá klíč 'steps'."
 );
 
@@ -1836,7 +1854,7 @@ $assertFails(
 		'name' => 'w',
 		'steps' => [[
 			'type' => 'if',
-			'condition' => ['left' => '%A%', 'op' => 'eq', 'right' => '1'],
+			'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => '1'],
 			'then' => [['type' => 'run']],
 		]],
 	],
@@ -1848,7 +1866,7 @@ $assertFails(
 		'name' => 'w',
 		'steps' => [[
 			'type' => 'foreach',
-			'over' => '%A%',
+			'over' => '{%A%}',
 			'as' => 'B',
 			'steps' => [['type' => 'set', 'key' => 'C']],
 		]],
@@ -1913,7 +1931,7 @@ Nette\Utils\FileSystem::createDir($dir);
 file_put_contents($dir . '/echo.json', json_encode([
 	'name' => 'echo',
 	'command' => 'echo',
-	'args' => [['%TEXT%']],
+	'args' => [['{%TEXT%}']],
 	'inputs' => ['TEXT' => ['required' => true]],
 ]));
 
@@ -2104,7 +2122,7 @@ Nette\Utils\FileSystem::createDir($dir);
 file_put_contents($dir . '/greet.json', json_encode([
 	'name' => 'greet',
 	'command' => 'echo',
-	'args' => [['%TEXT%'], ['%SUFFIX%']],
+	'args' => [['{%TEXT%}'], ['{%SUFFIX%}']],
 	'inputs' => [
 		'TEXT' => ['required' => true],
 		'SUFFIX' => ['required' => false],
@@ -2121,14 +2139,14 @@ file_put_contents($dir . '/withStdin.json', json_encode([
 file_put_contents($dir . '/withDefault.json', json_encode([
 	'name' => 'withDefault',
 	'command' => 'echo',
-	'args' => [['%A%']],
+	'args' => [['{%A%}']],
 	'inputs' => ['A' => ['required' => true, 'default' => 'x']],
 ]));
 
 file_put_contents($dir . '/badStdinArg.json', json_encode([
 	'name' => 'badStdinArg',
 	'command' => 'echo',
-	'args' => [['%STDIN%']],
+	'args' => [['{%STDIN%}']],
 	'stdin' => ['required' => true],
 ]));
 
@@ -2147,7 +2165,7 @@ Assert::same([], $messages([
 	'name' => 'w',
 	'inputs' => ['T' => ['required' => true]],
 	'steps' => [
-		['type' => 'run', 'block' => 'greet', 'in' => ['TEXT' => '%T%']],
+		['type' => 'run', 'block' => 'greet', 'in' => ['TEXT' => '{%T%}']],
 	],
 ]));
 
@@ -2184,7 +2202,7 @@ Assert::same(
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'greet',
-			'in' => ['TEXT' => '%T%', 'NEZNAMY' => 'x'],
+			'in' => ['TEXT' => '{%T%}', 'NEZNAMY' => 'x'],
 		]],
 	])
 );
@@ -2198,7 +2216,7 @@ Assert::same(
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'greet',
-			'in' => ['TEXT' => '%T%', 'STDIN' => 'x'],
+			'in' => ['TEXT' => '{%T%}', 'STDIN' => 'x'],
 		]],
 	])
 );
@@ -2212,9 +2230,9 @@ Assert::same(
 	])
 );
 
-// %STDIN% v args kamene
+// {%STDIN%} v args kamene
 Assert::same(
-	['w.json:steps[0]: %STDIN% použito v args kamene "badStdinArg"'],
+	['w.json:steps[0]: {%STDIN%} použito v args kamene "badStdinArg"'],
 	$messages([
 		'name' => 'w',
 		'steps' => [[
@@ -2234,7 +2252,7 @@ Assert::same(
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'greet',
-			'in' => ['TEXT' => '%T%'],
+			'in' => ['TEXT' => '{%T%}'],
 			'out' => ['stdout' => 'X'],
 		]],
 	])
@@ -2248,30 +2266,30 @@ Assert::same(
 		'inputs' => ['T' => []],
 		'steps' => [[
 			'type' => 'if',
-			'condition' => ['left' => '%T%', 'op' => 'matches', 'right' => 'x'],
+			'condition' => ['left' => '{%T%}', 'op' => 'matches', 'right' => 'x'],
 			'then' => [],
 		]],
 	])
 );
 
-// klíč bez písmene nejde zapsat
+// klíč, na který by pak nešlo odkázat
 Assert::same(
-	['w.json:steps[0]: klíč "20" musí obsahovat aspoň jedno písmeno'],
+	['w.json:steps[0]: klíč "A-B" není platné jméno'],
 	$messages([
 		'name' => 'w',
-		'steps' => [['type' => 'set', 'key' => '20', 'value' => 'x']],
+		'steps' => [['type' => 'set', 'key' => 'A-B', 'value' => 'x']],
 	])
 );
 
 Assert::same(
-	['w.json:steps[0]: klíč "1" musí obsahovat aspoň jedno písmeno'],
+	['w.json:steps[0]: klíč "A B" není platné jméno'],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['T' => []],
 		'steps' => [[
 			'type' => 'foreach',
-			'over' => '%T%',
-			'as' => '1',
+			'over' => '{%T%}',
+			'as' => 'A B',
 			'steps' => [],
 		]],
 	])
@@ -2520,7 +2538,7 @@ final class Validator
 				if (\in_array('STDIN', $template->getKeys(), true)) {
 					$result->add(Problem::error(
 						$at,
-						"%STDIN% použito v args kamene \"{$block->name}\""
+						"{%STDIN%} použito v args kamene \"{$block->name}\""
 					));
 
 					return;
@@ -2543,7 +2561,7 @@ final class Validator
 		if (!Template::isKeyName($key)) {
 			$result->add(Problem::error(
 				$at,
-				"klíč \"{$key}\" musí obsahovat aspoň jedno písmeno"
+				"klíč \"{$key}\" není platné jméno"
 			));
 		}
 	}
@@ -2617,7 +2635,7 @@ Nette\Utils\FileSystem::createDir($dir);
 file_put_contents($dir . '/echo.json', json_encode([
 	'name' => 'echo',
 	'command' => 'echo',
-	'args' => [['%TEXT%']],
+	'args' => [['{%TEXT%}']],
 	'inputs' => ['TEXT' => ['required' => true]],
 ]));
 
@@ -2638,14 +2656,14 @@ Assert::same([], $errors([
 	'name' => 'w',
 	'steps' => [
 		['type' => 'set', 'key' => 'A', 'value' => 'x'],
-		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '%A%']],
+		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
 	],
 ]));
 
 // STDIN a CWD jsou známé od začátku
 Assert::same([], $errors([
 	'name' => 'w',
-	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '%CWD%/%STDIN%']]],
+	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%CWD%}/{%STDIN%}']]],
 ]));
 
 // klíč, který nikdo nikdy nezapisuje = překlep
@@ -2653,7 +2671,7 @@ Assert::same(
 	['w.json:steps[0]: šablona čte klíč "NENI", který žádný krok nezapisuje'],
 	$errors([
 		'name' => 'w',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '%NENI%']]],
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%NENI%}']]],
 	])
 );
 
@@ -2663,7 +2681,7 @@ Assert::same(
 	$errors([
 		'name' => 'w',
 		'steps' => [
-			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '%A%']],
+			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
 			['type' => 'set', 'key' => 'A', 'value' => 'x'],
 		],
 	])
@@ -2676,10 +2694,10 @@ Assert::same([], $errors([
 	'steps' => [
 		[
 			'type' => 'if',
-			'condition' => ['left' => '%T%', 'op' => 'not_empty'],
+			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
 			'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
 		],
-		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '%A%']],
+		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
 	],
 ]));
 
@@ -2691,10 +2709,10 @@ Assert::contains(
 		'steps' => [
 			[
 				'type' => 'if',
-				'condition' => ['left' => '%T%', 'op' => 'not_empty'],
+				'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
 				'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
 			],
-			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '%A%']],
+			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
 		],
 	])
 );
@@ -2705,10 +2723,10 @@ Assert::same([], $errors([
 	'inputs' => ['T' => []],
 	'steps' => [[
 		'type' => 'if',
-		'condition' => ['left' => '%T%', 'op' => 'not_empty'],
+		'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
 		'then' => [
 			['type' => 'set', 'key' => 'A', 'value' => 'x'],
-			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '%A%']],
+			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
 		],
 	]],
 ]));
@@ -2719,9 +2737,9 @@ Assert::same([], $errors([
 	'inputs' => ['T' => []],
 	'steps' => [[
 		'type' => 'foreach',
-		'over' => '%T%',
+		'over' => '{%T%}',
 		'as' => 'LINE',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '%LINE%']]],
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%LINE%}']]],
 	]],
 ]));
 
@@ -2734,12 +2752,12 @@ Assert::same(
 		'steps' => [
 			[
 				'type' => 'if',
-				'condition' => ['left' => '%T%', 'op' => 'not_empty'],
+				'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
 				'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
 			],
 			[
 				'type' => 'if',
-				'condition' => ['left' => '%A%', 'op' => 'eq', 'right' => 'x'],
+				'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => 'x'],
 				'then' => [],
 			],
 		],
@@ -2753,7 +2771,7 @@ Assert::same(
 		'name' => 'w',
 		'steps' => [[
 			'type' => 'foreach',
-			'over' => '%NENI%',
+			'over' => '{%NENI%}',
 			'as' => 'L',
 			'steps' => [],
 		]],
@@ -2765,7 +2783,7 @@ Assert::same([], $errors([
 	'name' => 'w',
 	'steps' => [
 		['type' => 'set', 'key' => 'A', 'value' => 'x'],
-		['type' => 'set', 'key' => 'A', 'value' => '%A% y'],
+		['type' => 'set', 'key' => 'A', 'value' => '{%A%} y'],
 	],
 ]));
 
@@ -3312,7 +3330,7 @@ Assert::contains(
 Assert::contains(
 	'card-dev.json:steps[1]: šablona čte klíč "ME_JSN", který žádný krok nezapisuje',
 	$errorsAfter(function (array &$data): void {
-		$data['steps'][1]['in']['STDIN'] = '%ME_JSN%';
+		$data['steps'][1]['in']['STDIN'] = '{%ME_JSN%}';
 	})
 );
 

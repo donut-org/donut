@@ -7,13 +7,13 @@
       "finish"
     ],
     [
-      "--work-dir=%WORK_DIR%"
+      "--work-dir={%WORK_DIR%}"
     ],
     [
-      "--repo=%REPO%"
+      "--repo={%REPO%}"
     ],
     [
-      "--message=%MESSAGE%"
+      "--message={%MESSAGE%}"
     ]
   ],
   "inputs": {

@@ -7,40 +7,40 @@
       "task"
     ],
     [
-      "%QUEUE_FILE%"
+      "{%QUEUE_FILE%}"
     ],
     [
-      "%TASK_ID%"
+      "{%TASK_ID%}"
     ],
     [
       "donut"
     ],
     [
-      "%WORKFLOW%"
+      "{%WORKFLOW%}"
     ],
     [
-      "--SHORT_ID=%SHORT_ID%"
+      "--SHORT_ID={%SHORT_ID%}"
     ],
     [
-      "--EXPECT_STATUS=%EXPECT_STATUS%"
+      "--EXPECT_STATUS={%EXPECT_STATUS%}"
     ],
     [
-      "--MODEL=%MODEL%"
+      "--MODEL={%MODEL%}"
     ],
     [
-      "--SYSTEM_PROMPT=%SYSTEM_PROMPT%"
+      "--SYSTEM_PROMPT={%SYSTEM_PROMPT%}"
     ],
     [
-      "--TARGET_LIST=%TARGET_LIST%"
+      "--TARGET_LIST={%TARGET_LIST%}"
     ],
     [
-      "--TAG=%TAG%"
+      "--TAG={%TAG%}"
     ],
     [
-      "--CURLRC=%CURLRC%"
+      "--CURLRC={%CURLRC%}"
     ],
     [
-      "--WORK_ROOT=%WORK_ROOT%"
+      "--WORK_ROOT={%WORK_ROOT%}"
     ]
   ],
   "inputs": {

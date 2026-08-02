@@ -9,11 +9,11 @@
     ],
     [
       "--config",
-      "%CURLRC%"
+      "{%CURLRC%}"
     ],
     [
       "-X",
-      "%METHOD%"
+      "{%METHOD%}"
     ],
     [
       "-H",
@@ -24,7 +24,7 @@
       "@-"
     ],
     [
-      "%URL%"
+      "{%URL%}"
     ]
   ],
   "inputs": {

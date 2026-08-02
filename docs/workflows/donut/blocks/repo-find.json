@@ -7,7 +7,7 @@
       "repo-find"
     ],
     [
-      "--project=%PROJECT%"
+      "--project={%PROJECT%}"
     ]
   ],
   "inputs": {

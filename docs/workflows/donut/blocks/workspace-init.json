@@ -7,16 +7,16 @@
       "init"
     ],
     [
-      "--root=%WORK_ROOT%"
+      "--root={%WORK_ROOT%}"
     ],
     [
-      "--project=%PROJECT%"
+      "--project={%PROJECT%}"
     ],
     [
-      "--repo=%REPO%"
+      "--repo={%REPO%}"
     ],
     [
-      "--branch=%BRANCH%"
+      "--branch={%BRANCH%}"
     ]
   ],
   "inputs": {

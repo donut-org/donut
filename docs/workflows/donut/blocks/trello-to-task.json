@@ -4,7 +4,7 @@
   "command": "olw-trello-to-task",
   "args": [
     [
-      "--my-id=%MY_ID%"
+      "--my-id={%MY_ID%}"
     ]
   ],
   "inputs": {
