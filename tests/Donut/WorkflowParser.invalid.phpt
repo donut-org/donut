@@ -86,3 +86,113 @@ $assertFails(
 	],
 	"w.json: steps[0].steps[0] nemá klíč 'value'."
 );
+
+// chyba ve vnořeném kroku uvnitř 'else' ukazuje na správné místo
+$assertFails(
+	[
+		'name' => 'w',
+		'steps' => [[
+			'type' => 'if',
+			'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => '1'],
+			'then' => [],
+			'else' => [['type' => 'run']],
+		]],
+	],
+	"w.json: steps[0].else[0] nemá klíč 'block'."
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [], 'extra' => 1],
+	"w.json: neznámý klíč 'extra'."
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => ['not-an-object']],
+	'w.json: steps[0] musí být objekt.'
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'in' => 'nope']]],
+	'w.json: steps[0].in musí být objekt.'
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'out' => 'nope']]],
+	'w.json: steps[0].out musí být objekt.'
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'in' => ['URL' => 5]]]],
+	'w.json: steps[0].in musí být objekt řetězec => řetězec.'
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'out' => ['result' => 5]]]],
+	'w.json: steps[0].out musí být objekt řetězec => řetězec.'
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'timeout' => -1]]],
+	'w.json: steps[0].timeout musí být nezáporné celé číslo.'
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'if']]],
+	"w.json: steps[0] nemá klíč 'condition'."
+);
+
+$assertFails(
+	[
+		'name' => 'w',
+		'steps' => [['type' => 'if', 'condition' => ['left' => '{%A%}'], 'then' => []]],
+	],
+	"w.json: steps[0].condition nemá 'op'."
+);
+
+$assertFails(
+	[
+		'name' => 'w',
+		'steps' => [['type' => 'if', 'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => '1']]],
+	],
+	"w.json: steps[0] nemá klíč 'then'."
+);
+
+$assertFails(
+	[
+		'name' => 'w',
+		'steps' => [[
+			'type' => 'if',
+			'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => '1'],
+			'then' => [],
+			'else' => 'nope',
+		]],
+	],
+	'w.json: steps[0].else musí být pole.'
+);
+
+$assertFails(
+	[
+		'name' => 'w',
+		'steps' => [[
+			'type' => 'if',
+			'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => 5],
+			'then' => [],
+		]],
+	],
+	'w.json: steps[0].condition.right musí být řetězec.'
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'foreach', 'as' => 'B', 'steps' => []]]],
+	"w.json: steps[0] nemá klíč 'over'."
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'foreach', 'over' => '{%A%}', 'steps' => []]]],
+	"w.json: steps[0] nemá klíč 'as'."
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'set', 'value' => 'x']]],
+	"w.json: steps[0] nemá klíč 'key'."
+);
