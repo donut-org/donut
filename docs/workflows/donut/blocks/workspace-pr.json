@@ -7,13 +7,13 @@
       "pr"
     ],
     [
-      "--work-dir=%WORK_DIR%"
+      "--work-dir={%WORK_DIR%}"
     ],
     [
-      "--repo=%REPO%"
+      "--repo={%REPO%}"
     ],
     [
-      "--title=%TITLE%"
+      "--title={%TITLE%}"
     ]
   ],
   "inputs": {

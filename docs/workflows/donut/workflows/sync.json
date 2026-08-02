@@ -12,21 +12,21 @@
   "steps": [
     {
       "type": "run", "block": "test-file",
-      "in":  { "PATH": "%QUEUE_FILE%" },
+      "in":  { "PATH": "{%QUEUE_FILE%}" },
       "out": { "exit_code": "QUEUE_EXISTS" }
     },
     {
       "type": "if", "name": "fronta ještě neexistuje",
-      "condition": { "left": "%QUEUE_EXISTS%", "op": "neq", "right": "0" },
+      "condition": { "left": "{%QUEUE_EXISTS%}", "op": "neq", "right": "0" },
       "then": [
-        { "type": "run", "block": "jptq-init", "in": { "QUEUE_FILE": "%QUEUE_FILE%" } }
+        { "type": "run", "block": "jptq-init", "in": { "QUEUE_FILE": "{%QUEUE_FILE%}" } }
       ]
     },
 
     {
       "type": "run", "name": "načíst boardy",
       "block": "curl-get",
-      "in":  { "URL": "https://api.trello.com/1/members/me/boards?fields=id,name", "CURLRC": "%CURLRC%" },
+      "in":  { "URL": "https://api.trello.com/1/members/me/boards?fields=id,name", "CURLRC": "{%CURLRC%}" },
       "out": { "result": "BOARDS_JSON" }
     },
 
@@ -41,47 +41,47 @@
 
     {
       "type": "foreach", "name": "vývojové boardy",
-      "over": "%DEV_BOARDS%", "as": "BOARD",
+      "over": "{%DEV_BOARDS%}", "as": "BOARD",
       "steps": [
         {
           "type": "run", "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"%BOARD%\") | .id", "STDIN": "%BOARDS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"{%BOARD%}\") | .id", "STDIN": "{%BOARDS_JSON%}" },
           "out": { "result": "BOARD_ID" }
         },
         {
           "type": "run", "block": "curl-get",
-          "in":  { "URL": "https://api.trello.com/1/boards/%BOARD_ID%/lists?fields=id,name", "CURLRC": "%CURLRC%" },
+          "in":  { "URL": "https://api.trello.com/1/boards/{%BOARD_ID%}/lists?fields=id,name", "CURLRC": "{%CURLRC%}" },
           "out": { "result": "LISTS_JSON" }
         },
 
         {
           "type": "run", "name": "ToSpec → tech lead",
           "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"ToSpec\") | .id", "STDIN": "%LISTS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"ToSpec\") | .id", "STDIN": "{%LISTS_JSON%}" },
           "out": { "result": "LIST_ID" }
         },
         {
           "type": "run", "block": "curl-get",
-          "in":  { "URL": "https://api.trello.com/1/lists/%LIST_ID%/cards?fields=shortLink", "CURLRC": "%CURLRC%" },
+          "in":  { "URL": "https://api.trello.com/1/lists/{%LIST_ID%}/cards?fields=shortLink", "CURLRC": "{%CURLRC%}" },
           "out": { "result": "CARDS_JSON" }
         },
         {
           "type": "run", "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "%CARDS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "{%CARDS_JSON%}" },
           "out": { "result": "CARDS" }
         },
         {
-          "type": "foreach", "over": "%CARDS%", "as": "SHORT_ID",
+          "type": "foreach", "over": "{%CARDS%}", "as": "SHORT_ID",
           "steps": [
             {
               "type": "run", "block": "jptq-task",
               "in": {
-                "QUEUE_FILE": "%QUEUE_FILE%", "TASK_ID": "trello-%SHORT_ID%",
-                "WORKFLOW": "card-spec", "SHORT_ID": "%SHORT_ID%",
+                "QUEUE_FILE": "{%QUEUE_FILE%}", "TASK_ID": "trello-{%SHORT_ID%}",
+                "WORKFLOW": "card-spec", "SHORT_ID": "{%SHORT_ID%}",
                 "EXPECT_STATUS": "ToSpec", "MODEL": "sonnet",
-                "SYSTEM_PROMPT": "%PROMPTS_DIR%/techlead.md",
+                "SYSTEM_PROMPT": "{%PROMPTS_DIR%}/techlead.md",
                 "TARGET_LIST": "SpecReview", "TAG": "#tech-lead",
-                "CURLRC": "%CURLRC%", "WORK_ROOT": "%WORK_ROOT%"
+                "CURLRC": "{%CURLRC%}", "WORK_ROOT": "{%WORK_ROOT%}"
               }
             }
           ]
@@ -90,31 +90,31 @@
         {
           "type": "run", "name": "ReadyToDev → developer",
           "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"ReadyToDev\") | .id", "STDIN": "%LISTS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"ReadyToDev\") | .id", "STDIN": "{%LISTS_JSON%}" },
           "out": { "result": "LIST_ID" }
         },
         {
           "type": "run", "block": "curl-get",
-          "in":  { "URL": "https://api.trello.com/1/lists/%LIST_ID%/cards?fields=shortLink", "CURLRC": "%CURLRC%" },
+          "in":  { "URL": "https://api.trello.com/1/lists/{%LIST_ID%}/cards?fields=shortLink", "CURLRC": "{%CURLRC%}" },
           "out": { "result": "CARDS_JSON" }
         },
         {
           "type": "run", "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "%CARDS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "{%CARDS_JSON%}" },
           "out": { "result": "CARDS" }
         },
         {
-          "type": "foreach", "over": "%CARDS%", "as": "SHORT_ID",
+          "type": "foreach", "over": "{%CARDS%}", "as": "SHORT_ID",
           "steps": [
             {
               "type": "run", "block": "jptq-task",
               "in": {
-                "QUEUE_FILE": "%QUEUE_FILE%", "TASK_ID": "trello-%SHORT_ID%",
-                "WORKFLOW": "card-dev", "SHORT_ID": "%SHORT_ID%",
+                "QUEUE_FILE": "{%QUEUE_FILE%}", "TASK_ID": "trello-{%SHORT_ID%}",
+                "WORKFLOW": "card-dev", "SHORT_ID": "{%SHORT_ID%}",
                 "EXPECT_STATUS": "ReadyToDev", "MODEL": "sonnet",
-                "SYSTEM_PROMPT": "%PROMPTS_DIR%/developer.md",
+                "SYSTEM_PROMPT": "{%PROMPTS_DIR%}/developer.md",
                 "TARGET_LIST": "Testing", "TAG": "#developer",
-                "CURLRC": "%CURLRC%", "WORK_ROOT": "%WORK_ROOT%"
+                "CURLRC": "{%CURLRC%}", "WORK_ROOT": "{%WORK_ROOT%}"
               }
             }
           ]
@@ -123,31 +123,31 @@
         {
           "type": "run", "name": "ReadyToDev-Haiku → developer na haiku",
           "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"ReadyToDev-Haiku\") | .id", "STDIN": "%LISTS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"ReadyToDev-Haiku\") | .id", "STDIN": "{%LISTS_JSON%}" },
           "out": { "result": "LIST_ID" }
         },
         {
           "type": "run", "block": "curl-get",
-          "in":  { "URL": "https://api.trello.com/1/lists/%LIST_ID%/cards?fields=shortLink", "CURLRC": "%CURLRC%" },
+          "in":  { "URL": "https://api.trello.com/1/lists/{%LIST_ID%}/cards?fields=shortLink", "CURLRC": "{%CURLRC%}" },
           "out": { "result": "CARDS_JSON" }
         },
         {
           "type": "run", "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "%CARDS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "{%CARDS_JSON%}" },
           "out": { "result": "CARDS" }
         },
         {
-          "type": "foreach", "over": "%CARDS%", "as": "SHORT_ID",
+          "type": "foreach", "over": "{%CARDS%}", "as": "SHORT_ID",
           "steps": [
             {
               "type": "run", "block": "jptq-task",
               "in": {
-                "QUEUE_FILE": "%QUEUE_FILE%", "TASK_ID": "trello-%SHORT_ID%",
-                "WORKFLOW": "card-dev", "SHORT_ID": "%SHORT_ID%",
+                "QUEUE_FILE": "{%QUEUE_FILE%}", "TASK_ID": "trello-{%SHORT_ID%}",
+                "WORKFLOW": "card-dev", "SHORT_ID": "{%SHORT_ID%}",
                 "EXPECT_STATUS": "ReadyToDev-Haiku", "MODEL": "haiku",
-                "SYSTEM_PROMPT": "%PROMPTS_DIR%/developer.md",
+                "SYSTEM_PROMPT": "{%PROMPTS_DIR%}/developer.md",
                 "TARGET_LIST": "Testing", "TAG": "#developer",
-                "CURLRC": "%CURLRC%", "WORK_ROOT": "%WORK_ROOT%"
+                "CURLRC": "{%CURLRC%}", "WORK_ROOT": "{%WORK_ROOT%}"
               }
             }
           ]
@@ -157,47 +157,47 @@
 
     {
       "type": "foreach", "name": "asistentské boardy",
-      "over": "%ASSIST_BOARDS%", "as": "BOARD",
+      "over": "{%ASSIST_BOARDS%}", "as": "BOARD",
       "steps": [
         {
           "type": "run", "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"%BOARD%\") | .id", "STDIN": "%BOARDS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"{%BOARD%}\") | .id", "STDIN": "{%BOARDS_JSON%}" },
           "out": { "result": "BOARD_ID" }
         },
         {
           "type": "run", "block": "curl-get",
-          "in":  { "URL": "https://api.trello.com/1/boards/%BOARD_ID%/lists?fields=id,name", "CURLRC": "%CURLRC%" },
+          "in":  { "URL": "https://api.trello.com/1/boards/{%BOARD_ID%}/lists?fields=id,name", "CURLRC": "{%CURLRC%}" },
           "out": { "result": "LISTS_JSON" }
         },
 
         {
           "type": "run", "name": "Assistent",
           "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"Assistent\") | .id", "STDIN": "%LISTS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"Assistent\") | .id", "STDIN": "{%LISTS_JSON%}" },
           "out": { "result": "LIST_ID" }
         },
         {
           "type": "run", "block": "curl-get",
-          "in":  { "URL": "https://api.trello.com/1/lists/%LIST_ID%/cards?fields=shortLink", "CURLRC": "%CURLRC%" },
+          "in":  { "URL": "https://api.trello.com/1/lists/{%LIST_ID%}/cards?fields=shortLink", "CURLRC": "{%CURLRC%}" },
           "out": { "result": "CARDS_JSON" }
         },
         {
           "type": "run", "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "%CARDS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "{%CARDS_JSON%}" },
           "out": { "result": "CARDS" }
         },
         {
-          "type": "foreach", "over": "%CARDS%", "as": "SHORT_ID",
+          "type": "foreach", "over": "{%CARDS%}", "as": "SHORT_ID",
           "steps": [
             {
               "type": "run", "block": "jptq-task",
               "in": {
-                "QUEUE_FILE": "%QUEUE_FILE%", "TASK_ID": "trello-%SHORT_ID%",
-                "WORKFLOW": "card-dev", "SHORT_ID": "%SHORT_ID%",
+                "QUEUE_FILE": "{%QUEUE_FILE%}", "TASK_ID": "trello-{%SHORT_ID%}",
+                "WORKFLOW": "card-dev", "SHORT_ID": "{%SHORT_ID%}",
                 "EXPECT_STATUS": "Assistent", "MODEL": "sonnet",
-                "SYSTEM_PROMPT": "%PROMPTS_DIR%/assistent.md",
+                "SYSTEM_PROMPT": "{%PROMPTS_DIR%}/assistent.md",
                 "TARGET_LIST": "Review", "TAG": "#assistent",
-                "CURLRC": "%CURLRC%", "WORK_ROOT": "%WORK_ROOT%"
+                "CURLRC": "{%CURLRC%}", "WORK_ROOT": "{%WORK_ROOT%}"
               }
             }
           ]
@@ -206,31 +206,31 @@
         {
           "type": "run", "name": "Assistent-Haiku",
           "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"Assistent-Haiku\") | .id", "STDIN": "%LISTS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"Assistent-Haiku\") | .id", "STDIN": "{%LISTS_JSON%}" },
           "out": { "result": "LIST_ID" }
         },
         {
           "type": "run", "block": "curl-get",
-          "in":  { "URL": "https://api.trello.com/1/lists/%LIST_ID%/cards?fields=shortLink", "CURLRC": "%CURLRC%" },
+          "in":  { "URL": "https://api.trello.com/1/lists/{%LIST_ID%}/cards?fields=shortLink", "CURLRC": "{%CURLRC%}" },
           "out": { "result": "CARDS_JSON" }
         },
         {
           "type": "run", "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "%CARDS_JSON%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".[].shortLink", "STDIN": "{%CARDS_JSON%}" },
           "out": { "result": "CARDS" }
         },
         {
-          "type": "foreach", "over": "%CARDS%", "as": "SHORT_ID",
+          "type": "foreach", "over": "{%CARDS%}", "as": "SHORT_ID",
           "steps": [
             {
               "type": "run", "block": "jptq-task",
               "in": {
-                "QUEUE_FILE": "%QUEUE_FILE%", "TASK_ID": "trello-%SHORT_ID%",
-                "WORKFLOW": "card-dev", "SHORT_ID": "%SHORT_ID%",
+                "QUEUE_FILE": "{%QUEUE_FILE%}", "TASK_ID": "trello-{%SHORT_ID%}",
+                "WORKFLOW": "card-dev", "SHORT_ID": "{%SHORT_ID%}",
                 "EXPECT_STATUS": "Assistent-Haiku", "MODEL": "haiku",
-                "SYSTEM_PROMPT": "%PROMPTS_DIR%/assistent.md",
+                "SYSTEM_PROMPT": "{%PROMPTS_DIR%}/assistent.md",
                 "TARGET_LIST": "Review", "TAG": "#assistent",
-                "CURLRC": "%CURLRC%", "WORK_ROOT": "%WORK_ROOT%"
+                "CURLRC": "{%CURLRC%}", "WORK_ROOT": "{%WORK_ROOT%}"
               }
             }
           ]

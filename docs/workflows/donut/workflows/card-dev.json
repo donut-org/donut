@@ -17,46 +17,46 @@
     {
       "type": "run", "name": "zjistit vlastní ID v Trellu",
       "block": "curl-get",
-      "in":  { "URL": "https://api.trello.com/1/members/me?fields=id", "CURLRC": "%CURLRC%" },
+      "in":  { "URL": "https://api.trello.com/1/members/me?fields=id", "CURLRC": "{%CURLRC%}" },
       "out": { "result": "ME_JSON" }
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".id", "STDIN": "%ME_JSON%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".id", "STDIN": "{%ME_JSON%}" },
       "out": { "result": "MY_ID" }
     },
 
     {
       "type": "run", "name": "stáhnout kartu včetně komentářů, příloh a checklistů",
       "block": "curl-get",
-      "in":  { "URL": "https://api.trello.com/1/cards/%SHORT_ID%?list=true&actions=commentCard&attachments=true&checklists=all", "CURLRC": "%CURLRC%" },
+      "in":  { "URL": "https://api.trello.com/1/cards/{%SHORT_ID%}?list=true&actions=commentCard&attachments=true&checklists=all", "CURLRC": "{%CURLRC%}" },
       "out": { "result": "CARD_JSON" }
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".id", "STDIN": "%CARD_JSON%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".id", "STDIN": "{%CARD_JSON%}" },
       "out": { "result": "CARD_ID" }
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".idBoard", "STDIN": "%CARD_JSON%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".idBoard", "STDIN": "{%CARD_JSON%}" },
       "out": { "result": "BOARD_ID" }
     },
     {
       "type": "run", "name": "převést kartu na task JSON",
       "block": "trello-to-task",
-      "in":  { "MY_ID": "%MY_ID%", "STDIN": "%CARD_JSON%" },
+      "in":  { "MY_ID": "{%MY_ID%}", "STDIN": "{%CARD_JSON%}" },
       "out": { "result": "TASK" }
     },
 
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".status", "STDIN": "%TASK%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".status", "STDIN": "{%TASK%}" },
       "out": { "result": "STATUS" }
     },
     {
-      "type": "if", "name": "karta už není ve stavu %EXPECT_STATUS% — mezitím se přesunula",
-      "condition": { "left": "%STATUS%", "op": "neq", "right": "%EXPECT_STATUS%" },
+      "type": "if", "name": "karta už není ve stavu {%EXPECT_STATUS%} — mezitím se přesunula",
+      "condition": { "left": "{%STATUS%}", "op": "neq", "right": "{%EXPECT_STATUS%}" },
       "then": [ { "type": "run", "block": "fail" } ]
     },
 
@@ -65,106 +65,106 @@
       "block": "jq",
       "in": {
         "FILTER": "if (.title | test(\"^[^ ]+ - \")) then (.project = (.title | sub(\" - .*\"; \"\")) | .title = (.title | sub(\"^[^ ]* - \"; \"\"))) else . end",
-        "STDIN": "%TASK%"
+        "STDIN": "{%TASK%}"
       },
       "out": { "result": "TASK" }
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".project", "STDIN": "%TASK%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".project", "STDIN": "{%TASK%}" },
       "out": { "result": "PROJECT" }
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".branch", "STDIN": "%TASK%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".branch", "STDIN": "{%TASK%}" },
       "out": { "result": "BRANCH" }
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".title", "STDIN": "%TASK%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".title", "STDIN": "{%TASK%}" },
       "out": { "result": "TITLE" }
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".description", "STDIN": "%TASK%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".description", "STDIN": "{%TASK%}" },
       "out": { "result": "DESCRIPTION" }
     },
 
     {
       "type": "run", "name": "najít repozitář; prázdný výstup = pracuje se bez repozitáře",
       "block": "repo-find",
-      "in":  { "PROJECT": "%PROJECT%" },
+      "in":  { "PROJECT": "{%PROJECT%}" },
       "out": { "result": "REPO" }
     },
     {
       "type": "run", "name": "připravit workspace",
       "block": "workspace-init",
-      "in":  { "WORK_ROOT": "%WORK_ROOT%", "PROJECT": "%PROJECT%", "REPO": "%REPO%", "BRANCH": "%BRANCH%" },
+      "in":  { "WORK_ROOT": "{%WORK_ROOT%}", "PROJECT": "{%PROJECT%}", "REPO": "{%REPO%}", "BRANCH": "{%BRANCH%}" },
       "out": { "result": "WORK_DIR" }
     },
 
     {
       "type": "run", "block": "format-prompt",
-      "in":  { "STDIN": "%TASK%" },
+      "in":  { "STDIN": "{%TASK%}" },
       "out": { "result": "PROMPT" }
     },
     {
       "type": "run", "name": "spustit agenta",
       "block": "agent",
-      "in":  { "MODEL": "%MODEL%", "SYSTEM_PROMPT": "%SYSTEM_PROMPT%", "WORK_DIR": "%WORK_DIR%", "STDIN": "%PROMPT%" },
+      "in":  { "MODEL": "{%MODEL%}", "SYSTEM_PROMPT": "{%SYSTEM_PROMPT%}", "WORK_DIR": "{%WORK_DIR%}", "STDIN": "{%PROMPT%}" },
       "out": { "result": "RESULT" }
     },
 
     {
       "type": "run", "name": "commitnout a pushnout",
       "block": "workspace-finish",
-      "in":  { "WORK_DIR": "%WORK_DIR%", "REPO": "%REPO%", "MESSAGE": "%BRANCH%: %TITLE%" }
+      "in":  { "WORK_DIR": "{%WORK_DIR%}", "REPO": "{%REPO%}", "MESSAGE": "{%BRANCH%}: {%TITLE%}" }
     },
     {
       "type": "run", "name": "založit pull request",
       "block": "workspace-pr",
-      "in":  { "WORK_DIR": "%WORK_DIR%", "REPO": "%REPO%", "TITLE": "%TITLE%", "STDIN": "%DESCRIPTION%" },
+      "in":  { "WORK_DIR": "{%WORK_DIR%}", "REPO": "{%REPO%}", "TITLE": "{%TITLE%}", "STDIN": "{%DESCRIPTION%}" },
       "out": { "result": "PR_URL" }
     },
 
     {
-      "type": "set", "key": "COMMENT", "value": "%TAG%\n\n%RESULT%"
+      "type": "set", "key": "COMMENT", "value": "{%TAG%}\n\n{%RESULT%}"
     },
     {
       "type": "if", "name": "PR vznikl teď — připojit odkaz",
-      "condition": { "left": "%PR_URL%", "op": "not_empty" },
+      "condition": { "left": "{%PR_URL%}", "op": "not_empty" },
       "then": [
-        { "type": "set", "key": "COMMENT", "value": "%COMMENT%\n\nPR: %PR_URL%" }
+        { "type": "set", "key": "COMMENT", "value": "{%COMMENT%}\n\nPR: {%PR_URL%}" }
       ]
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-Rs", "FILTER": "{text: .}", "STDIN": "%COMMENT%" },
+      "in":  { "FLAGS": "-Rs", "FILTER": "{text: .}", "STDIN": "{%COMMENT%}" },
       "out": { "result": "COMMENT_JSON" }
     },
     {
       "type": "run", "name": "přidat komentář ke kartě",
       "block": "curl-send-json",
-      "in":  { "METHOD": "POST", "URL": "https://api.trello.com/1/cards/%CARD_ID%/actions/comments", "CURLRC": "%CURLRC%", "STDIN": "%COMMENT_JSON%" }
+      "in":  { "METHOD": "POST", "URL": "https://api.trello.com/1/cards/{%CARD_ID%}/actions/comments", "CURLRC": "{%CURLRC%}", "STDIN": "{%COMMENT_JSON%}" }
     },
 
     {
       "type": "run", "block": "curl-get",
-      "in":  { "URL": "https://api.trello.com/1/boards/%BOARD_ID%/lists?fields=id,name", "CURLRC": "%CURLRC%" },
+      "in":  { "URL": "https://api.trello.com/1/boards/{%BOARD_ID%}/lists?fields=id,name", "CURLRC": "{%CURLRC%}" },
       "out": { "result": "LISTS_JSON" }
     },
     {
       "type": "run", "block": "jq",
-      "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"%TARGET_LIST%\") | .id", "STDIN": "%LISTS_JSON%" },
+      "in":  { "FLAGS": "-r", "FILTER": ".[] | select(.name == \"{%TARGET_LIST%}\") | .id", "STDIN": "{%LISTS_JSON%}" },
       "out": { "result": "TARGET_LIST_ID" }
     },
     {
-      "type": "set", "key": "MOVE_BODY", "value": "{\"idList\": \"%TARGET_LIST_ID%\"}"
+      "type": "set", "key": "MOVE_BODY", "value": "{\"idList\": \"{%TARGET_LIST_ID%}\"}"
     },
     {
-      "type": "run", "name": "přesunout kartu do %TARGET_LIST%",
+      "type": "run", "name": "přesunout kartu do {%TARGET_LIST%}",
       "block": "curl-send-json",
-      "in":  { "METHOD": "PUT", "URL": "https://api.trello.com/1/cards/%CARD_ID%", "CURLRC": "%CURLRC%", "STDIN": "%MOVE_BODY%" }
+      "in":  { "METHOD": "PUT", "URL": "https://api.trello.com/1/cards/{%CARD_ID%}", "CURLRC": "{%CURLRC%}", "STDIN": "{%MOVE_BODY%}" }
     }
   ]
 }

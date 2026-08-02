@@ -25,9 +25,9 @@ Formát souborů: viz `format-specifikace.md`.
 | Věc | Rozhodnutí |
 |---|---|
 | Argumenty | Pole, ne string. Žádný shell. |
-| Skupiny argů | `[["-H","%HEADER%"]]` — skupina, v níž se proměnná vyhodnotí na prázdno, vypadne celá |
+| Skupiny argů | `[["-H","{%HEADER%}"]]` — skupina, v níž se proměnná vyhodnotí na prázdno, vypadne celá |
 | Nevyplněno vs `""` | Totéž. Krok nikdy nevyrobí „nevyplněno“ — viz sekce 6 specifikace |
-| Šablony | `%KLIC%`, jeden průchod, neznámý vzor projde beze změny, `%%` = literál |
+| Šablony | `{%KLIC%}`, jeden průchod, co tvaru neodpovídá projde beze změny, escape není potřeba |
 | Čtení neexistujícího klíče | Tvrdá chyba, konec běhu |
 | `if` větev | Nemá vlastní scope. Zápis ve větvi je vidět i za `if`. |
 | Chyba kroku | Default stop. `allow_failure: [0,1]` pro `grep`/`test`. |

@@ -4,13 +4,13 @@
   "command": "olw-agent",
   "args": [
     [
-      "--model=%MODEL%"
+      "--model={%MODEL%}"
     ],
     [
-      "--system-prompt-file=%SYSTEM_PROMPT%"
+      "--system-prompt-file={%SYSTEM_PROMPT%}"
     ],
     [
-      "--work-dir=%WORK_DIR%"
+      "--work-dir={%WORK_DIR%}"
     ]
   ],
   "inputs": {

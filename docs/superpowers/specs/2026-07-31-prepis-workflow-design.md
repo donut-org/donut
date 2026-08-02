@@ -108,15 +108,23 @@ a checklistů naráz. Omezení formátu odhalilo zbytečnost v bashi.
 
 **Pravidlo o jednom průchodu šablon si vydělalo.** Mapou protéká cizí text —
 komentáře z Trella, výstup agenta. To, že se výsledek dosazení dál
-nezpracovává, je přesně to, co brání komentáři obsahujícímu `%NECO%` cokoliv
+nezpracovává, je přesně to, co brání komentáři obsahujícímu `{%NECO%}` cokoliv
 rozbít. V bashi to hlídá `jq --arg`, tady formát.
 
-**Tvar jména klíče musel dostat pravidlo.** Sekce 3 slibovala, že neznámý
-vzor projde beze změny, sekce 5 dělala z nezapisovaného klíče chybu — na
-`%20%` v URL si to protiřečilo. Vyřešeno tím, že jméno klíče musí obsahovat
-aspoň jedno písmeno, takže `%20%` šablona není. Doloženo to ale není:
-v přepisu se percent-encoding nevyskytuje, všech 39 šablon je tvaru
-`VELKÁ_PÍSMENA`. Pravidlo je navržené proti očekávanému použití.
+**Delimitery šablon se musely změnit na dvouznakové.** Původní `%KLIC%` se
+sráželo s procentem v datech: sekce 3 slibovala, že neznámý vzor projde beze
+změny, sekce 5 dělala z nezapisovaného klíče chybu, a na `%20%` v URL si to
+protiřečilo. Zkoušelo se to zachránit pravidlem na tvar jména klíče, ale to
+řešilo `%20`, ne `%2F%3A`.
+
+Tvar `{%KLIC%}` je proti tomu imunní: `{%` ani `%}` nevznikne
+percent-encodingem, byly by to `%7B` a `%7D`. Samotné procento tím přestává
+mít význam, takže **odpadá escape i pravidlo o tvaru jména** — `date +%Y`,
+`printf '%d\n'` i `100% hotovo` se píšou přímo.
+
+Doloženo to není: v přepisu se percent-encoding nevyskytuje, všech 39 šablon
+bylo tvaru `VELKÁ_PÍSMENA`. Změna je proti očekávanému použití, ne proti
+zjištěné vadě.
 
 **Zrušil se rozdíl mezi nevyplněno a `""`.** Podrobně v sekci 6 specifikace.
 Krátce: krok nikdy nemůže vyrobit „nevyplněnou" hodnotu, takže by skupiny
@@ -159,5 +167,5 @@ hodnotou a z formátu zmizel; `result` je vždy standardní výstup procesu.
 
 - `foreach` neumí rozdělit řádek na sloupce, takže tabulka board × seznam ×
   role v `sync` je rozepsaná do pěti skoro shodných čtyřkrokových bloků.
-- `%STDIN%` jako vstup prvního kroku zůstal neověřený — žádné z workflow
+- `{%STDIN%}` jako vstup prvního kroku zůstal neověřený — žádné z workflow
   nečte CLI stdin.

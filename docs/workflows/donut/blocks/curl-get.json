@@ -9,10 +9,10 @@
     ],
     [
       "--config",
-      "%CURLRC%"
+      "{%CURLRC%}"
     ],
     [
-      "%URL%"
+      "{%URL%}"
     ]
   ],
   "inputs": {

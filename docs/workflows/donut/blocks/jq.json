@@ -4,10 +4,10 @@
   "command": "jq",
   "args": [
     [
-      "%FLAGS%"
+      "{%FLAGS%}"
     ],
     [
-      "%FILTER%"
+      "{%FILTER%}"
     ]
   ],
   "inputs": {

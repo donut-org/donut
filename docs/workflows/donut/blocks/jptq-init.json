@@ -7,7 +7,7 @@
       "init"
     ],
     [
-      "%QUEUE_FILE%"
+      "{%QUEUE_FILE%}"
     ]
   ],
   "inputs": {

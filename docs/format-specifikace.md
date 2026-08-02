@@ -19,8 +19,8 @@ které ho volá, ani o klíčích v mapě enginu.
 
   "args": [
     ["-sS", "--fail"],
-    ["--config", "%CURLRC%"],
-    ["%URL%"]
+    ["--config", "{%CURLRC%}"],
+    ["{%URL%}"]
   ],
 
   "inputs": {
@@ -41,7 +41,7 @@ Kámen čtoucí ze standardního vstupu:
   "description": "Transformace JSON/textu na stdin filtrem jq.",
 
   "command": "jq",
-  "args": [["%FLAGS%"], ["%FILTER%"]],
+  "args": [["{%FLAGS%}"], ["{%FILTER%}"]],
 
   "inputs": {
     "FLAGS":  { "required": false, "description": "Volby jq v jednom tokenu: -r, -Rs …" },
@@ -87,7 +87,7 @@ Exit code se dá bez ohledu na tohle nastavení uložit do mapy kanálem
 
 `args` je pole polí. Výsledná příkazová řádka vznikne zploštěním skupin.
 
-**Pravidlo:** skupina, ve které se některá `%VAR%` vyhodnotí na prázdno,
+**Pravidlo:** skupina, ve které se některá `{%VAR%}` vyhodnotí na prázdno,
 se celá vynechá.
 
 ```
@@ -107,7 +107,7 @@ konstantu (`["--prefix="]`). Bez proměnné není co vyhodnotit na prázdno,
 takže skupina nikdy nevypadne.
 
 Dosazení probíhá do jednotlivých prvků skupiny, nikdy do celé řádky.
-Prvek může obsahovat víc proměnných i okolní text (`"--url=%URL%"`).
+Prvek může obsahovat víc proměnných i okolní text (`"--url={%URL%}"`).
 
 ### `inputs`
 
@@ -136,12 +136,12 @@ vstup a struktura to vynucuje sama, bez pravidla ve validaci.
 Krok ho plní stejně jako ostatní vstupy, pod jménem `STDIN`:
 
 ```json
-"in": { "FILTER": ".title", "STDIN": "%TASK%" }
+"in": { "FILTER": ".title", "STDIN": "{%TASK%}" }
 ```
 
-`%STDIN%` se **nikdy nedosazuje do `args`** — je to označení kanálu, ne
+`{%STDIN%}` se **nikdy nedosazuje do `args`** — je to označení kanálu, ne
 proměnná. (Pozor na optickou kolizi: první krok workflow může vypadat jako
-`"in": { "STDIN": "%STDIN%" }`. Vlevo je kanál kamene, vpravo klíč v mapě
+`"in": { "STDIN": "{%STDIN%}" }`. Vlevo je kanál kamene, vpravo klíč v mapě
 enginu se vstupem CLI volání. Je to správně.)
 
 Bez `stdin` dostane proces prázdný standardní vstup.
@@ -169,17 +169,17 @@ nevytváří ani neuklízí žádné soubory; cesty, které ve workflow vystupuj
     {
       "type": "run",
       "block": "curl-get",
-      "in":  { "URL": "https://api.example.com/%ENV%/status" },
+      "in":  { "URL": "https://api.example.com/{%ENV%}/status" },
       "out": { "result": "STATUS", "exit_code": "RC" }
     },
     {
       "type": "if",
-      "condition": { "left": "%RC%", "op": "eq", "right": "0" },
+      "condition": { "left": "{%RC%}", "op": "eq", "right": "0" },
       "then": [
         {
           "type": "run",
           "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".version", "STDIN": "%STATUS%" },
+          "in":  { "FLAGS": "-r", "FILTER": ".version", "STDIN": "{%STATUS%}" },
           "out": { "result": "VERZE" }
         }
       ],
@@ -205,7 +205,7 @@ Krok je `run`, `if`, `set` nebo `foreach`.
 | `allow_failure` | ne | Přepíše nastavení kamene pro tento krok. |
 | `timeout` | ne | Přepíše nastavení kamene pro tento krok. |
 
-Hodnoty v `in` jsou šablony — text s `%KLIC%`. Klíč, který v mapě neexistuje,
+Hodnoty v `in` jsou šablony — text s `{%KLIC%}`. Klíč, který v mapě neexistuje,
 je **tvrdá chyba a konec běhu**.
 
 `out` přijímá kanály:
@@ -244,7 +244,7 @@ kroku, který se objeví v logu.
 
 Jediný způsob, jak složit hodnotu z jiných hodnot bez spuštění procesu.
 Čtení vlastního klíče je v pořádku — dosazuje se jedním průchodem, takže
-`{"key":"X","value":"%X% a něco"}` přečte starou hodnotu a zapíše novou.
+`{"key":"X","value":"{%X%} a něco"}` přečte starou hodnotu a zapíše novou.
 
 ### Krok `foreach`
 
@@ -270,7 +270,7 @@ Vnořování je povolené — `sync` iteruje přes boardy a uvnitř přes karty.
 ### Podmínka
 
 ```json
-{ "left": "%RC%", "op": "eq", "right": "0" }
+{ "left": "{%RC%}", "op": "eq", "right": "0" }
 ```
 
 `left` i `right` jsou šablony. Operátory:
@@ -296,20 +296,22 @@ Vnořování je povolené — `sync` iteruje přes boardy a uvnitř přes karty.
 
 ### Šablonování
 
-- Tvar `%KLIC%`. Vyžaduje oba delimitery.
-- **Jméno klíče se skládá z písmen, číslic a podtržítek a musí obsahovat
-  aspoň jedno písmeno.** `%20%` tedy klíč není. Totéž pravidlo platí pro
-  klíče zapisované v `out`, `set` a `foreach.as` — jinak by šlo vyrobit
-  klíč, který se pak nedá přečíst.
-- **Co tvaru neodpovídá, projde beze změny.** `date +%Y` nemá druhý
-  delimiter, `printf '%d\n'` taky ne, `?path=%2Ffoo` taky ne.
-- Literální procento: `%%`. Potřeba u dvou percent-encoded sekvencí za sebou:
-  `%2F%3A` má mezi delimitery `2F`, což jako jméno klíče projde, takže se
-  to bez escapování zastaví při validaci. Píše se `%%2F%%3A`.
+- Tvar `{%KLIC%}`. Jméno klíče je `[A-Za-z0-9_]+`.
+- **Co tvaru neodpovídá, projde beze změny.** Samotné procento nic neznamená,
+  takže `date +%Y`, `printf '%d\n'`, `100% hotovo` i percent-encoding v URL
+  (`?path=%2Ffoo`, `{%2F%}3A`) fungují bez jakéhokoliv escapování.
+- **Žádný escape neexistuje a není potřeba.** `{%` ani `%}` nevznikne
+  percent-encodingem — byly by to `%7B` a `%7D`. Jediný text, který takhle
+  nejde napsat, je literální `{%NECO%}`; kdyby to někdy bylo potřeba, escape
+  se doplní.
 - Dosazuje se **jedním průchodem**; výsledek se dál nezpracovává, takže data
-  obsahující `%NECO%` se nevyhodnocují. Tohle pravidlo je to, co dovoluje
+  obsahující `{%NECO%}` se nevyhodnocují. Tohle pravidlo je to, co dovoluje
   protahovat mapou cizí text — komentáře z Trella, výstup agenta —
   bez rizika, že se něco v datech vyhodnotí.
+
+Delimitery jsou dvouznakové právě kvůli tomu, aby se nesrážely s procentem
+v datech. Jednoznakové `{%KLIC%}` se s URL a formátovacími řetězci sráželo
+a vyžadovalo escapování i pravidlo o tvaru jména; obojí tímhle odpadá.
 
 ---
 
@@ -337,10 +339,11 @@ je chyba před spuštěním prvního kroku.
 - šablona čte klíč, který **žádný krok nikdy nezapisuje** (překlep)
 - šablona čte klíč, který v žádné předchozí větvi nemohl vzniknout
 - podmínka nebo `foreach.over` čte klíč, který nemohl vzniknout
-- `%STDIN%` použito v `args`
+- `{%STDIN%}` použito v `args`
 - neznámý operátor v podmínce
 - `allow_failure` není `true`, `false` ani pole celých čísel
-- klíč v `out`, `set.key` nebo `foreach.as` neobsahuje písmeno
+- klíč v `out`, `set.key` nebo `foreach.as` není platné jméno
+  (`[A-Za-z0-9_]+`) — jinak by vznikl klíč, na který se nedá odkázat
 
 **Varování**
 - šablona čte klíč zapsaný jen v jedné větvi `if` nebo uvnitř `foreach`
@@ -368,6 +371,7 @@ vnořených v `if` a `foreach`. Nad 14 kameny.
 |---|---|
 | přibyl `foreach` | `sync` iteruje přes karty vrácené API |
 | přibyl `set` | složení komentáře z výsledku agenta a odkazu na PR |
+| šablony mají tvar `{%KLIC%}`, ne `%KLIC%` | jednoznakový delimiter se srážel s procentem v URL a formátovacích řetězcích; s dvouznakovým odpadá escape i pravidlo o tvaru jména |
 | `allow_failure` bere i pole exit kódů | `jptq task` vrací 1 pro „už ve frontě" a jiné kódy pro selhání |
 | **zrušen rozdíl mezi „nevyplněno" a `""`** | viz níže |
 | **odložen `output` a souborové výstupy** | přechod na stdin/stdout je učinil nepotřebnými |
@@ -378,7 +382,7 @@ vnořených v `if` a `foreach`. Nad 14 kameny.
 Verze 0.2 je vedla jako dvě různé věci. Přepis ukázal, že to nejde udržet:
 **krok nikdy nemůže vyrobit „nevyplněnou" hodnotu.** Stdout příkazu je vždy
 řetězec, takže když `repo-find` nenajde repozitář, v mapě skončí `""` —
-což by byla „vyplněná" hodnota a skupina `["--repo=%REPO%"]` by nevypadla.
+což by byla „vyplněná" hodnota a skupina `["--repo={%REPO%}"]` by nevypadla.
 Skupiny argumentů by tak fungovaly pro vstupy workflow, ale nikdy pro
 výstupy kroků.
 
@@ -419,7 +423,7 @@ souborové výstupy potřeba, klíč se vrátí.
 
 ### Co přepis neověřil
 
-- `%STDIN%` jako vstup prvního kroku — žádné z workflow nečte CLI stdin.
+- `{%STDIN%}` jako vstup prvního kroku — žádné z workflow nečte CLI stdin.
 
 ### Nález, který se zatím neimplementuje
 
