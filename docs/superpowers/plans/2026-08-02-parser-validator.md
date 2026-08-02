@@ -14,7 +14,8 @@
 - `nette/utils` `^4.1.4`. JSON se dekóduje **jen** přes `Nette\Utils\Json::decode($s, forceArrays: true)`.
 - Žádná databáze. Žádné contributte balíčky. Žádný `nette/di`.
 - Namespace `Donut\`, PSR-4 na `src/`.
-- PHPStan level max nad `src` i `tests` musí projít. **Pozor:** hodnoty z `Json::decode` jsou `mixed` a level max odmítne `(string) $mixed` s „Cannot cast mixed to string". Každé přetypování nepovinné hodnoty proto stojí za `\is_scalar()`, jak ukazuje kód parserů níže.
+- PHPStan level max nad `src` i `tests` musí projít. **Pozor:** hodnoty z `Json::decode` jsou `mixed` a level max odmítne `(string) $mixed` s „Cannot cast mixed to string". Nepovinné textové hodnoty proto neprocházejí přímým přetypováním, ale přes `JsonSource::optionalString()` — viz Task 3.
+- **Strukturální neshoda je vždy `ParseException`, nikdy tichá `null`.** Když je v souboru na místě textu pole nebo objekt, běh se zastaví s hláškou. Nejvíc na tom záleží u `default`, který se za běhu dosazuje — tiše zahozený default by se projevil až chybějícím argumentem někde daleko.
 - Testy jsou `.phpt` soubory pro nette/tester, spouštěné přes `make test`.
 - Jazyk kódu a identifikátorů je angličtina. Chybové hlášky pro uživatele česky, protože specifikace i workflow jsou česky.
 - **Referenční pravda je `docs/format-specifikace.md` verze 0.3.** Když se plán a specifikace rozejdou, platí specifikace a rozpor nahlas oznam.
@@ -531,6 +532,7 @@ git commit -m "Template: parsování a dosazování {%KLIC%}"
   - `Donut\Parser\JsonSource::readFile(string $path): array<mixed>` — statická
   - `Donut\Parser\JsonSource::parseInputs(array<mixed> $data, string $location): array<string, Input>` — statická, čte klíč `inputs`
   - `Donut\Parser\JsonSource::parseAllowFailure(mixed $value, string $location, string $what): bool|array<int, int>` — statická
+  - `Donut\Parser\JsonSource::optionalString(array<mixed> $data, string $key, string $location, string $what): ?string` — statická
   - `Donut\Parser\BlockParser::parseFile(string $path): Block`
   - `Donut\Parser\BlockParser::parseArray(array<mixed> $data, string $location): Block`
   - `Donut\Parser\ParseException extends Donut\Exception`
@@ -809,14 +811,39 @@ final class JsonSource
 			$inputs[$name] = new Input(
 				name: $name,
 				required: isset($spec['required']) ? (bool) $spec['required'] : true,
-				default: isset($spec['default']) && \is_scalar($spec['default'])
-					? (string) $spec['default'] : null,
-				description: isset($spec['description']) && \is_scalar($spec['description'])
-					? (string) $spec['description'] : null,
+				default: self::optionalString($spec, 'default', $location, "default vstupu '{$name}'"),
+				description: self::optionalString($spec, 'description', $location, "description vstupu '{$name}'"),
 			);
 		}
 
 		return $inputs;
+	}
+
+
+	/**
+	 * Nepovinná textová hodnota. Chybí -> null. Skalár -> text (číslo v JSON
+	 * je tedy platný `default`). Pole nebo objekt -> chyba, protože v mapě
+	 * enginu jsou jen texty.
+	 *
+	 * Tiché zahození by nejvíc bolelo u `default`, který se za běhu dosazuje:
+	 * rozbitý default by se z „žádný default" projevil až chybějícím
+	 * argumentem někde úplně jinde.
+	 *
+	 * @param  array<mixed> $data
+	 * @param  string $what jak se na hodnotu odkázat v hlášce
+	 * @throws ParseException
+	 */
+	public static function optionalString(array $data, string $key, string $location, string $what): ?string
+	{
+		if (!isset($data[$key])) {
+			return null;
+		}
+
+		if (!\is_scalar($data[$key])) {
+			throw new ParseException("{$location}: {$what} musí být řetězec.");
+		}
+
+		return (string) $data[$key];
 	}
 
 
@@ -946,8 +973,7 @@ final class BlockParser
 
 			$stdin = new StdinSpec(
 				required: isset($data['stdin']['required']) ? (bool) $data['stdin']['required'] : true,
-				description: isset($data['stdin']['description']) && \is_scalar($data['stdin']['description'])
-					? (string) $data['stdin']['description'] : null,
+				description: JsonSource::optionalString($data['stdin'], 'description', $location, 'stdin.description'),
 			);
 		}
 
@@ -971,8 +997,7 @@ final class BlockParser
 			allowFailure: isset($data['allow_failure'])
 				? JsonSource::parseAllowFailure($data['allow_failure'], $location, 'allow_failure')
 				: false,
-			description: isset($data['description']) && \is_scalar($data['description'])
-				? (string) $data['description'] : null,
+			description: JsonSource::optionalString($data, 'description', $location, 'description'),
 		);
 	}
 
@@ -1523,8 +1548,7 @@ final class WorkflowParser
 			name: $data['name'],
 			inputs: JsonSource::parseInputs($data, $location),
 			steps: $this->parseSteps($data['steps'], $location, 'steps'),
-			description: isset($data['description']) && \is_scalar($data['description'])
-				? (string) $data['description'] : null,
+			description: JsonSource::optionalString($data, 'description', $location, 'description'),
 		);
 	}
 
@@ -1562,7 +1586,7 @@ final class WorkflowParser
 			throw new ParseException("{$location}: {$path} nemá klíč 'type'.");
 		}
 
-		$name = isset($step['name']) && \is_scalar($step['name']) ? (string) $step['name'] : null;
+		$name = JsonSource::optionalString($step, 'name', $location, "{$path}.name");
 
 		return match ($type) {
 			'run' => $this->parseRun($step, $location, $path, $name),
