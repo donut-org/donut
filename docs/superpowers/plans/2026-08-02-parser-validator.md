@@ -517,6 +517,7 @@ git commit -m "Template: parsování a dosazování {%KLIC%}"
 - Create: `src/Format/StdinSpec.php`
 - Create: `src/Format/Block.php`
 - Create: `src/Parser/ParseException.php`
+- Create: `src/Parser/JsonSource.php`
 - Create: `src/Parser/BlockParser.php`
 - Test: `tests/Donut/BlockParser.valid.phpt`
 - Test: `tests/Donut/BlockParser.invalid.phpt`
@@ -527,9 +528,14 @@ git commit -m "Template: parsování a dosazování {%KLIC%}"
   - `Donut\Format\Input` — veřejné readonly `string $name`, `bool $required`, `?string $default`, `?string $description`
   - `Donut\Format\StdinSpec` — `bool $required`, `?string $description`
   - `Donut\Format\Block` — `string $name`, `?string $description`, `string $command`, `array<int, array<int, Template>> $args`, `array<string, Input> $inputs`, `?StdinSpec $stdin`, `?int $timeout`, `bool|array<int, int> $allowFailure`
+  - `Donut\Parser\JsonSource::readFile(string $path): array<mixed>` — statická
+  - `Donut\Parser\JsonSource::parseInputs(array<mixed> $data, string $location): array<string, Input>` — statická, čte klíč `inputs`
+  - `Donut\Parser\JsonSource::parseAllowFailure(mixed $value, string $location, string $what): bool|array<int, int>` — statická
   - `Donut\Parser\BlockParser::parseFile(string $path): Block`
   - `Donut\Parser\BlockParser::parseArray(array<mixed> $data, string $location): Block`
   - `Donut\Parser\ParseException extends Donut\Exception`
+
+**Proč `JsonSource`:** kámen a workflow sdílí tři věci — čtení souboru, deklaraci `inputs` a `allow_failure`. Bez společného místa by je Task 4 opsal a formát by se pak měnil na dvou místech. Kontrola `name` proti názvu souboru sdílená **není**, každý parser má vlastní hlášku.
 
 - [ ] **Step 1: Napsat padající test na platný kámen**
 
@@ -700,7 +706,7 @@ final class Block
 }
 ```
 
-- [ ] **Step 4: Napsat ParseException a BlockParser**
+- [ ] **Step 4: Napsat ParseException a JsonSource**
 
 `src/Parser/ParseException.php`:
 
@@ -722,7 +728,7 @@ final class ParseException extends Exception
 }
 ```
 
-`src/Parser/BlockParser.php`:
+`src/Parser/JsonSource.php`:
 
 ```php
 <?php
@@ -731,25 +737,25 @@ declare(strict_types=1);
 
 namespace Donut\Parser;
 
-use Donut\Format\Block;
 use Donut\Format\Input;
-use Donut\Format\StdinSpec;
-use Donut\Template;
 use Nette\Utils\Json;
 use Nette\Utils\JsonException;
 
 
 /**
- * JSON souboru z blocks/ na objekt Block.
+ * Části parsování společné kamenům i workflow.
  *
- * Kontroluje jen strukturu jednoho souboru. Vazby mezi soubory řeší validátor.
+ * Oba formáty se čtou stejně a oba deklarují inputs; kámen a krok navíc
+ * sdílejí tvar allow_failure. Bez tohohle místa by se to opisovalo
+ * a měnilo dvakrát.
  */
-final class BlockParser
+final class JsonSource
 {
 	/**
+	 * @return array<mixed>
 	 * @throws ParseException
 	 */
-	public function parseFile(string $path): Block
+	public static function readFile(string $path): array
 	{
 		$content = @\file_get_contents($path);
 
@@ -768,7 +774,114 @@ final class BlockParser
 			throw new ParseException("Soubor '{$path}' musí obsahovat objekt.");
 		}
 
-		$block = $this->parseArray($data, $path);
+		return $data;
+	}
+
+
+	/**
+	 * Přečte klíč `inputs`. Chybějící klíč znamená prázdnou deklaraci.
+	 *
+	 * @param  array<mixed> $data celý objekt kamene nebo workflow
+	 * @return array<string, Input>
+	 * @throws ParseException
+	 */
+	public static function parseInputs(array $data, string $location): array
+	{
+		if (!isset($data['inputs'])) {
+			return [];
+		}
+
+		if (!\is_array($data['inputs'])) {
+			throw new ParseException("{$location}: klíč 'inputs' musí být objekt.");
+		}
+
+		$inputs = [];
+
+		foreach ($data['inputs'] as $name => $spec) {
+			if (!\is_string($name)) {
+				throw new ParseException("{$location}: jména vstupů musí být řetězce.");
+			}
+
+			if (!\is_array($spec)) {
+				throw new ParseException("{$location}: vstup '{$name}' musí být objekt.");
+			}
+
+			$inputs[$name] = new Input(
+				name: $name,
+				required: isset($spec['required']) ? (bool) $spec['required'] : true,
+				default: isset($spec['default']) ? (string) $spec['default'] : null,
+				description: isset($spec['description']) ? (string) $spec['description'] : null,
+			);
+		}
+
+		return $inputs;
+	}
+
+
+	/**
+	 * @param  string $what jak se na pole odkázat v hlášce (`allow_failure`,
+	 *                      nebo `steps[0].allow_failure` u kroku)
+	 * @return bool|array<int, int>
+	 * @throws ParseException
+	 */
+	public static function parseAllowFailure(mixed $value, string $location, string $what): bool|array
+	{
+		if (\is_bool($value)) {
+			return $value;
+		}
+
+		if (\is_array($value)) {
+			$codes = [];
+
+			foreach ($value as $code) {
+				if (!\is_int($code)) {
+					throw new ParseException(
+						"{$location}: {$what} jako pole musí obsahovat jen celá čísla."
+					);
+				}
+
+				$codes[] = $code;
+			}
+
+			return $codes;
+		}
+
+		throw new ParseException(
+			"{$location}: {$what} musí být true, false, nebo pole celých čísel."
+		);
+	}
+}
+```
+
+- [ ] **Step 4b: Napsat BlockParser**
+
+`src/Parser/BlockParser.php`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Donut\Parser;
+
+use Donut\Format\Block;
+use Donut\Format\StdinSpec;
+use Donut\Template;
+
+
+/**
+ * JSON souboru z blocks/ na objekt Block.
+ *
+ * Kontroluje jen strukturu jednoho souboru. Vazby mezi soubory řeší validátor.
+ */
+final class BlockParser
+{
+	/**
+	 * @throws ParseException
+	 */
+	public function parseFile(string $path): Block
+	{
+		$block = $this->parseArray(JsonSource::readFile($path), $path);
 		$expected = \basename($path, '.json');
 
 		if ($block->name !== $expected) {
@@ -822,25 +935,6 @@ final class BlockParser
 			$args[] = $parsedGroup;
 		}
 
-		$inputs = [];
-
-		foreach ($this->arrayOrEmpty($data, 'inputs', $location) as $inputName => $spec) {
-			if (!\is_string($inputName)) {
-				throw new ParseException("{$location}: jména vstupů musí být řetězce.");
-			}
-
-			if (!\is_array($spec)) {
-				throw new ParseException("{$location}: vstup '{$inputName}' musí být objekt.");
-			}
-
-			$inputs[$inputName] = new Input(
-				name: $inputName,
-				required: isset($spec['required']) ? (bool) $spec['required'] : true,
-				default: isset($spec['default']) ? (string) $spec['default'] : null,
-				description: isset($spec['description']) ? (string) $spec['description'] : null,
-			);
-		}
-
 		$stdin = null;
 
 		if (isset($data['stdin'])) {
@@ -868,50 +962,13 @@ final class BlockParser
 			name: $name,
 			command: $command,
 			args: $args,
-			inputs: $inputs,
+			inputs: JsonSource::parseInputs($data, $location),
 			stdin: $stdin,
 			timeout: $timeout,
-			allowFailure: $this->parseAllowFailure($data, $location),
+			allowFailure: isset($data['allow_failure'])
+				? JsonSource::parseAllowFailure($data['allow_failure'], $location, 'allow_failure')
+				: false,
 			description: isset($data['description']) ? (string) $data['description'] : null,
-		);
-	}
-
-
-	/**
-	 * @param  array<mixed> $data
-	 * @return bool|array<int, int>
-	 * @throws ParseException
-	 */
-	private function parseAllowFailure(array $data, string $location): bool|array
-	{
-		if (!isset($data['allow_failure'])) {
-			return false;
-		}
-
-		$value = $data['allow_failure'];
-
-		if (\is_bool($value)) {
-			return $value;
-		}
-
-		if (\is_array($value)) {
-			$codes = [];
-
-			foreach ($value as $code) {
-				if (!\is_int($code)) {
-					throw new ParseException(
-						"{$location}: 'allow_failure' jako pole musí obsahovat jen celá čísla."
-					);
-				}
-
-				$codes[] = $code;
-			}
-
-			return $codes;
-		}
-
-		throw new ParseException(
-			"{$location}: 'allow_failure' musí být true, false, nebo pole celých čísel."
 		);
 	}
 
@@ -924,25 +981,6 @@ final class BlockParser
 	{
 		if (!isset($data[$key]) || !\is_string($data[$key]) || $data[$key] === '') {
 			throw new ParseException("{$location}: klíč '{$key}' je povinný a musí být neprázdný řetězec.");
-		}
-
-		return $data[$key];
-	}
-
-
-	/**
-	 * @param  array<mixed> $data
-	 * @return array<mixed>
-	 * @throws ParseException
-	 */
-	private function arrayOrEmpty(array $data, string $key, string $location): array
-	{
-		if (!isset($data[$key])) {
-			return [];
-		}
-
-		if (!\is_array($data[$key])) {
-			throw new ParseException("{$location}: klíč '{$key}' musí být objekt.");
 		}
 
 		return $data[$key];
@@ -1007,12 +1045,12 @@ $assertFails(
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'allow_failure' => 'ano'],
-	"x.json: 'allow_failure' musí být true, false, nebo pole celých čísel."
+	'x.json: allow_failure musí být true, false, nebo pole celých čísel.'
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'allow_failure' => ['a']],
-	"x.json: 'allow_failure' jako pole musí obsahovat jen celá čísla."
+	'x.json: allow_failure jako pole musí obsahovat jen celá čísla.'
 );
 
 $assertFails(
@@ -1048,7 +1086,7 @@ Expected: `[OK] No errors`
 
 ```bash
 git add src/Format src/Parser tests/Donut/BlockParser.valid.phpt tests/Donut/BlockParser.invalid.phpt
-git commit -m "BlockParser: načítání kamenů z JSON"
+git commit -m "BlockParser a JsonSource: načítání kamenů z JSON"
 ```
 
 ---
@@ -1068,7 +1106,7 @@ git commit -m "BlockParser: načítání kamenů z JSON"
 - Test: `tests/Donut/WorkflowParser.invalid.phpt`
 
 **Interfaces:**
-- Consumes: `Donut\Template`, `Donut\Format\Input`, `Donut\Parser\ParseException`.
+- Consumes: `Donut\Template`, `Donut\Format\Input`, `Donut\Parser\ParseException`, a z Tasku 3 `Donut\Parser\JsonSource` — `readFile()`, `parseInputs()` a `parseAllowFailure()` se **neopisují**, volají se.
 - Produces:
   - `Donut\Format\Step` — prázdné rozhraní, společný typ pro pole kroků; všechny kroky mají `?string $name`
   - `Donut\Format\RunStep` — `string $block`, `array<string, Template> $in`, `array<string, string> $out` (klíč = kanál `result`/`stderr`/`exit_code`), `?int $timeout`, `bool|array<int, int>|null $allowFailure`, `?string $name`
@@ -1424,14 +1462,11 @@ namespace Donut\Parser;
 use Donut\Format\Condition;
 use Donut\Format\ForeachStep;
 use Donut\Format\IfStep;
-use Donut\Format\Input;
 use Donut\Format\RunStep;
 use Donut\Format\SetStep;
 use Donut\Format\Step;
 use Donut\Format\Workflow;
 use Donut\Template;
-use Nette\Utils\Json;
-use Nette\Utils\JsonException;
 
 
 /**
@@ -1447,24 +1482,7 @@ final class WorkflowParser
 	 */
 	public function parseFile(string $path): Workflow
 	{
-		$content = @\file_get_contents($path);
-
-		if ($content === false) {
-			throw new ParseException("Soubor '{$path}' nejde přečíst.");
-		}
-
-		try {
-			$data = Json::decode($content, forceArrays: true);
-
-		} catch (JsonException $e) {
-			throw new ParseException("Soubor '{$path}' není platný JSON: {$e->getMessage()}", 0, $e);
-		}
-
-		if (!\is_array($data)) {
-			throw new ParseException("Soubor '{$path}' musí obsahovat objekt.");
-		}
-
-		$workflow = $this->parseArray($data, $path);
+		$workflow = $this->parseArray(JsonSource::readFile($path), $path);
 		$expected = \basename($path, '.json');
 
 		if ($workflow->name !== $expected) {
@@ -1493,34 +1511,13 @@ final class WorkflowParser
 			throw new ParseException("{$location}: klíč 'name' je povinný a musí být neprázdný řetězec.");
 		}
 
-		$inputs = [];
-
-		if (isset($data['inputs'])) {
-			if (!\is_array($data['inputs'])) {
-				throw new ParseException("{$location}: klíč 'inputs' musí být objekt.");
-			}
-
-			foreach ($data['inputs'] as $name => $spec) {
-				if (!\is_string($name) || !\is_array($spec)) {
-					throw new ParseException("{$location}: vstup '{$name}' musí být objekt.");
-				}
-
-				$inputs[$name] = new Input(
-					name: $name,
-					required: isset($spec['required']) ? (bool) $spec['required'] : true,
-					default: isset($spec['default']) ? (string) $spec['default'] : null,
-					description: isset($spec['description']) ? (string) $spec['description'] : null,
-				);
-			}
-		}
-
 		if (!isset($data['steps']) || !\is_array($data['steps'])) {
 			throw new ParseException("{$location}: klíč 'steps' je povinný a musí být pole.");
 		}
 
 		return new Workflow(
 			name: $data['name'],
-			inputs: $inputs,
+			inputs: JsonSource::parseInputs($data, $location),
 			steps: $this->parseSteps($data['steps'], $location, 'steps'),
 			description: isset($data['description']) ? (string) $data['description'] : null,
 		);
@@ -1602,35 +1599,9 @@ final class WorkflowParser
 			$out[$channel] = $key;
 		}
 
-		$allowFailure = null;
-
-		if (isset($step['allow_failure'])) {
-			$value = $step['allow_failure'];
-
-			if (\is_bool($value)) {
-				$allowFailure = $value;
-
-			} elseif (\is_array($value)) {
-				$codes = [];
-
-				foreach ($value as $code) {
-					if (!\is_int($code)) {
-						throw new ParseException(
-							"{$location}: {$path}.allow_failure jako pole musí obsahovat jen celá čísla."
-						);
-					}
-
-					$codes[] = $code;
-				}
-
-				$allowFailure = $codes;
-
-			} else {
-				throw new ParseException(
-					"{$location}: {$path}.allow_failure musí být true, false, nebo pole celých čísel."
-				);
-			}
-		}
+		$allowFailure = isset($step['allow_failure'])
+			? JsonSource::parseAllowFailure($step['allow_failure'], $location, "{$path}.allow_failure")
+			: null;
 
 		$timeout = null;
 
