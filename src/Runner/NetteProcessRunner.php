@@ -23,6 +23,7 @@ final class NetteProcessRunner implements ProcessRunner
 		string $command,
 		array $args,
 		string $stdin,
+		bool $captureStdout,
 		bool $captureStderr,
 		?int $timeout,
 	): ProcessResult
@@ -31,7 +32,7 @@ final class NetteProcessRunner implements ProcessRunner
 			executable: $command,
 			arguments: $args,
 			stdin: $stdin,
-			stdout: null,
+			stdout: $captureStdout ? null : STDOUT,
 			stderr: $captureStderr ? null : STDERR,
 			timeout: $timeout === null ? null : (float) $timeout,
 		);
@@ -39,7 +40,7 @@ final class NetteProcessRunner implements ProcessRunner
 		$exitCode = $process->getExitCode();
 
 		return new ProcessResult(
-			stdout: self::trimTrailingNewlines($process->getStdOutput()),
+			stdout: $captureStdout ? self::trimTrailingNewlines($process->getStdOutput()) : null,
 			stderr: $captureStderr ? self::trimTrailingNewlines($process->getStdError()) : null,
 			exitCode: $exitCode,
 		);

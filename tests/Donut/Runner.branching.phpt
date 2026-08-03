@@ -29,7 +29,7 @@ final class RecordingProcesses implements ProcessRunner
 	/** @var array<int, list<string>> */
 	public array $args = [];
 
-	public function run(string $command, array $args, string $stdin, bool $captureStderr, ?int $timeout): ProcessResult
+	public function run(string $command, array $args, string $stdin, bool $captureStdout, bool $captureStderr, ?int $timeout): ProcessResult
 	{
 		$this->args[] = $args;
 
