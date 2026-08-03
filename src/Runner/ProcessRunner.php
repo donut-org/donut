@@ -14,7 +14,7 @@ namespace Donut\Runner;
 interface ProcessRunner
 {
 	/**
-	 * @param  array<int, string> $args
+	 * @param  list<string> $args
 	 * @param  bool $captureStderr true = do paměti, false = streamovat na terminál
 	 * @param  ?int $timeout sekundy; null vypíná limit
 	 * @throws \Nette\Utils\ProcessTimeoutException

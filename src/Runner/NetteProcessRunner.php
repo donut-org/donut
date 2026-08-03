@@ -29,7 +29,7 @@ final class NetteProcessRunner implements ProcessRunner
 	{
 		$process = Process::runExecutable(
 			executable: $command,
-			arguments: \array_values($args),
+			arguments: $args,
 			stdin: $stdin,
 			stdout: null,
 			stderr: $captureStderr ? null : STDERR,
