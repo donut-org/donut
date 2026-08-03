@@ -213,6 +213,27 @@ nemůže — že se proces opravdu spustí, že stdin doteče, že exit code sed
 výslednou mapu. Přepis v `docs/workflows/donut/` se spustit nedá — volá
 Trello API a `gh` — takže zůstává tím, čím je: zátěží pro validátor.
 
+## Co vypadá jako nedodělek a není
+
+Čtyři místa, u kterých závěrečná revize doložila, že jsou správně tak, jak
+jsou. Neuklízet:
+
+- **Nedosažitelná větev `default =>` v `ConditionEvaluator::compare()`.**
+  Existuje kvůli úplnosti pro PHPStan; bez ní by PHP hodilo
+  `UnhandledMatchError` místo hlášky s polohou. Analogická větev o funkci
+  výš odstraněná být mohla, protože tamní `match` je chráněný `in_array`
+  o dva řádky dřív — ty dvě situace nejsou stejné.
+- **`/usr/bin/false` absolutní cestou v testech.** Specifikace ho sama
+  v sekci 2 uvádí jako idiomatický způsob, jak zastavit větev. Bare `false`
+  přes `PATH` by navíc oslabil přijímací test, který chce dokázat, že se
+  spustí skutečná binárka, ne že funguje rozlišení `PATH`.
+- **`FakeProcesses::run()` přijímá `\Throwable`.** Runner chytá dvě různé
+  nette výjimky; fake typovaný na jednu z nich by druhou nedokázal
+  vyzkoušet. Zúžení by byla regrese.
+- **`rtrim($output, "\r\n")` je o kus širší než `$(...)`.** Odřezává
+  i koncové `\r`. Výstup končící holým `\r` o něj přijde. Vědomé, nikoho
+  to nepotká.
+
 ## Otevřené a vědomě odložené
 
 - **Dry run.** Vypsat poskládané příkazové řádky bez spuštění by bylo užitečné
