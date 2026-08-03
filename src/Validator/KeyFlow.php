@@ -104,6 +104,37 @@ final class KeyFlow
 	}
 
 
+	/**
+	 * Sloučí obě větve if. Klíč jistý v obou větvích je jistý i tady —
+	 * na rozdíl od mergeAsMaybe(), který by ho degradoval na „možná",
+	 * i když z ifu není úniku. Klíč jistý jen v jedné větvi zůstává „možná".
+	 */
+	public function mergeBranches(self $a, self $b): void
+	{
+		foreach ([...\array_keys($a->known), ...\array_keys($b->known)] as $key) {
+			if (isset($this->known[$key])) {
+				continue;
+			}
+
+			if (isset($a->known[$key]) && isset($b->known[$key])) {
+				$this->known[$key] = true;
+
+			} else {
+				$this->maybe[$key] = true;
+			}
+		}
+
+		foreach ([...\array_keys($a->maybe), ...\array_keys($b->maybe)] as $key) {
+			if (!isset($this->known[$key])) {
+				$this->maybe[$key] = true;
+			}
+		}
+
+		$this->written += $a->written + $b->written;
+		$this->read += $a->read + $b->read;
+	}
+
+
 	/** @return array<int, string> */
 	public function getWritten(): array
 	{

@@ -248,4 +248,38 @@ Assert::contains(
 	])
 );
 
+// klíč zapsaný v obou větvích if je za ním jistý, ne jen "možná"
+Assert::same([], $warnings([
+	'name' => 'w',
+	'inputs' => ['T' => []],
+	'steps' => [
+		[
+			'type' => 'if',
+			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'set', 'key' => 'V', 'value' => 'a']],
+			'else' => [['type' => 'set', 'key' => 'V', 'value' => 'b']],
+		],
+		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%V%}']],
+	],
+]));
+
+// a totéž čtené přísně (podmínkou) nesmí být chyba
+Assert::same([], $errors([
+	'name' => 'w',
+	'inputs' => ['T' => []],
+	'steps' => [
+		[
+			'type' => 'if',
+			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'set', 'key' => 'V', 'value' => 'a']],
+			'else' => [['type' => 'set', 'key' => 'V', 'value' => 'b']],
+		],
+		[
+			'type' => 'if',
+			'condition' => ['left' => '{%V%}', 'op' => 'eq', 'right' => 'a'],
+			'then' => [],
+		],
+	],
+]));
+
 Nette\Utils\FileSystem::delete(TEMP_DIR);
