@@ -41,12 +41,7 @@ final class BlockParser
 	public function parseArray(array $data, string $location): Block
 	{
 		$known = ['name', 'description', 'command', 'args', 'inputs', 'stdin', 'timeout', 'allow_failure'];
-
-		foreach (\array_keys($data) as $key) {
-			if (!\in_array($key, $known, true)) {
-				throw new ParseException("{$location}: neznámý klíč '{$key}'.");
-			}
-		}
+		JsonSource::rejectUnknownKeys($data, $known, $location, '');
 
 		$name = $this->requireString($data, 'name', $location);
 		$command = $this->requireString($data, 'command', $location);
@@ -81,6 +76,8 @@ final class BlockParser
 			if (!\is_array($data['stdin'])) {
 				throw new ParseException("{$location}: klíč 'stdin' musí být objekt.");
 			}
+
+			JsonSource::rejectUnknownKeys($data['stdin'], ['required', 'description'], $location, 'stdin');
 
 			$stdin = new StdinSpec(
 				required: isset($data['stdin']['required']) ? (bool) $data['stdin']['required'] : true,

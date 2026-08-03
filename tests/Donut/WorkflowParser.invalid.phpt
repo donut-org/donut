@@ -196,3 +196,57 @@ $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'set', 'value' => 'x']]],
 	"w.json: steps[0] nemá klíč 'key'."
 );
+
+// neznámý klíč uvnitř kroku 'run'
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'outs' => []]]],
+	"w.json: steps[0] má neznámý klíč 'outs'."
+);
+
+// neznámý klíč uvnitř kroku 'if' — typický překlep 'esle'
+$assertFails(
+	[
+		'name' => 'w',
+		'steps' => [[
+			'type' => 'if',
+			'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => '1'],
+			'then' => [],
+			'esle' => [],
+		]],
+	],
+	"w.json: steps[0] má neznámý klíč 'esle'."
+);
+
+// neznámý klíč uvnitř kroku 'set'
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'set', 'key' => 'A', 'value' => 'x', 'default' => 'y']]],
+	"w.json: steps[0] má neznámý klíč 'default'."
+);
+
+// neznámý klíč uvnitř kroku 'foreach'
+$assertFails(
+	[
+		'name' => 'w',
+		'steps' => [['type' => 'foreach', 'over' => '{%A%}', 'as' => 'B', 'steps' => [], 'in' => []]],
+	],
+	"w.json: steps[0] má neznámý klíč 'in'."
+);
+
+// neznámý klíč uvnitř 'condition'
+$assertFails(
+	[
+		'name' => 'w',
+		'steps' => [[
+			'type' => 'if',
+			'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => '1', 'nope' => true],
+			'then' => [],
+		]],
+	],
+	"w.json: steps[0].condition má neznámý klíč 'nope'."
+);
+
+// neznámý klíč uvnitř 'inputs.<name>'
+$assertFails(
+	['name' => 'w', 'inputs' => ['T' => ['requried' => true]], 'steps' => []],
+	"w.json: vstup 'T' má neznámý klíč 'requried'."
+);

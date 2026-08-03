@@ -46,6 +46,31 @@ final class JsonSource
 
 
 	/**
+	 * Odmítne klíče, které nejsou v seznamu známých — pro libovolnou úroveň
+	 * vnoření, ne jen kořen souboru. `$what` je jak se v hlášce odkázat na
+	 * místo; prázdný řetězec pro kořen souboru.
+	 *
+	 * @param  array<mixed> $data
+	 * @param  array<int, string> $known
+	 * @throws ParseException
+	 */
+	public static function rejectUnknownKeys(array $data, array $known, string $location, string $what): void
+	{
+		foreach (\array_keys($data) as $key) {
+			if (\in_array($key, $known, true)) {
+				continue;
+			}
+
+			$message = $what === ''
+				? "neznámý klíč '{$key}'."
+				: "{$what} má neznámý klíč '{$key}'.";
+
+			throw new ParseException("{$location}: {$message}");
+		}
+	}
+
+
+	/**
 	 * Přečte klíč `inputs`. Chybějící klíč znamená prázdnou deklaraci.
 	 *
 	 * @param  array<mixed> $data celý objekt kamene nebo workflow
@@ -72,6 +97,8 @@ final class JsonSource
 			if (!\is_array($spec)) {
 				throw new ParseException("{$location}: vstup '{$name}' musí být objekt.");
 			}
+
+			self::rejectUnknownKeys($spec, ['required', 'default', 'description'], $location, "vstup '{$name}'");
 
 			$inputs[$name] = new Input(
 				name: $name,
