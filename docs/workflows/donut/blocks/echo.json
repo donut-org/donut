@@ -1,0 +1,13 @@
+{
+  "name": "echo",
+  "description": "Vypíše text na stdout.",
+
+  "command": "echo",
+  "args": [
+    ["{%TEXT%}"]
+  ],
+
+  "inputs": {
+    "TEXT": { "required": true, "description": "Text k vypsání" }
+  }
+}
