@@ -154,8 +154,8 @@ final class WorkflowParser
 		$timeout = null;
 
 		if (isset($step['timeout'])) {
-			if (!\is_int($step['timeout']) || $step['timeout'] < 0) {
-				throw new ParseException("{$location}: {$path}.timeout musí být nezáporné celé číslo.");
+			if (!\is_int($step['timeout']) || $step['timeout'] < 1) {
+				throw new ParseException("{$location}: {$path}.timeout musí být kladné celé číslo.");
 			}
 
 			$timeout = $step['timeout'];

@@ -88,8 +88,8 @@ final class BlockParser
 		$timeout = null;
 
 		if (isset($data['timeout'])) {
-			if (!\is_int($data['timeout']) || $data['timeout'] < 0) {
-				throw new ParseException("{$location}: 'timeout' musí být nezáporné celé číslo.");
+			if (!\is_int($data['timeout']) || $data['timeout'] < 1) {
+				throw new ParseException("{$location}: 'timeout' musí být kladné celé číslo.");
 			}
 
 			$timeout = $data['timeout'];
