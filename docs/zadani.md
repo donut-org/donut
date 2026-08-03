@@ -41,7 +41,7 @@ Formát souborů: viz `format-specifikace.md`.
 
 0. ~~Přepsat existující bashová workflow → ověřit formát~~ — hotovo,
    viz `workflows/donut/` a sekce 6 specifikace
-1. Parser + **validátor** (běží před spuštěním, viz sekce 5 specifikace)
+1. ~~Parser + **validátor**~~ — hotovo, viz sekce 5 specifikace
 2. ~~Runner~~ — hotovo, viz `superpowers/specs/2026-08-03-runner-design.md`
 3. CLI wrapper (`--list`, `--help`, běh)
 4. Přepsat `olw-*` skripty podle rozhraní v návrhu
