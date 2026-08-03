@@ -165,6 +165,20 @@ Assert::same(
 	])
 );
 
+// binární operátor bez right
+Assert::same(
+	['w.json:steps[0]: operátor "eq" vyžaduje \'right\''],
+	$messages([
+		'name' => 'w',
+		'inputs' => ['T' => []],
+		'steps' => [[
+			'type' => 'if',
+			'condition' => ['left' => '{%T%}', 'op' => 'eq'],
+			'then' => [],
+		]],
+	])
+);
+
 // klíč, na který by pak nešlo odkázat
 Assert::same(
 	['w.json:steps[0]: klíč "A-B" není platné jméno'],
