@@ -50,9 +50,9 @@ final class Runner
 		}
 
 		if ($result->hasErrors()) {
-			$messages = \implode('; ', \array_map(strval(...), $result->getErrors()));
+			$messages = \implode("\n", \array_map(strval(...), $result->getErrors()));
 
-			throw new RunFailedException("Statická validace neprošla: {$messages}");
+			throw new RunFailedException("Statická validace neprošla:\n{$messages}");
 		}
 
 		$map = $initialMap;

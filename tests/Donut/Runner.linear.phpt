@@ -193,8 +193,26 @@ Assert::exception(
 		'steps' => [['type' => 'run', 'block' => 'neexistuje']],
 	], $procs),
 	RunFailedException::class,
-	'%a%validace neprošla%a%'
+	'%A%validace neprošla%A%'
 );
 Assert::same([], $procs->calls);
+
+// víc nálezů validace je v hlášce každý na svém řádku
+$procs = new FakeProcesses;
+$e = Assert::exception(
+	fn() => $run([
+		'name' => 'w',
+		'steps' => [
+			['type' => 'run', 'block' => 'neexistuje1'],
+			['type' => 'run', 'block' => 'neexistuje2'],
+		],
+	], $procs),
+	RunFailedException::class,
+	'%A%validace neprošla%A%'
+);
+$lines = explode("\n", $e->getMessage());
+Assert::count(3, $lines);
+Assert::same('w.json:steps[0]: kámen "neexistuje1" neexistuje', $lines[1]);
+Assert::same('w.json:steps[1]: kámen "neexistuje2" neexistuje', $lines[2]);
 
 FileSystem::delete(TEMP_DIR);
