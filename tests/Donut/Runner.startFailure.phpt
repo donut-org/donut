@@ -32,7 +32,7 @@ $workflow = (new WorkflowParser)->parseArray([
 Assert::exception(
 	fn() => $runner->run($workflow),
 	RunFailedException::class,
-	'%A?%w.json:steps[0]%A%typo%A%prikaz-ktery-neexistuje%A%'
+	'%A?%w.json:steps[0]%A%typo%A%prikaz-ktery-neexistuje%A?%'
 );
 
 FileSystem::delete(TEMP_DIR);
