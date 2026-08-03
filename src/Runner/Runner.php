@@ -43,6 +43,7 @@ final class Runner
 	 * @param  array<string, string> $initialMap
 	 * @return array<string, string> výsledná mapa
 	 * @throws RunFailedException
+	 * @throws \Donut\Parser\ParseException kámen v blocks/ se nedá naparsovat
 	 */
 	public function run(Workflow $workflow, array $initialMap = []): array
 	{
@@ -58,10 +59,44 @@ final class Runner
 			throw new RunFailedException("Statická validace neprošla:\n{$messages}");
 		}
 
-		$map = $initialMap;
+		$map = $this->composeInitialMap($workflow, $initialMap);
 		$this->runSteps($workflow->steps, $workflow->name . '.json:steps', $map);
 
 		return $map;
+	}
+
+
+	/**
+	 * Doplní do mapy volajícím dodané, co validátor předpokládá jako
+	 * počáteční obsah: default vstupů workflow, STDIN a CWD. Bez tohohle by
+	 * validní workflow se vstupem s default hodnotou umřelo uprostřed běhu
+	 * na MissingKeyException bez cesty ke kroku.
+	 *
+	 * @param  array<string, string> $initialMap
+	 * @return array<string, string>
+	 * @throws RunFailedException
+	 */
+	private function composeInitialMap(Workflow $workflow, array $initialMap): array
+	{
+		$map = $initialMap;
+
+		foreach ($workflow->inputs as $name => $input) {
+			if (!isset($map[$name]) && $input->default !== null) {
+				$map[$name] = $input->default;
+			}
+
+			if (!isset($map[$name]) && $input->required) {
+				throw new RunFailedException("{$workflow->name}.json: povinný vstup \"{$name}\" nemá hodnotu.");
+			}
+		}
+
+		$cwd = \getcwd();
+
+		if ($cwd === false) {
+			throw new RunFailedException("{$workflow->name}.json: nejde zjistit aktuální pracovní adresář.");
+		}
+
+		return $map + ['STDIN' => '', 'CWD' => $cwd];
 	}
 
 
@@ -75,32 +110,40 @@ final class Runner
 		foreach ($steps as $i => $step) {
 			$at = "{$path}[{$i}]";
 
-			if ($step instanceof RunStep) {
-				$this->runCommand($step, $at, $map);
+			try {
+				if ($step instanceof RunStep) {
+					$this->runStep($step, $at, $map);
 
-			} elseif ($step instanceof SetStep) {
-				$this->reporter->step($at, $step->name ?? "set {$step->key}");
-				$map[$step->key] = $step->value->render($map);
+				} elseif ($step instanceof SetStep) {
+					$this->reporter->step($at, $step->name ?? "set {$step->key}");
+					$map[$step->key] = $step->value->render($map);
 
-			} elseif ($step instanceof IfStep) {
-				$this->reporter->step($at, $step->name ?? 'if');
+				} elseif ($step instanceof IfStep) {
+					$this->reporter->step($at, $step->name ?? 'if');
 
-				$matched = ConditionEvaluator::evaluate($step->condition, $map, $at);
-				$branch = $matched ? $step->then : $step->else;
+					$matched = ConditionEvaluator::evaluate($step->condition, $map, $at);
+					$branch = $matched ? $step->then : $step->else;
 
-				$this->runSteps($branch, $at . ($matched ? '.then' : '.else'), $map);
+					$this->runSteps($branch, $at . ($matched ? '.then' : '.else'), $map);
 
-			} elseif ($step instanceof ForeachStep) {
-				$this->reporter->step($at, $step->name ?? 'foreach');
+				} elseif ($step instanceof ForeachStep) {
+					$this->reporter->step($at, $step->name ?? 'foreach');
 
-				foreach (self::splitLines($step->over->render($map)) as $line) {
-					$map[$step->as] = $line;
-					$this->reporter->step($at, "{$step->as}={$line}");
-					$this->runSteps($step->steps, "{$at}.steps", $map);
+					foreach (self::splitLines($step->over->render($map)) as $line) {
+						$map[$step->as] = $line;
+						$this->reporter->step($at, "{$step->as}={$line}");
+						$this->runSteps($step->steps, "{$at}.steps", $map);
+					}
+
+				} else {
+					throw new RunFailedException("{$at}: krok typu " . \get_debug_type($step) . " runner neumí.");
 				}
 
-			} else {
-				throw new RunFailedException("{$at}: krok typu " . \get_debug_type($step) . " runner neumí.");
+			} catch (\Donut\MissingKeyException $e) {
+				// Vnořené volání runSteps() už MissingKeyException zabalilo do
+				// RunFailedException, takže sem se dostane jen ta z tohoto kroku
+				// samotného — cesta se nikdy nepřepíše podruhé.
+				throw new RunFailedException("{$at}: {$e->getMessage()}", 0, $e);
 			}
 		}
 	}
@@ -132,7 +175,7 @@ final class Runner
 	 * @param  array<string, string> $map
 	 * @throws RunFailedException
 	 */
-	private function runCommand(RunStep $step, string $at, array &$map): void
+	private function runStep(RunStep $step, string $at, array &$map): void
 	{
 		$block = $this->blocks->get($step->block);
 		$this->reporter->step($at, $step->name ?? $block->name);

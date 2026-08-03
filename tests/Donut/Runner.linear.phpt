@@ -117,14 +117,14 @@ $map = $run([
 Assert::same('chyba', $map['E']);
 Assert::same(['cat', [], 'text', true, 60], $procs->calls[0]);
 
-// krok bez out mapu nemění
+// krok bez out mapu nemění — kromě STDIN a CWD, které run() sám doplní
 $procs = new FakeProcesses([new ProcessResult('nic', null, 0)]);
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['T' => []],
 	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%T%}']]],
 ], $procs, ['T' => 'x']);
-Assert::same(['T' => 'x'], $map);
+Assert::same(['T' => 'x', 'STDIN' => '', 'CWD' => getcwd()], $map);
 
 // nenulový exit code zastaví běh
 $procs = new FakeProcesses([new ProcessResult('', null, 3)]);
@@ -214,5 +214,44 @@ $lines = explode("\n", $e->getMessage());
 Assert::count(3, $lines);
 Assert::same('w.json:steps[0]: kámen "neexistuje1" neexistuje', $lines[1]);
 Assert::same('w.json:steps[1]: kámen "neexistuje2" neexistuje', $lines[2]);
+
+// run() sám doplní počáteční mapu, kterou validátor předpokládá: default
+// vstupu, když ho volající nedodá
+$procs = new FakeProcesses;
+$map = $run([
+	'name' => 'w',
+	'inputs' => ['TAG' => ['required' => false, 'default' => 'latest']],
+	'steps' => [['type' => 'set', 'key' => 'OUT', 'value' => '{%TAG%}']],
+], $procs);
+Assert::same('latest', $map['OUT']);
+
+// hodnota od volajícího default přebije
+$map = $run([
+	'name' => 'w',
+	'inputs' => ['TAG' => ['required' => false, 'default' => 'latest']],
+	'steps' => [['type' => 'set', 'key' => 'OUT', 'value' => '{%TAG%}']],
+], $procs, ['TAG' => 'v2']);
+Assert::same('v2', $map['OUT']);
+
+// chybějící povinný vstup bez hodnoty je chyba dřív, než se spustí první krok
+Assert::exception(
+	fn() => $run([
+		'name' => 'w',
+		'inputs' => ['TAG' => ['required' => true]],
+		'steps' => [],
+	], $procs),
+	RunFailedException::class,
+	'w.json: povinný vstup "TAG" nemá hodnotu.'
+);
+Assert::same([], $procs->calls);
+
+// CWD je v mapě a není prázdné, STDIN je v mapě prázdné, když nic nepřišlo
+$map = $run(['name' => 'w', 'steps' => []], $procs);
+Assert::same(getcwd(), $map['CWD']);
+Assert::same('', $map['STDIN']);
+
+// CWD dodané volajícím run() nepřepíše
+$map = $run(['name' => 'w', 'steps' => []], $procs, ['CWD' => '/od/volajiciho']);
+Assert::same('/od/volajiciho', $map['CWD']);
 
 FileSystem::delete(TEMP_DIR);
