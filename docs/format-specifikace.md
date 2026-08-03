@@ -231,6 +231,7 @@ Takový klíč by nikdo nikdy nezapsal, zatímco autor workflow počítá s tím
 | `condition` | ano | Viz níže. |
 | `then` | ano | Pole kroků. Smí být prázdné. |
 | `else` | ne | Pole kroků. |
+| `name` | ne | Popisek pro log a GUI, stejně jako u `run`. |
 
 Větve nezavádějí vlastní scope — zápis uvnitř větve je vidět i za `if`.
 Vnořování je povolené do libovolné hloubky.
@@ -285,7 +286,10 @@ Vnořování je povolené — `sync` iteruje přes boardy a uvnitř přes karty.
 | `eq`, `neq` | porovnání řetězců |
 | `gt`, `gte`, `lt`, `lte` | číselné porovnání; nečíselná hodnota = chyba |
 | `contains` | `left` obsahuje `right` |
-| `empty`, `not_empty` | `right` se ignoruje |
+| `empty`, `not_empty` | `right` se ignoruje a nemusí být uveden |
+
+Všechny ostatní operátory `right` **vyžadují**. Podmínka bez něj by
+porovnávala s ničím a validace ji odmítne.
 
 ---
 
@@ -348,6 +352,11 @@ je chyba před spuštěním prvního kroku.
 - `{%STDIN%}` použito v `args`
 - `out` uvádí jméno, které není kanál (`result`, `stderr`, `exit_code`)
 - neznámý operátor v podmínce
+- binární operátor v podmínce nemá `right`
+- objekt obsahuje klíč, který formát nezná — a to na **každé** úrovni, ne
+  jen v kořeni souboru. `"esle"` místo `"else"` by jinak tiše zahodilo celou
+  větev a překlep v `allow_failure` u kroku by tiše vrátil chování kamene.
+  Formát je uzavřený, takže není důvod cizí klíče tolerovat.
 - `allow_failure` není `true`, `false` ani pole celých čísel
 - klíč v `out`, `set.key` nebo `foreach.as` není platné jméno
   (`[A-Za-z0-9_]+`) — jinak by vznikl klíč, na který se nedá odkázat

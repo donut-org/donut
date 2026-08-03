@@ -3178,7 +3178,11 @@ a přidej metodu:
 
 `KeyFlow` je ve stejném namespace jako `Validator`, takže se neimportuje. `Template` už mezi `use` je z Tasku 6.
 
-**Vědomé zjednodušení:** klíč zapsaný v obou větvích `if` by mohl být za `if` „jistý", ale tahle implementace ho vede jako „možná". Je to konzervativní — vyrobí varování tam, kde by nemuselo být, ale nikdy neprohlásí za jistý klíč, který nemusí vzniknout. Neopravuj to; kdyby to začalo vadit, je to samostatná změna s vlastními testy.
+**Pozor — tenhle plán tu původně mandátoval chybu.** Stálo tu, že klíč zapsaný v obou větvích `if` se povede jako „možná", s odůvodněním, že je to konzervativní: „vyrobí varování tam, kde by nemuselo být, ale nikdy neprohlásí za jistý klíč, který nemusí vzniknout."
+
+To odůvodnění neplatí. Podmínka a `foreach.over` čtou **přísně**, takže z nadbytečného varování se stane tvrdá chyba — validátor odmítne korektní workflow a odůvodní to tvrzením, které není pravdivé. Odhalila to až závěrečná revize celého branche; sedm předchozích recenzí i přijímací test to minuly, protože v referenčním přepisu není ani jedna větev `else`.
+
+Správně je `KeyFlow::mergeBranches()`: klíč jistý v **obou** větvích je jistý i za `if`, cokoliv jiného je „možná". `foreach` si ponechává `mergeAsMaybe()` — tělo cyklu nemusí proběhnout ani jednou, takže jeho zápisy jsou skutečně jen možné.
 
 - [ ] **Step 5: Spustit test, ověřit že prochází**
 
