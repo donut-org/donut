@@ -33,7 +33,7 @@ zapsaný v obou větvích `if` je za `if` jen „možná" — validátor pak odm
 korektní workflow s hláškou, která nebyla pravdivá. Sedm recenzí i zelený
 přijímací test to minuly, protože tu cestu nebylo čím pokrýt.
 
-`repo-check` zapisuje `MESSAGE` v obou větvích a čte ho za `if`. Proti
+`repo-check` zapisuje `message` v obou větvích a čte ho za `if`. Proti
 opravené implementaci dává nula chyb a nula varování; proti té chybné
 přijímací test spadne. Ta větev `else` není ozdoba — je to jediné, co
 tenhle druh chyby v přepisu odhalí.
@@ -55,6 +55,6 @@ donut card-dev  --shortId=… --expectStatus=ReadyToDev --model=sonnet \
 ## Předpoklady
 
 - `~/.config/donut/trello.curlrc` s přihlašovací hlavičkou pro Trello API;
-  cesta se předává jako `--CURLRC`. Engine o credentials neví nic.
+  cesta se předává jako `--curlrc`. Engine o credentials neví nic.
 - Přepsané `olw-*` příkazy podle rozhraní v návrhovém dokumentu — bez JSON
   obálky, argumenty vstup, stdout výstup.
