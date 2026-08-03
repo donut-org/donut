@@ -129,7 +129,7 @@ final class Validator
 		$block = $this->blocks->get($step->block);
 
 		foreach ($step->in as $name => $template) {
-			if ($name === 'STDIN') {
+			if ($name === 'stdin') {
 				if ($block->stdin === null) {
 					$result->add(Problem::error(
 						$at,
@@ -154,7 +154,7 @@ final class Validator
 			}
 		}
 
-		if ($block->stdin !== null && $block->stdin->required && !isset($step->in['STDIN'])) {
+		if ($block->stdin !== null && $block->stdin->required && !isset($step->in['stdin'])) {
 			$result->add(Problem::error(
 				$at,
 				"kámen \"{$block->name}\" vyžaduje stdin, krok ho neplní"

@@ -7,76 +7,76 @@
       "task"
     ],
     [
-      "{%QUEUE_FILE%}"
+      "{%queueFile%}"
     ],
     [
-      "{%TASK_ID%}"
+      "{%taskId%}"
     ],
     [
       "donut"
     ],
     [
-      "{%WORKFLOW%}"
+      "{%workflow%}"
     ],
     [
-      "--SHORT_ID={%SHORT_ID%}"
+      "--SHORT_ID={%shortId%}"
     ],
     [
-      "--EXPECT_STATUS={%EXPECT_STATUS%}"
+      "--EXPECT_STATUS={%expectStatus%}"
     ],
     [
-      "--MODEL={%MODEL%}"
+      "--MODEL={%model%}"
     ],
     [
-      "--SYSTEM_PROMPT={%SYSTEM_PROMPT%}"
+      "--SYSTEM_PROMPT={%systemPrompt%}"
     ],
     [
-      "--TARGET_LIST={%TARGET_LIST%}"
+      "--TARGET_LIST={%targetList%}"
     ],
     [
-      "--TAG={%TAG%}"
+      "--TAG={%tag%}"
     ],
     [
-      "--CURLRC={%CURLRC%}"
+      "--CURLRC={%curlrc%}"
     ],
     [
-      "--WORK_ROOT={%WORK_ROOT%}"
+      "--WORK_ROOT={%workRoot%}"
     ]
   ],
   "inputs": {
-    "QUEUE_FILE": {
+    "queueFile": {
       "required": true
     },
-    "TASK_ID": {
+    "taskId": {
       "required": true,
       "description": "Identita úlohy ve frontě, kvůli deduplikaci"
     },
-    "WORKFLOW": {
+    "workflow": {
       "required": true,
       "description": "card-dev | card-spec"
     },
-    "SHORT_ID": {
+    "shortId": {
       "required": true
     },
-    "EXPECT_STATUS": {
+    "expectStatus": {
       "required": true
     },
-    "MODEL": {
+    "model": {
       "required": true
     },
-    "SYSTEM_PROMPT": {
+    "systemPrompt": {
       "required": true
     },
-    "TARGET_LIST": {
+    "targetList": {
       "required": true
     },
-    "TAG": {
+    "tag": {
       "required": true
     },
-    "CURLRC": {
+    "curlrc": {
       "required": false
     },
-    "WORK_ROOT": {
+    "workRoot": {
       "required": true
     }
   },

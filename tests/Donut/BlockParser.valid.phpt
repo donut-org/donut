@@ -13,12 +13,12 @@ $block = (new BlockParser)->parseArray([
 	'command' => 'curl',
 	'args' => [
 		['-sS', '--fail'],
-		['--config', '{%CURLRC%}'],
-		['{%URL%}'],
+		['--config', '{%curlrc%}'],
+		['{%url%}'],
 	],
 	'inputs' => [
-		'URL' => ['required' => true, 'description' => 'Adresa'],
-		'CURLRC' => ['required' => false],
+		'url' => ['required' => true, 'description' => 'Adresa'],
+		'curlrc' => ['required' => false],
 	],
 ], 'curl-get.json');
 
@@ -26,14 +26,14 @@ Assert::same('curl-get', $block->name);
 Assert::same('HTTP GET.', $block->description);
 Assert::same('curl', $block->command);
 Assert::count(3, $block->args);
-Assert::same('{%URL%}', $block->args[2][0]->getSource());
-Assert::same(['URL'], $block->args[2][0]->getKeys());
+Assert::same('{%url%}', $block->args[2][0]->getSource());
+Assert::same(['url'], $block->args[2][0]->getKeys());
 
-Assert::same(['URL', 'CURLRC'], array_keys($block->inputs));
-Assert::true($block->inputs['URL']->required);
-Assert::same('Adresa', $block->inputs['URL']->description);
-Assert::false($block->inputs['CURLRC']->required);
-Assert::null($block->inputs['CURLRC']->default);
+Assert::same(['url', 'curlrc'], array_keys($block->inputs));
+Assert::true($block->inputs['url']->required);
+Assert::same('Adresa', $block->inputs['url']->description);
+Assert::false($block->inputs['curlrc']->required);
+Assert::null($block->inputs['curlrc']->default);
 
 Assert::null($block->stdin);
 Assert::null($block->timeout);
@@ -43,15 +43,15 @@ Assert::false($block->allowFailure);
 $block = (new BlockParser)->parseArray([
 	'name' => 'jq',
 	'command' => 'jq',
-	'args' => [['{%FILTER%}']],
-	'inputs' => ['FILTER' => []],
+	'args' => [['{%filter%}']],
+	'inputs' => ['filter' => []],
 	'stdin' => ['required' => true],
 	'timeout' => 30,
 	'allow_failure' => [0, 1],
 ], 'jq.json');
 
 Assert::null($block->description);
-Assert::true($block->inputs['FILTER']->required);
+Assert::true($block->inputs['filter']->required);
 Assert::notNull($block->stdin);
 Assert::true($block->stdin->required);
 Assert::same(30, $block->timeout);

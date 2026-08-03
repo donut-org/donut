@@ -7,11 +7,11 @@
       "init"
     ],
     [
-      "{%QUEUE_FILE%}"
+      "{%queueFile%}"
     ]
   ],
   "inputs": {
-    "QUEUE_FILE": {
+    "queueFile": {
       "required": true
     }
   }

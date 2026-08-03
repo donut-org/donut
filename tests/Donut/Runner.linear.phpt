@@ -20,8 +20,8 @@ FileSystem::createDir($dir);
 
 file_put_contents($dir . '/echo.json', json_encode([
 	'name' => 'echo', 'command' => 'echo',
-	'args' => [['{%TEXT%}']],
-	'inputs' => ['TEXT' => ['required' => true]],
+	'args' => [['{%text%}']],
+	'inputs' => ['text' => ['required' => true]],
 ]));
 
 file_put_contents($dir . '/cat.json', json_encode([
@@ -76,29 +76,29 @@ $run = function (array $data, FakeProcesses $procs, array $initial = []) use ($r
 $procs = new FakeProcesses;
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['A' => []],
+	'inputs' => ['a' => []],
 	'steps' => [
-		['type' => 'set', 'key' => 'B', 'value' => '{%A%}-x'],
-		['type' => 'set', 'key' => 'B', 'value' => '{%B%}-y'],
+		['type' => 'set', 'key' => 'b', 'value' => '{%a%}-x'],
+		['type' => 'set', 'key' => 'b', 'value' => '{%b%}-y'],
 	],
-], $procs, ['A' => 'v']);
-Assert::same('v-x-y', $map['B']);
+], $procs, ['a' => 'v']);
+Assert::same('v-x-y', $map['b']);
 Assert::same([], $procs->calls);
 
 // run: poskládaná příkazová řádka a zápis kanálů
 $procs = new FakeProcesses([new ProcessResult('vysledek', null, 0)]);
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['T' => []],
+	'inputs' => ['t' => []],
 	'steps' => [[
 		'type' => 'run', 'block' => 'echo',
-		'in' => ['TEXT' => '{%T%}'],
-		'out' => ['result' => 'R', 'exit_code' => 'RC'],
+		'in' => ['text' => '{%t%}'],
+		'out' => ['result' => 'r', 'exit_code' => 'rc'],
 	]],
-], $procs, ['T' => 'ahoj']);
+], $procs, ['t' => 'ahoj']);
 
-Assert::same('vysledek', $map['R']);
-Assert::same('0', $map['RC']);
+Assert::same('vysledek', $map['r']);
+Assert::same('0', $map['rc']);
 Assert::count(1, $procs->calls);
 Assert::same(['echo', ['ahoj'], '', false, 60], $procs->calls[0]);
 
@@ -106,34 +106,34 @@ Assert::same(['echo', ['ahoj'], '', false, 60], $procs->calls[0]);
 $procs = new FakeProcesses([new ProcessResult('', 'chyba', 0)]);
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['IN' => []],
+	'inputs' => ['in' => []],
 	'steps' => [[
 		'type' => 'run', 'block' => 'cat',
-		'in' => ['STDIN' => '{%IN%}'],
-		'out' => ['stderr' => 'E'],
+		'in' => ['stdin' => '{%in%}'],
+		'out' => ['stderr' => 'e'],
 	]],
-], $procs, ['IN' => 'text']);
+], $procs, ['in' => 'text']);
 
-Assert::same('chyba', $map['E']);
+Assert::same('chyba', $map['e']);
 Assert::same(['cat', [], 'text', true, 60], $procs->calls[0]);
 
 // krok bez out mapu nemění — kromě STDIN a CWD, které run() sám doplní
 $procs = new FakeProcesses([new ProcessResult('nic', null, 0)]);
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['T' => []],
-	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%T%}']]],
-], $procs, ['T' => 'x']);
-Assert::same(['T' => 'x', 'STDIN' => '', 'CWD' => getcwd()], $map);
+	'inputs' => ['t' => []],
+	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%t%}']]],
+], $procs, ['t' => 'x']);
+Assert::same(['t' => 'x', 'STDIN' => '', 'CWD' => getcwd()], $map);
 
 // nenulový exit code zastaví běh
 $procs = new FakeProcesses([new ProcessResult('', null, 3)]);
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
-		'inputs' => ['T' => []],
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%T%}']]],
-	], $procs, ['T' => 'x']),
+		'inputs' => ['t' => []],
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%t%}']]],
+	], $procs, ['t' => 'x']),
 	RunFailedException::class,
 	'w.json:steps[0]: kámen "echo" skončil s exit code 3.'
 );
@@ -143,12 +143,12 @@ $procs = new FakeProcesses([new ProcessResult('', null, 1), new ProcessResult('p
 $map = $run([
 	'name' => 'w',
 	'steps' => [
-		['type' => 'run', 'block' => 'maybe', 'out' => ['exit_code' => 'RC']],
-		['type' => 'set', 'key' => 'DALSI', 'value' => 'probehlo-{%RC%}'],
+		['type' => 'run', 'block' => 'maybe', 'out' => ['exit_code' => 'rc']],
+		['type' => 'set', 'key' => 'dalsi', 'value' => 'probehlo-{%rc%}'],
 	],
 ], $procs);
-Assert::same('1', $map['RC']);
-Assert::same('probehlo-1', $map['DALSI']);
+Assert::same('1', $map['rc']);
+Assert::same('probehlo-1', $map['dalsi']);
 
 // kód mimo seznam zastaví i u allow_failure
 $procs = new FakeProcesses([new ProcessResult('', null, 5)]);
@@ -168,10 +168,10 @@ $map = $run([
 	'steps' => [[
 		'type' => 'run', 'block' => 'maybe',
 		'allow_failure' => true, 'timeout' => 5,
-		'out' => ['exit_code' => 'RC'],
+		'out' => ['exit_code' => 'rc'],
 	]],
 ], $procs);
-Assert::same('9', $map['RC']);
+Assert::same('9', $map['rc']);
 Assert::same(5, $procs->calls[0][4]);
 
 // vypršení limitu není exit code, allow_failure ho nepohltí
@@ -220,28 +220,28 @@ Assert::same('w.json:steps[1]: kámen "neexistuje2" neexistuje', $lines[2]);
 $procs = new FakeProcesses;
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['TAG' => ['required' => false, 'default' => 'latest']],
-	'steps' => [['type' => 'set', 'key' => 'OUT', 'value' => '{%TAG%}']],
+	'inputs' => ['tag' => ['required' => false, 'default' => 'latest']],
+	'steps' => [['type' => 'set', 'key' => 'out', 'value' => '{%tag%}']],
 ], $procs);
-Assert::same('latest', $map['OUT']);
+Assert::same('latest', $map['out']);
 
 // hodnota od volajícího default přebije
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['TAG' => ['required' => false, 'default' => 'latest']],
-	'steps' => [['type' => 'set', 'key' => 'OUT', 'value' => '{%TAG%}']],
-], $procs, ['TAG' => 'v2']);
-Assert::same('v2', $map['OUT']);
+	'inputs' => ['tag' => ['required' => false, 'default' => 'latest']],
+	'steps' => [['type' => 'set', 'key' => 'out', 'value' => '{%tag%}']],
+], $procs, ['tag' => 'v2']);
+Assert::same('v2', $map['out']);
 
 // chybějící povinný vstup bez hodnoty je chyba dřív, než se spustí první krok
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
-		'inputs' => ['TAG' => ['required' => true]],
+		'inputs' => ['tag' => ['required' => true]],
 		'steps' => [],
 	], $procs),
 	RunFailedException::class,
-	'w.json: povinný vstup "TAG" nemá hodnotu.'
+	'w.json: povinný vstup "tag" nemá hodnotu.'
 );
 Assert::same([], $procs->calls);
 

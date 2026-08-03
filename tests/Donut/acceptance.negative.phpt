@@ -43,17 +43,17 @@ Assert::contains(
 
 // překlep v názvu klíče
 Assert::contains(
-	'card-dev.json:steps[1]: šablona čte klíč "ME_JSN", který žádný krok nezapisuje',
+	'card-dev.json:steps[1]: šablona čte klíč "meJsn", který žádný krok nezapisuje',
 	$errorsAfter(function (array &$data): void {
-		$data['steps'][1]['in']['STDIN'] = '{%ME_JSN%}';
+		$data['steps'][1]['in']['stdin'] = '{%meJsn%}';
 	})
 );
 
 // nedeklarovaný vstup
 Assert::contains(
-	'card-dev.json:steps[1]: kámen "jq" nedeklaruje vstup "NEZNAMY"',
+	'card-dev.json:steps[1]: kámen "jq" nedeklaruje vstup "neznamy"',
 	$errorsAfter(function (array &$data): void {
-		$data['steps'][1]['in']['NEZNAMY'] = 'x';
+		$data['steps'][1]['in']['neznamy'] = 'x';
 	})
 );
 
@@ -61,7 +61,7 @@ Assert::contains(
 Assert::contains(
 	'card-dev.json:steps[1]: kámen "jq" vyžaduje stdin, krok ho neplní',
 	$errorsAfter(function (array &$data): void {
-		unset($data['steps'][1]['in']['STDIN']);
+		unset($data['steps'][1]['in']['stdin']);
 	})
 );
 

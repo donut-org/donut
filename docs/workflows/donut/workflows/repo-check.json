@@ -3,29 +3,29 @@
   "description": "Zjistí, jestli k projektu existuje GitHub repozitář — stejným hledáním, jaké dělá card-dev. Odpovídá na otázku, proč karta skončila ve workspace bez gitu.",
 
   "inputs": {
-    "PROJECT": { "required": true, "description": "Jméno projektu, nebo rovnou owner/name" }
+    "project": { "required": true, "description": "Jméno projektu, nebo rovnou owner/name" }
   },
 
   "steps": [
     {
       "type": "run", "name": "najít repozitář",
       "block": "repo-find",
-      "in":  { "PROJECT": "{%PROJECT%}" },
-      "out": { "result": "REPO" }
+      "in":  { "project": "{%project%}" },
+      "out": { "result": "repo" }
     },
     {
       "type": "if", "name": "prázdný výstup znamená, že se nic nenašlo",
-      "condition": { "left": "{%REPO%}", "op": "not_empty" },
+      "condition": { "left": "{%repo%}", "op": "not_empty" },
       "then": [
-        { "type": "set", "key": "MESSAGE", "value": "{%PROJECT%} → {%REPO%}" }
+        { "type": "set", "key": "message", "value": "{%project%} → {%repo%}" }
       ],
       "else": [
-        { "type": "set", "key": "MESSAGE", "value": "{%PROJECT%}: repozitář nenalezen, workspace by vznikl bez gitu" }
+        { "type": "set", "key": "message", "value": "{%project%}: repozitář nenalezen, workspace by vznikl bez gitu" }
       ]
     },
     {
       "type": "run", "block": "echo",
-      "in": { "TEXT": "{%MESSAGE%}" }
+      "in": { "text": "{%message%}" }
     }
   ]
 }

@@ -69,8 +69,8 @@ $assertFails(
 );
 
 $assertFails(
-	['name' => 'x', 'command' => 'x', 'args' => [], 'inputs' => ['A' => 'ne']],
-	"x.json: vstup 'A' musí být objekt."
+	['name' => 'x', 'command' => 'x', 'args' => [], 'inputs' => ['a' => 'ne']],
+	"x.json: vstup 'a' musí být objekt."
 );
 
 $assertFails(
@@ -79,8 +79,8 @@ $assertFails(
 );
 
 $assertFails(
-	['name' => 'x', 'command' => 'x', 'args' => [], 'inputs' => ['URL' => ['default' => ['a', 'b']]]],
-	"x.json: default vstupu 'URL' musí být řetězec."
+	['name' => 'x', 'command' => 'x', 'args' => [], 'inputs' => ['url' => ['default' => ['a', 'b']]]],
+	"x.json: default vstupu 'url' musí být řetězec."
 );
 
 $assertFails(

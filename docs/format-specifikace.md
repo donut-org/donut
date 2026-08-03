@@ -19,13 +19,13 @@ které ho volá, ani o klíčích v mapě enginu.
 
   "args": [
     ["-sS", "--fail"],
-    ["--config", "{%CURLRC%}"],
-    ["{%URL%}"]
+    ["--config", "{%curlrc%}"],
+    ["{%url%}"]
   ],
 
   "inputs": {
-    "URL":    { "required": true,  "description": "Úplná adresa včetně query stringu" },
-    "CURLRC": { "required": false, "description": "Soubor s přihlašovací hlavičkou" }
+    "url":    { "required": true,  "description": "Úplná adresa včetně query stringu" },
+    "curlrc": { "required": false, "description": "Soubor s přihlašovací hlavičkou" }
   },
 
   "timeout": 60,
@@ -41,11 +41,11 @@ Kámen čtoucí ze standardního vstupu:
   "description": "Transformace JSON/textu na stdin filtrem jq.",
 
   "command": "jq",
-  "args": [["{%FLAGS%}"], ["{%FILTER%}"]],
+  "args": [["{%flags%}"], ["{%filter%}"]],
 
   "inputs": {
-    "FLAGS":  { "required": false, "description": "Volby jq v jednom tokenu: -r, -Rs …" },
-    "FILTER": { "required": true,  "description": "Program jq" }
+    "flags":  { "required": false, "description": "Volby jq v jednom tokenu: -r, -Rs …" },
+    "filter": { "required": true,  "description": "Program jq" }
   },
   "stdin": { "required": true }
 }
@@ -91,8 +91,8 @@ Exit code se dá bez ohledu na tohle nastavení uložit do mapy kanálem
 se celá vynechá.
 
 ```
-CURLRC prázdný  → curl -sS --fail https://…
-CURLRC vyplněný → curl -sS --fail --config /home/…/trello.curlrc https://…
+curlrc prázdný  → curl -sS --fail https://…
+curlrc vyplněný → curl -sS --fail --config /home/…/trello.curlrc https://…
 ```
 
 „Prázdno" pokrývá obojí — nevyplněný volitelný vstup i vstup vyplněný
@@ -107,14 +107,14 @@ konstantu (`["--prefix="]`). Bez proměnné není co vyhodnotit na prázdno,
 takže skupina nikdy nevypadne.
 
 Dosazení probíhá do jednotlivých prvků skupiny, nikdy do celé řádky.
-Prvek může obsahovat víc proměnných i okolní text (`"--url={%URL%}"`).
+Prvek může obsahovat víc proměnných i okolní text (`"--url={%url%}"`).
 
 ### `inputs`
 
 ```json
 "inputs": {
-  "VZOR":  { "required": true },
-  "LIMIT": { "required": false, "default": "10" }
+  "vzor":  { "required": true },
+  "limit": { "required": false, "default": "10" }
 }
 ```
 
@@ -133,16 +133,17 @@ Prvek může obsahovat víc proměnných i okolní text (`"--url={%URL%}"`).
 Samostatný klíč, ne položka v `inputs` — kámen má nejvýše jeden standardní
 vstup a struktura to vynucuje sama, bez pravidla ve validaci.
 
-Krok ho plní stejně jako ostatní vstupy, pod jménem `STDIN`:
+Krok ho plní stejně jako ostatní vstupy, pod jménem `stdin`:
 
 ```json
-"in": { "FILTER": ".title", "STDIN": "{%TASK%}" }
+"in": { "filter": ".title", "stdin": "{%task%}" }
 ```
 
+Vstup CLI volání se pak plní `"in": { "stdin": "{%STDIN%}" }` — vlevo jméno
+kanálu, vpravo klíč, který do mapy dodal engine.
+
 `{%STDIN%}` se **nikdy nedosazuje do `args`** — je to označení kanálu, ne
-proměnná. (Pozor na optickou kolizi: první krok workflow může vypadat jako
-`"in": { "STDIN": "{%STDIN%}" }`. Vlevo je kanál kamene, vpravo klíč v mapě
-enginu se vstupem CLI volání. Je to správně.)
+proměnná.
 
 Bez `stdin` dostane proces prázdný standardní vstup.
 
@@ -161,30 +162,30 @@ nevytváří ani neuklízí žádné soubory; cesty, které ve workflow vystupuj
   "description": "Zjistí verzi API na daném prostředí.",
 
   "inputs": {
-    "ENV": { "required": true,  "description": "prod | staging" },
-    "TAG": { "required": false, "default": "latest" }
+    "env": { "required": true,  "description": "prod | staging" },
+    "tag": { "required": false, "default": "latest" }
   },
 
   "steps": [
     {
       "type": "run",
       "block": "curl-get",
-      "in":  { "URL": "https://api.example.com/{%ENV%}/status" },
-      "out": { "result": "STATUS", "exit_code": "RC" }
+      "in":  { "url": "https://api.example.com/{%env%}/status" },
+      "out": { "result": "status", "exit_code": "rc" }
     },
     {
       "type": "if",
-      "condition": { "left": "{%RC%}", "op": "eq", "right": "0" },
+      "condition": { "left": "{%rc%}", "op": "eq", "right": "0" },
       "then": [
         {
           "type": "run",
           "block": "jq",
-          "in":  { "FLAGS": "-r", "FILTER": ".version", "STDIN": "{%STATUS%}" },
-          "out": { "result": "VERZE" }
+          "in":  { "flags": "-r", "filter": ".version", "stdin": "{%status%}" },
+          "out": { "result": "verze" }
         }
       ],
       "else": [
-        { "type": "set", "key": "VERZE", "value": "neznámá" }
+        { "type": "set", "key": "verze", "value": "neznámá" }
       ]
     }
   ]
@@ -199,7 +200,7 @@ Krok je `run`, `if`, `set` nebo `foreach`.
 |---|---|---|
 | `type` | ano | `"run"` |
 | `block` | ano | Jméno kamene z `blocks/`. |
-| `in` | ne | Mapa `vstup kamene → šablona`. Klíč `STDIN` plní standardní vstup. |
+| `in` | ne | Mapa `vstup kamene → šablona`. Klíč `stdin` plní standardní vstup. |
 | `out` | ne | Mapa `kanál → klíč v mapě enginu`. |
 | `name` | ne | Popisek pro log a GUI. Nemá vliv na běh. |
 | `allow_failure` | ne | Přepíše nastavení kamene pro tento krok. |
@@ -255,7 +256,7 @@ kroku, který se objeví v logu.
 
 Jediný způsob, jak složit hodnotu z jiných hodnot bez spuštění procesu.
 Čtení vlastního klíče je v pořádku — dosazuje se jedním průchodem, takže
-`{"key":"X","value":"{%X%} a něco"}` přečte starou hodnotu a zapíše novou.
+`{"key":"x","value":"{%x%} a něco"}` přečte starou hodnotu a zapíše novou.
 
 ### Krok `foreach`
 
@@ -281,7 +282,7 @@ Vnořování je povolené — `sync` iteruje přes boardy a uvnitř přes karty.
 ### Podmínka
 
 ```json
-{ "left": "{%RC%}", "op": "eq", "right": "0" }
+{ "left": "{%rc%}", "op": "eq", "right": "0" }
 ```
 
 `left` i `right` jsou šablony. Operátory:
@@ -300,7 +301,12 @@ porovnávala s ničím a validace ji odmítne.
 
 ## 3. Mapa enginu
 
-- Klíče jsou case-sensitive. Doporučení: VELKÁ_PÍSMENA.
+- Klíče jsou case-sensitive. Doporučení:
+  - **slovník formátu** (klíče JSONu) je snake_case: `allow_failure`, `exit_code`, `stdin`
+  - **klíče, které pojmenuješ sám**, jsou camelCase: `cardJson`, `shortId`
+  - **klíče dodané enginem** jsou velkými: `STDIN`, `CWD`
+
+  Velká písmena tím značí „tohle jsi nepojmenoval ty".
 - **Všechny hodnoty jsou text.** Žádné pole, objekty, čísla.
 - Počáteční obsah: vstupy workflow podle jmen, `STDIN` (standardní vstup
   CLI volání; prázdný řetězec, když nic nepřišlo) a `CWD`.
@@ -350,7 +356,7 @@ je chyba před spuštěním prvního kroku.
 - kámen neexistuje
 - povinný vstup kamene nemá hodnotu v `in` ani `default`
 - povinný `stdin` kamene není v `in` naplněn
-- `in` obsahuje jméno, které kámen nedeklaruje (ani `STDIN`, když kámen `stdin` nemá)
+- `in` obsahuje jméno, které kámen nedeklaruje (ani `stdin`, když kámen `stdin` nemá)
 - šablona čte klíč, který **žádný krok nikdy nezapisuje** (překlep)
 - šablona čte klíč, který v žádné předchozí větvi nemohl vzniknout
 - podmínka nebo `foreach.over` čte klíč, který nemohl vzniknout
@@ -409,7 +415,7 @@ v obou větvích `if`. `repo-check` tu cestu pokrývá.
 Verze 0.2 je vedla jako dvě různé věci. Přepis ukázal, že to nejde udržet:
 **krok nikdy nemůže vyrobit „nevyplněnou" hodnotu.** Stdout příkazu je vždy
 řetězec, takže když `repo-find` nenajde repozitář, v mapě skončí `""` —
-což by byla „vyplněná" hodnota a skupina `["--repo={%REPO%}"]` by nevypadla.
+což by byla „vyplněná" hodnota a skupina `["--repo={%repo%}"]` by nevypadla.
 Skupiny argumentů by tak fungovaly pro vstupy workflow, ale nikdy pro
 výstupy kroků.
 

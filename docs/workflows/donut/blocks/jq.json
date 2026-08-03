@@ -4,18 +4,18 @@
   "command": "jq",
   "args": [
     [
-      "{%FLAGS%}"
+      "{%flags%}"
     ],
     [
-      "{%FILTER%}"
+      "{%filter%}"
     ]
   ],
   "inputs": {
-    "FLAGS": {
+    "flags": {
       "required": false,
       "description": "Volby jq v jednom tokenu: -r, -Rs, -rs …"
     },
-    "FILTER": {
+    "filter": {
       "required": true,
       "description": "Program jq"
     }

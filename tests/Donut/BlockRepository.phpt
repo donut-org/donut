@@ -14,8 +14,8 @@ Nette\Utils\FileSystem::createDir($dir);
 file_put_contents($dir . '/echo.json', json_encode([
 	'name' => 'echo',
 	'command' => 'echo',
-	'args' => [['{%TEXT%}']],
-	'inputs' => ['TEXT' => ['required' => true]],
+	'args' => [['{%text%}']],
+	'inputs' => ['text' => ['required' => true]],
 ]));
 
 file_put_contents($dir . '/cat.json', json_encode([

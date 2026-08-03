@@ -2,35 +2,35 @@
   "name": "card-spec",
   "description": "Zpracuje kartu agentem, výsledek zapíše jako komentář a kartu přesune dál. Bez pull requestu. Nahrazuje jpw-indev-techlead.",
   "inputs": {
-    "SHORT_ID": {
+    "shortId": {
       "required": true,
       "description": "shortLink karty v Trellu"
     },
-    "EXPECT_STATUS": {
+    "expectStatus": {
       "required": true,
       "description": "Seznam, ve kterém karta musí být, jinak se běh zastaví"
     },
-    "MODEL": {
+    "model": {
       "required": true,
       "description": "sonnet | haiku | opus"
     },
-    "SYSTEM_PROMPT": {
+    "systemPrompt": {
       "required": true,
       "description": "Cesta k souboru se systémovým promptem"
     },
-    "TARGET_LIST": {
+    "targetList": {
       "required": true,
       "description": "Seznam, kam se karta na konci přesune"
     },
-    "TAG": {
+    "tag": {
       "required": true,
       "description": "Značka na začátku komentáře, např. #developer"
     },
-    "WORK_ROOT": {
+    "workRoot": {
       "required": true,
       "description": "Nadřazený adresář pro workspace"
     },
-    "CURLRC": {
+    "curlrc": {
       "required": false,
       "description": "Soubor s přihlašovací hlavičkou pro Trello API"
     }
@@ -41,23 +41,23 @@
       "name": "zjistit vlastní ID v Trellu",
       "block": "curl-get",
       "in": {
-        "URL": "https://api.trello.com/1/members/me?fields=id",
-        "CURLRC": "{%CURLRC%}"
+        "url": "https://api.trello.com/1/members/me?fields=id",
+        "curlrc": "{%curlrc%}"
       },
       "out": {
-        "result": "ME_JSON"
+        "result": "meJson"
       }
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-r",
-        "FILTER": ".id",
-        "STDIN": "{%ME_JSON%}"
+        "flags": "-r",
+        "filter": ".id",
+        "stdin": "{%meJson%}"
       },
       "out": {
-        "result": "MY_ID"
+        "result": "myId"
       }
     },
     {
@@ -65,35 +65,35 @@
       "name": "stáhnout kartu včetně komentářů, příloh a checklistů",
       "block": "curl-get",
       "in": {
-        "URL": "https://api.trello.com/1/cards/{%SHORT_ID%}?list=true&actions=commentCard&attachments=true&checklists=all",
-        "CURLRC": "{%CURLRC%}"
+        "url": "https://api.trello.com/1/cards/{%shortId%}?list=true&actions=commentCard&attachments=true&checklists=all",
+        "curlrc": "{%curlrc%}"
       },
       "out": {
-        "result": "CARD_JSON"
+        "result": "cardJson"
       }
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-r",
-        "FILTER": ".id",
-        "STDIN": "{%CARD_JSON%}"
+        "flags": "-r",
+        "filter": ".id",
+        "stdin": "{%cardJson%}"
       },
       "out": {
-        "result": "CARD_ID"
+        "result": "cardId"
       }
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-r",
-        "FILTER": ".idBoard",
-        "STDIN": "{%CARD_JSON%}"
+        "flags": "-r",
+        "filter": ".idBoard",
+        "stdin": "{%cardJson%}"
       },
       "out": {
-        "result": "BOARD_ID"
+        "result": "boardId"
       }
     },
     {
@@ -101,32 +101,32 @@
       "name": "převést kartu na task JSON",
       "block": "trello-to-task",
       "in": {
-        "MY_ID": "{%MY_ID%}",
-        "STDIN": "{%CARD_JSON%}"
+        "myId": "{%myId%}",
+        "stdin": "{%cardJson%}"
       },
       "out": {
-        "result": "TASK"
+        "result": "task"
       }
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-r",
-        "FILTER": ".status",
-        "STDIN": "{%TASK%}"
+        "flags": "-r",
+        "filter": ".status",
+        "stdin": "{%task%}"
       },
       "out": {
-        "result": "STATUS"
+        "result": "status"
       }
     },
     {
       "type": "if",
-      "name": "karta už není ve stavu {%EXPECT_STATUS%} — mezitím se přesunula",
+      "name": "karta už není ve stavu {%expectStatus%} — mezitím se přesunula",
       "condition": {
-        "left": "{%STATUS%}",
+        "left": "{%status%}",
         "op": "neq",
-        "right": "{%EXPECT_STATUS%}"
+        "right": "{%expectStatus%}"
       },
       "then": [
         {
@@ -140,47 +140,47 @@
       "name": "odvodit projekt z prefixu v názvu karty",
       "block": "jq",
       "in": {
-        "FILTER": "if (.title | test(\"^[^ ]+ - \")) then (.project = (.title | sub(\" - .*\"; \"\")) | .title = (.title | sub(\"^[^ ]* - \"; \"\"))) else . end",
-        "STDIN": "{%TASK%}"
+        "filter": "if (.title | test(\"^[^ ]+ - \")) then (.project = (.title | sub(\" - .*\"; \"\")) | .title = (.title | sub(\"^[^ ]* - \"; \"\"))) else . end",
+        "stdin": "{%task%}"
       },
       "out": {
-        "result": "TASK"
+        "result": "task"
       }
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-r",
-        "FILTER": ".project",
-        "STDIN": "{%TASK%}"
+        "flags": "-r",
+        "filter": ".project",
+        "stdin": "{%task%}"
       },
       "out": {
-        "result": "PROJECT"
+        "result": "project"
       }
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-r",
-        "FILTER": ".branch",
-        "STDIN": "{%TASK%}"
+        "flags": "-r",
+        "filter": ".branch",
+        "stdin": "{%task%}"
       },
       "out": {
-        "result": "BRANCH"
+        "result": "branch"
       }
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-r",
-        "FILTER": ".title",
-        "STDIN": "{%TASK%}"
+        "flags": "-r",
+        "filter": ".title",
+        "stdin": "{%task%}"
       },
       "out": {
-        "result": "TITLE"
+        "result": "title"
       }
     },
     {
@@ -188,10 +188,10 @@
       "name": "najít repozitář; prázdný výstup = pracuje se bez repozitáře",
       "block": "repo-find",
       "in": {
-        "PROJECT": "{%PROJECT%}"
+        "project": "{%project%}"
       },
       "out": {
-        "result": "REPO"
+        "result": "repo"
       }
     },
     {
@@ -199,23 +199,23 @@
       "name": "připravit workspace",
       "block": "workspace-init",
       "in": {
-        "WORK_ROOT": "{%WORK_ROOT%}",
-        "PROJECT": "{%PROJECT%}",
-        "REPO": "{%REPO%}",
-        "BRANCH": "{%BRANCH%}"
+        "workRoot": "{%workRoot%}",
+        "project": "{%project%}",
+        "repo": "{%repo%}",
+        "branch": "{%branch%}"
       },
       "out": {
-        "result": "WORK_DIR"
+        "result": "workDir"
       }
     },
     {
       "type": "run",
       "block": "format-prompt",
       "in": {
-        "STDIN": "{%TASK%}"
+        "stdin": "{%task%}"
       },
       "out": {
-        "result": "PROMPT"
+        "result": "prompt"
       }
     },
     {
@@ -223,13 +223,13 @@
       "name": "spustit agenta",
       "block": "agent",
       "in": {
-        "MODEL": "{%MODEL%}",
-        "SYSTEM_PROMPT": "{%SYSTEM_PROMPT%}",
-        "WORK_DIR": "{%WORK_DIR%}",
-        "STDIN": "{%PROMPT%}"
+        "model": "{%model%}",
+        "systemPrompt": "{%systemPrompt%}",
+        "workDir": "{%workDir%}",
+        "stdin": "{%prompt%}"
       },
       "out": {
-        "result": "RESULT"
+        "result": "agentResult"
       }
     },
     {
@@ -237,26 +237,26 @@
       "name": "commitnout a pushnout",
       "block": "workspace-finish",
       "in": {
-        "WORK_DIR": "{%WORK_DIR%}",
-        "REPO": "{%REPO%}",
-        "MESSAGE": "{%BRANCH%}: {%TITLE%}"
+        "workDir": "{%workDir%}",
+        "repo": "{%repo%}",
+        "message": "{%branch%}: {%title%}"
       }
     },
     {
       "type": "set",
-      "key": "COMMENT",
-      "value": "{%TAG%}\n\n{%RESULT%}"
+      "key": "comment",
+      "value": "{%tag%}\n\n{%agentResult%}"
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-Rs",
-        "FILTER": "{text: .}",
-        "STDIN": "{%COMMENT%}"
+        "flags": "-Rs",
+        "filter": "{text: .}",
+        "stdin": "{%comment%}"
       },
       "out": {
-        "result": "COMMENT_JSON"
+        "result": "commentJson"
       }
     },
     {
@@ -264,49 +264,49 @@
       "name": "přidat komentář ke kartě",
       "block": "curl-send-json",
       "in": {
-        "METHOD": "POST",
-        "URL": "https://api.trello.com/1/cards/{%CARD_ID%}/actions/comments",
-        "CURLRC": "{%CURLRC%}",
-        "STDIN": "{%COMMENT_JSON%}"
+        "method": "POST",
+        "url": "https://api.trello.com/1/cards/{%cardId%}/actions/comments",
+        "curlrc": "{%curlrc%}",
+        "stdin": "{%commentJson%}"
       }
     },
     {
       "type": "run",
       "block": "curl-get",
       "in": {
-        "URL": "https://api.trello.com/1/boards/{%BOARD_ID%}/lists?fields=id,name",
-        "CURLRC": "{%CURLRC%}"
+        "url": "https://api.trello.com/1/boards/{%boardId%}/lists?fields=id,name",
+        "curlrc": "{%curlrc%}"
       },
       "out": {
-        "result": "LISTS_JSON"
+        "result": "listsJson"
       }
     },
     {
       "type": "run",
       "block": "jq",
       "in": {
-        "FLAGS": "-r",
-        "FILTER": ".[] | select(.name == \"{%TARGET_LIST%}\") | .id",
-        "STDIN": "{%LISTS_JSON%}"
+        "flags": "-r",
+        "filter": ".[] | select(.name == \"{%targetList%}\") | .id",
+        "stdin": "{%listsJson%}"
       },
       "out": {
-        "result": "TARGET_LIST_ID"
+        "result": "targetListId"
       }
     },
     {
       "type": "set",
-      "key": "MOVE_BODY",
-      "value": "{\"idList\": \"{%TARGET_LIST_ID%}\"}"
+      "key": "moveBody",
+      "value": "{\"idList\": \"{%targetListId%}\"}"
     },
     {
       "type": "run",
-      "name": "přesunout kartu do {%TARGET_LIST%}",
+      "name": "přesunout kartu do {%targetList%}",
       "block": "curl-send-json",
       "in": {
-        "METHOD": "PUT",
-        "URL": "https://api.trello.com/1/cards/{%CARD_ID%}",
-        "CURLRC": "{%CURLRC%}",
-        "STDIN": "{%MOVE_BODY%}"
+        "method": "PUT",
+        "url": "https://api.trello.com/1/cards/{%cardId%}",
+        "curlrc": "{%curlrc%}",
+        "stdin": "{%moveBody%}"
       }
     }
   ]

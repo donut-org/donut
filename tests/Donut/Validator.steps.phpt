@@ -15,10 +15,10 @@ Nette\Utils\FileSystem::createDir($dir);
 file_put_contents($dir . '/greet.json', json_encode([
 	'name' => 'greet',
 	'command' => 'echo',
-	'args' => [['{%TEXT%}'], ['{%SUFFIX%}']],
+	'args' => [['{%text%}'], ['{%suffix%}']],
 	'inputs' => [
-		'TEXT' => ['required' => true],
-		'SUFFIX' => ['required' => false],
+		'text' => ['required' => true],
+		'suffix' => ['required' => false],
 	],
 ]));
 
@@ -32,8 +32,8 @@ file_put_contents($dir . '/withStdin.json', json_encode([
 file_put_contents($dir . '/withDefault.json', json_encode([
 	'name' => 'withDefault',
 	'command' => 'echo',
-	'args' => [['{%A%}']],
-	'inputs' => ['A' => ['required' => true, 'default' => 'x']],
+	'args' => [['{%a%}']],
+	'inputs' => ['a' => ['required' => true, 'default' => 'x']],
 ]));
 
 file_put_contents($dir . '/badStdinArg.json', json_encode([
@@ -46,8 +46,8 @@ file_put_contents($dir . '/badStdinArg.json', json_encode([
 file_put_contents($dir . '/badArgsInput.json', json_encode([
 	'name' => 'badArgsInput',
 	'command' => 'echo',
-	'args' => [['--tag={%TGA%}']],
-	'inputs' => ['TAG' => ['required' => true]],
+	'args' => [['--tag={%tga%}']],
+	'inputs' => ['tag' => ['required' => true]],
 ]));
 
 $repo = new BlockRepository($dir);
@@ -63,9 +63,9 @@ $messages = function (array $data) use ($parser, $validator): array {
 // všechno v pořádku
 Assert::same([], $messages([
 	'name' => 'w',
-	'inputs' => ['T' => ['required' => true]],
+	'inputs' => ['t' => ['required' => true]],
 	'steps' => [
-		['type' => 'run', 'block' => 'greet', 'in' => ['TEXT' => '{%T%}']],
+		['type' => 'run', 'block' => 'greet', 'in' => ['text' => '{%t%}']],
 	],
 ]));
 
@@ -80,7 +80,7 @@ Assert::same(
 
 // povinný vstup není naplněn
 Assert::same(
-	['w.json:steps[0]: povinný vstup "TEXT" kamene "greet" není naplněn'],
+	['w.json:steps[0]: povinný vstup "text" kamene "greet" není naplněn'],
 	$messages([
 		'name' => 'w',
 		'steps' => [['type' => 'run', 'block' => 'greet']],
@@ -95,28 +95,28 @@ Assert::same([], $messages([
 
 // in obsahuje jméno, které kámen nedeklaruje
 Assert::same(
-	['w.json:steps[0]: kámen "greet" nedeklaruje vstup "NEZNAMY"'],
+	['w.json:steps[0]: kámen "greet" nedeklaruje vstup "neznamy"'],
 	$messages([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'greet',
-			'in' => ['TEXT' => '{%T%}', 'NEZNAMY' => 'x'],
+			'in' => ['text' => '{%t%}', 'neznamy' => 'x'],
 		]],
 	])
 );
 
-// STDIN u kamene, který stdin nemá
+// stdin u kamene, který stdin nemá
 Assert::same(
 	['w.json:steps[0]: kámen "greet" nečte stdin, ale krok ho plní'],
 	$messages([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'greet',
-			'in' => ['TEXT' => '{%T%}', 'STDIN' => 'x'],
+			'in' => ['text' => '{%t%}', 'stdin' => 'x'],
 		]],
 	])
 );
@@ -138,20 +138,20 @@ Assert::same(
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'badStdinArg',
-			'in' => ['STDIN' => 'x'],
+			'in' => ['stdin' => 'x'],
 		]],
 	])
 );
 
 // args kamene odkazuje proměnnou, kterou kámen nedeklaruje jako vstup
 Assert::same(
-	['w.json:steps[0]: kámen "badArgsInput" používá v args proměnnou "TGA", kterou nedeklaruje'],
+	['w.json:steps[0]: kámen "badArgsInput" používá v args proměnnou "tga", kterou nedeklaruje'],
 	$messages([
 		'name' => 'w',
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'badArgsInput',
-			'in' => ['TAG' => 'v1'],
+			'in' => ['tag' => 'v1'],
 		]],
 	])
 );
@@ -161,12 +161,12 @@ Assert::same(
 	['w.json:steps[0]: neznámý kanál "stdout"'],
 	$messages([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'greet',
-			'in' => ['TEXT' => '{%T%}'],
-			'out' => ['stdout' => 'X'],
+			'in' => ['text' => '{%t%}'],
+			'out' => ['stdout' => 'x'],
 		]],
 	])
 );
@@ -176,10 +176,10 @@ Assert::same(
 	['w.json:steps[0]: neznámý operátor "matches"'],
 	$messages([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'if',
-			'condition' => ['left' => '{%T%}', 'op' => 'matches', 'right' => 'x'],
+			'condition' => ['left' => '{%t%}', 'op' => 'matches', 'right' => 'x'],
 			'then' => [],
 		]],
 	])
@@ -190,10 +190,10 @@ Assert::same(
 	['w.json:steps[0]: operátor "eq" vyžaduje \'right\''],
 	$messages([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'if',
-			'condition' => ['left' => '{%T%}', 'op' => 'eq'],
+			'condition' => ['left' => '{%t%}', 'op' => 'eq'],
 			'then' => [],
 		]],
 	])
@@ -212,10 +212,10 @@ Assert::same(
 	['w.json:steps[0]: klíč "A B" není platné jméno'],
 	$messages([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'foreach',
-			'over' => '{%T%}',
+			'over' => '{%t%}',
 			'as' => 'A B',
 			'steps' => [],
 		]],

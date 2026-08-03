@@ -7,23 +7,23 @@
       "pr"
     ],
     [
-      "--work-dir={%WORK_DIR%}"
+      "--work-dir={%workDir%}"
     ],
     [
-      "--repo={%REPO%}"
+      "--repo={%repo%}"
     ],
     [
-      "--title={%TITLE%}"
+      "--title={%title%}"
     ]
   ],
   "inputs": {
-    "WORK_DIR": {
+    "workDir": {
       "required": true
     },
-    "REPO": {
+    "repo": {
       "required": false
     },
-    "TITLE": {
+    "title": {
       "required": true
     }
   },

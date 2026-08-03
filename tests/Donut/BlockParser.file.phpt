@@ -19,14 +19,14 @@ $path = TEMP_DIR . '/curl-get.json';
 file_put_contents($path, json_encode([
 	'name' => 'curl-get',
 	'command' => 'curl',
-	'args' => [['{%URL%}']],
+	'args' => [['{%url%}']],
 ], JSON_THROW_ON_ERROR));
 
 $block = $parser->parseFile($path);
 Assert::same('curl-get', $block->name);
 Assert::same('curl', $block->command);
 Assert::count(1, $block->args);
-Assert::same('{%URL%}', $block->args[0][0]->getSource());
+Assert::same('{%url%}', $block->args[0][0]->getSource());
 
 // name neodpovídá názvu souboru
 $path = TEMP_DIR . '/wrong-name.json';

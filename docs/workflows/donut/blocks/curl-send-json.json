@@ -9,11 +9,11 @@
     ],
     [
       "--config",
-      "{%CURLRC%}"
+      "{%curlrc%}"
     ],
     [
       "-X",
-      "{%METHOD%}"
+      "{%method%}"
     ],
     [
       "-H",
@@ -24,18 +24,18 @@
       "@-"
     ],
     [
-      "{%URL%}"
+      "{%url%}"
     ]
   ],
   "inputs": {
-    "METHOD": {
+    "method": {
       "required": true,
       "description": "POST | PUT | PATCH | DELETE"
     },
-    "URL": {
+    "url": {
       "required": true
     },
-    "CURLRC": {
+    "curlrc": {
       "required": false
     }
   },
