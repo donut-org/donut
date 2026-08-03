@@ -108,6 +108,13 @@ Kroky, které potřebují běžet jinde, dostávají cestu argumentem
 
 **Stdout se zachytává vždy**, protože je to `result`.
 
+**Zachycené hodnoty se zbavují koncového odřádkování**, přesně jako
+`$(...)` v shellu. Není to kosmetika: `jq -r '.id'` vrací `5f2abc\n`
+a v `card-dev` se třináct zachycených hodnot lepí do URL nebo do
+argumentu. Syrový výstup by rozbil každé workflow v přepisu. Vnitřní
+odřádkování zůstává — u výstupu agenta nebo u seznamu karet pro `foreach`
+je nosné.
+
 **Stderr se řídí tím, jestli ho krok mapuje v `out`.** Když ano, zachytí se
 do paměti a uloží do mapy. Když ne, teče živě na `STDERR` runneru.
 

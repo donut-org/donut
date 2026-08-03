@@ -216,6 +216,11 @@ je **tvrdá chyba a konec běhu**.
 | `stderr` | chybový výstup |
 | `exit_code` | návratový kód jako text (`"0"`) |
 
+U `result` a `stderr` se **odřezává koncové odřádkování**, stejně jako to
+dělá `$(...)` v shellu. Bez toho by `jq -r '.id'` vrátil `5f2abc\n` a ta
+hodnota by se pak vlepila doprostřed URL. Vnitřní odřádkování zůstává
+nedotčené — odřezává se jen konec.
+
 Kanál, který krok v `out` neuvede, se zahodí — krok mapující jen `result`
 zahazuje `stderr` i `exit_code`. Krok bez `out` mapu nemění.
 
