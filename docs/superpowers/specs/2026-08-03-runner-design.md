@@ -138,12 +138,20 @@ steps[15]  připravit workspace
 steps[17]  spustit agenta
 ```
 
-Uvnitř `foreach` se přidává hodnota iterace:
+Uvnitř `foreach` se před každou iterací ohlásí její hodnota — na cestě
+samotného `foreach`, ne na cestě kroku v těle:
 
 ```
-steps[5].steps[2]           BOARD=INDEV-OSS
-steps[5].steps[5].steps[0]  SHORT_ID=aB3xY
+steps[5]           foreach
+steps[5]           BOARD=INDEV-OSS
+steps[5].steps[0]  načíst seznamy
+steps[5].steps[1]  jq
+steps[5]           BOARD=DEV
+steps[5].steps[0]  načíst seznamy
 ```
+
+Hodnota patří `foreach`u, protože je to on, kdo se posunul; kroky v těle
+mají svoje vlastní cesty a opakují se pod každou iterací.
 
 Cesta je **stejná notace, jakou používají hlášky validátoru**. Když
 validace řekne `steps[7]` a runner spadne na `steps[7]`, je to bez
