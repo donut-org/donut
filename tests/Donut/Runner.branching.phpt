@@ -6,8 +6,10 @@ use Donut\BlockRepository;
 use Donut\Parser\WorkflowParser;
 use Donut\Runner\ProcessResult;
 use Donut\Runner\ProcessRunner;
+use Donut\Runner\Reporter;
 use Donut\Runner\Runner;
 use Donut\Runner\NullReporter;
+use Donut\Runner\RunFailedException;
 use Nette\Utils\FileSystem;
 use Tester\Assert;
 
@@ -32,6 +34,21 @@ final class RecordingProcesses implements ProcessRunner
 		$this->args[] = $args;
 
 		return new ProcessResult('', null, 0);
+	}
+}
+
+final class RecordingReporter implements Reporter
+{
+	/** @var array<int, array{string, string}> */
+	public array $lines = [];
+
+	public function step(string $path, string $label): void
+	{
+		$this->lines[] = [$path, $label];
+	}
+
+	public function warning(string $message): void
+	{
 	}
 }
 
@@ -99,6 +116,29 @@ $map = $run([
 ], $procs, ['A' => 'ano']);
 Assert::same('puvodni', $map['V']);
 
+// všechny čtyři if-případy výše používají jen set — žádný proces neměl start
+Assert::same([], $procs->args);
+
+// klíč zapsaný jen v then je za validace jen varování ("může, ale nemusí
+// existovat"); když se pak vezme else a klíč se čte, běh spadne jako
+// MissingKeyException — ale s cestou ke kroku, ne jen se jménem klíče
+Assert::exception(
+	fn() => $run([
+		'name' => 'w',
+		'inputs' => ['A' => []],
+		'steps' => [
+			[
+				'type' => 'if',
+				'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => 'ano'],
+				'then' => [['type' => 'set', 'key' => 'X', 'value' => 'jen-then']],
+			],
+			['type' => 'set', 'key' => 'PO', 'value' => '{%X%}'],
+		],
+	], $procs, ['A' => 'ne']),
+	RunFailedException::class,
+	"w.json:steps[1]: Klíč 'X' v mapě neexistuje."
+);
+
 // foreach: iterace přes řádky, prázdné se přeskočí, \r se odřízne
 $procs = new RecordingProcesses;
 $map = $run([
@@ -141,5 +181,37 @@ $run([
 	]],
 ], $procs, ['VNEJSI' => "1\n2", 'VNITRNI' => "a\nb"]);
 Assert::same([['1a'], ['1b'], ['2a'], ['2b']], $procs->args);
+
+// hlášení: hodnota patří cestě foreache, tělo hlásí svoje vlastní cesty,
+// obojí se opakuje pod každou iterací — viz sekce Hlášení průběhu v návrhu
+$procs = new RecordingProcesses;
+$reporter = new RecordingReporter;
+(new Runner($repo, $procs, $reporter))->run($parser->parseArray([
+	'name' => 'w',
+	'inputs' => ['VNEJSI' => [], 'VNITRNI' => []],
+	'steps' => [[
+		'type' => 'foreach', 'over' => '{%VNEJSI%}', 'as' => 'X',
+		'steps' => [[
+			'type' => 'foreach', 'over' => '{%VNITRNI%}', 'as' => 'Y',
+			'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%X%}{%Y%}']]],
+		]],
+	]],
+], 'w.json'), ['VNEJSI' => "1\n2", 'VNITRNI' => "a\nb"]);
+
+Assert::same([
+	['w.json:steps[0]', 'foreach'],
+	['w.json:steps[0]', 'X=1'],
+	['w.json:steps[0].steps[0]', 'foreach'],
+	['w.json:steps[0].steps[0]', 'Y=a'],
+	['w.json:steps[0].steps[0].steps[0]', 'echo'],
+	['w.json:steps[0].steps[0]', 'Y=b'],
+	['w.json:steps[0].steps[0].steps[0]', 'echo'],
+	['w.json:steps[0]', 'X=2'],
+	['w.json:steps[0].steps[0]', 'foreach'],
+	['w.json:steps[0].steps[0]', 'Y=a'],
+	['w.json:steps[0].steps[0].steps[0]', 'echo'],
+	['w.json:steps[0].steps[0]', 'Y=b'],
+	['w.json:steps[0].steps[0].steps[0]', 'echo'],
+], $reporter->lines);
 
 FileSystem::delete(TEMP_DIR);
