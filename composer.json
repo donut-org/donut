@@ -22,5 +22,6 @@
 	},
 	"autoload": {
 		"psr-4": {"Donut\\": "src/"}
-	}
+	},
+	"bin": ["bin/donut"]
 }
