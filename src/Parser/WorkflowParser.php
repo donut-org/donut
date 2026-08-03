@@ -46,11 +46,7 @@ final class WorkflowParser
 	 */
 	public function parseArray(array $data, string $location): Workflow
 	{
-		foreach (\array_keys($data) as $key) {
-			if (!\in_array($key, ['name', 'description', 'inputs', 'steps'], true)) {
-				throw new ParseException("{$location}: neznámý klíč '{$key}'.");
-			}
-		}
+		JsonSource::rejectUnknownKeys($data, ['name', 'description', 'inputs', 'steps'], $location, '');
 
 		if (!isset($data['name']) || !\is_string($data['name']) || $data['name'] === '') {
 			throw new ParseException("{$location}: klíč 'name' je povinný a musí být neprázdný řetězec.");
@@ -120,6 +116,13 @@ final class WorkflowParser
 	 */
 	private function parseRun(array $step, string $location, string $path, ?string $name): RunStep
 	{
+		JsonSource::rejectUnknownKeys(
+			$step,
+			['type', 'block', 'in', 'out', 'name', 'allow_failure', 'timeout'],
+			$location,
+			$path,
+		);
+
 		if (!isset($step['block']) || !\is_string($step['block'])) {
 			throw new ParseException("{$location}: {$path} nemá klíč 'block'.");
 		}
@@ -175,11 +178,20 @@ final class WorkflowParser
 	 */
 	private function parseIf(array $step, string $location, string $path, ?string $name): IfStep
 	{
+		JsonSource::rejectUnknownKeys(
+			$step,
+			['type', 'condition', 'then', 'else', 'name'],
+			$location,
+			$path,
+		);
+
 		if (!isset($step['condition']) || !\is_array($step['condition'])) {
 			throw new ParseException("{$location}: {$path} nemá klíč 'condition'.");
 		}
 
 		$condition = $step['condition'];
+
+		JsonSource::rejectUnknownKeys($condition, ['left', 'op', 'right'], $location, "{$path}.condition");
 
 		if (!isset($condition['left']) || !\is_string($condition['left'])) {
 			throw new ParseException("{$location}: {$path}.condition nemá 'left'.");
@@ -228,6 +240,8 @@ final class WorkflowParser
 	 */
 	private function parseSet(array $step, string $location, string $path, ?string $name): SetStep
 	{
+		JsonSource::rejectUnknownKeys($step, ['type', 'key', 'value', 'name'], $location, $path);
+
 		if (!isset($step['key']) || !\is_string($step['key'])) {
 			throw new ParseException("{$location}: {$path} nemá klíč 'key'.");
 		}
@@ -250,6 +264,13 @@ final class WorkflowParser
 	 */
 	private function parseForeach(array $step, string $location, string $path, ?string $name): ForeachStep
 	{
+		JsonSource::rejectUnknownKeys(
+			$step,
+			['type', 'over', 'as', 'steps', 'name'],
+			$location,
+			$path,
+		);
+
 		if (!isset($step['over']) || !\is_string($step['over'])) {
 			throw new ParseException("{$location}: {$path} nemá klíč 'over'.");
 		}

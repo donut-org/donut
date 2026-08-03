@@ -77,3 +77,8 @@ $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'inputs' => ['URL' => ['default' => ['a', 'b']]]],
 	"x.json: default vstupu 'URL' musí být řetězec."
 );
+
+$assertFails(
+	['name' => 'x', 'command' => 'x', 'args' => [], 'stdin' => ['required' => true, 'optional' => false]],
+	"x.json: stdin má neznámý klíč 'optional'."
+);
