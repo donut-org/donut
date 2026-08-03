@@ -17,7 +17,7 @@ use Donut\Template;
  */
 final class CommandLine
 {
-	/** @param array<int, string> $args */
+	/** @param list<string> $args */
 	private function __construct(
 		public readonly string $command,
 		public readonly array $args,
