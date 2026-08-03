@@ -18,6 +18,7 @@ interface ProcessRunner
 	 * @param  bool $captureStderr true = do paměti, false = streamovat na terminál
 	 * @param  ?int $timeout sekundy; null vypíná limit
 	 * @throws \Nette\Utils\ProcessTimeoutException
+	 * @throws \Nette\Utils\ProcessFailedException proces se vůbec nepodařilo spustit
 	 */
 	public function run(
 		string $command,

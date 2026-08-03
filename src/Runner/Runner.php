@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Donut\Runner;
 
 use Donut\BlockRepository;
+use Donut\Format\ForeachStep;
+use Donut\Format\IfStep;
 use Donut\Format\RunStep;
 use Donut\Format\SetStep;
 use Donut\Format\Step;
 use Donut\Format\Workflow;
 use Donut\Validator\Validator;
+use Nette\Utils\ProcessFailedException;
 use Nette\Utils\ProcessTimeoutException;
 
 
@@ -79,10 +82,49 @@ final class Runner
 				$this->reporter->step($at, $step->name ?? "set {$step->key}");
 				$map[$step->key] = $step->value->render($map);
 
+			} elseif ($step instanceof IfStep) {
+				$this->reporter->step($at, $step->name ?? 'if');
+
+				$matched = ConditionEvaluator::evaluate($step->condition, $map, $at);
+				$branch = $matched ? $step->then : $step->else;
+
+				$this->runSteps($branch, $at . ($matched ? '.then' : '.else'), $map);
+
+			} elseif ($step instanceof ForeachStep) {
+				$this->reporter->step($at, $step->name ?? 'foreach');
+
+				foreach (self::splitLines($step->over->render($map)) as $line) {
+					$map[$step->as] = $line;
+					$this->reporter->step($at, "{$step->as}={$line}");
+					$this->runSteps($step->steps, "{$at}.steps", $map);
+				}
+
 			} else {
 				throw new RunFailedException("{$at}: krok typu " . \get_debug_type($step) . " runner neumí.");
 			}
 		}
+	}
+
+
+	/**
+	 * Rozdělí hodnotu na řádky. \r na konci řádku se odřízne, prázdné řádky
+	 * se přeskočí, nula řádků znamená nula iterací.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function splitLines(string $value): array
+	{
+		$lines = [];
+
+		foreach (\explode("\n", $value) as $line) {
+			$line = \rtrim($line, "\r");
+
+			if ($line !== '') {
+				$lines[] = $line;
+			}
+		}
+
+		return $lines;
 	}
 
 
@@ -112,6 +154,13 @@ final class Runner
 		} catch (ProcessTimeoutException $e) {
 			throw new RunFailedException(
 				"{$at}: kámen \"{$block->name}\" překročil limit {$timeout} s.",
+				0,
+				$e,
+			);
+
+		} catch (ProcessFailedException $e) {
+			throw new RunFailedException(
+				"{$at}: kámen \"{$block->name}\" nešel spustit — příkaz \"{$commandLine->command}\": {$e->getMessage()}",
 				0,
 				$e,
 			);
