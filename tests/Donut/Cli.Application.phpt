@@ -41,6 +41,17 @@ file_put_contents($dir . '/workflows/spadne.json', json_encode([
 	'steps' => [['type' => 'run', 'block' => 'fail']],
 ]));
 
+file_put_contents($dir . '/workflows/bez-defaultu.json', json_encode([
+	'name' => 'bez-defaultu',
+	'description' => 'Volitelný vstup bez default.',
+	'inputs' => [
+		'tag' => ['required' => false],
+	],
+	'steps' => [
+		['type' => 'set', 'key' => 'precteno', 'value' => '{%tag%}'],
+	],
+]));
+
 /**
  * Pozn.: zachytí se jen to, co píše Application — tedy --list, --help
  * a chybové hlášky. Standardní výstup spuštěných kroků jde na skutečný
@@ -102,6 +113,10 @@ Assert::notContains('povinný', $tag);
 
 // běh doběhne, kód 0
 [$code] = spust($dir, ['donut', 'pozdrav', '--kdo=svete']);
+Assert::same(0, $code);
+
+// nepředaný volitelný vstup bez default se čte jako '' — ne kód 1
+[$code] = spust($dir, ['donut', 'bez-defaultu']);
 Assert::same(0, $code);
 
 // selhání kroku je kód 1
