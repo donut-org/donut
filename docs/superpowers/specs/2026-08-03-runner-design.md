@@ -170,8 +170,16 @@ specifikace. Vypršení hodí `ProcessTimeoutException`, proces dostane SIGKILL.
 `allow_failure` timeout **nepokrývá**: je to překročení limitu, ne
 návratový kód, na kterém by se šlo dohodnout.
 
-Obojí končí `RunFailedException`, která nese cestu ke kroku, jméno kamene,
-příkaz a exit code. **Nenese stderr** — ten už uživatel viděl na obrazovce,
+**Nespuštěný proces** je třetí případ: když `command` kamene na stroji
+neexistuje, `Process` hodí `ProcessFailedException` ještě předtím, než
+vznikne jakýkoliv exit code. Validátor to chytit nemůže — neví, co je na
+`PATH`. Bez ošetření by uživatel dostal syrovou výjimku bez cesty ke kroku
+a bez jména kamene, tedy netušil by, který z třiceti kroků to byl.
+
+Všechny tři případy končí `RunFailedException` s cestou ke kroku a jménem
+kamene. **Jméno příkazu je v hlášce jen u nespuštěného procesu** — tam je
+příčinou, jinde by byl šum, protože kámen si ho drží ve svém JSON souboru.
+**Stderr v hlášce není nikdy** — ten už uživatel viděl na obrazovce,
 protože se streamoval.
 
 Žádný rollback. Workflow spouští unixové příkazy, které si po sobě
