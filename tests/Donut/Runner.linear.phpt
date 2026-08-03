@@ -255,6 +255,16 @@ $map = $run([
 ], $procs, ['tag' => 'v2']);
 Assert::same('v2', $map['out']);
 
+// volitelný vstup bez default, který volající nedodá, je v mapě jako
+// prázdný řetězec — ne chybějící klíč (spec sekce 6: „nevyplněno" a ''
+// jsou jedna a táž věc)
+$map = $run([
+	'name' => 'w',
+	'inputs' => ['tag' => ['required' => false]],
+	'steps' => [['type' => 'set', 'key' => 'out', 'value' => '{%tag%}']],
+], $procs);
+Assert::same('', $map['out']);
+
 // chybějící povinný vstup bez hodnoty je chyba dřív, než se spustí první krok
 Assert::exception(
 	fn() => $run([

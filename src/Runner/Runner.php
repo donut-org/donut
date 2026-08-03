@@ -88,12 +88,16 @@ final class Runner
 			if (!isset($map[$name]) && $input->required) {
 				throw new CannotStartException("{$workflow->name}.json: povinný vstup \"{$name}\" nemá hodnotu.");
 			}
+
+			if (!isset($map[$name]) && !$input->required) {
+				$map[$name] = '';
+			}
 		}
 
 		$cwd = \getcwd();
 
 		if ($cwd === false) {
-			throw new RunFailedException("{$workflow->name}.json: nejde zjistit aktuální pracovní adresář.");
+			throw new CannotStartException("{$workflow->name}.json: nejde zjistit aktuální pracovní adresář.");
 		}
 
 		return $map + ['STDIN' => '', 'CWD' => $cwd];
