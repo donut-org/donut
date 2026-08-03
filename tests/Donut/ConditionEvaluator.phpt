@@ -34,8 +34,11 @@ Assert::false($eval(cond('{%A%}', 'eq', '1'), ['A' => '01']));
 Assert::true($eval(cond('{%A%}', 'gt', '5'), ['A' => '10']));
 Assert::false($eval(cond('{%A%}', 'gt', '10'), ['A' => '10']));
 Assert::true($eval(cond('{%A%}', 'gte', '10'), ['A' => '10']));
+Assert::false($eval(cond('{%A%}', 'gte', '10'), ['A' => '9']));
 Assert::true($eval(cond('{%A%}', 'lt', '10'), ['A' => '5']));
+Assert::false($eval(cond('{%A%}', 'lt', '10'), ['A' => '10']));
 Assert::true($eval(cond('{%A%}', 'lte', '5'), ['A' => '5']));
+Assert::false($eval(cond('{%A%}', 'lte', '5'), ['A' => '6']));
 Assert::true($eval(cond('{%A%}', 'gt', '5'), ['A' => '10.5']));
 Assert::true($eval(cond('{%A%}', 'lt', '0'), ['A' => '-3']));
 
