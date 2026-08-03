@@ -149,7 +149,8 @@ Kroky včetně vnořených v `if` a `foreach`.
 | `card-dev.json` | 29 | `jpw-indev-developer`, `-developer-haiku`, `-assistent`, `-assistent-haiku` |
 | `card-spec.json` | 25 | `jpw-indev-techlead` |
 | `sync.json` | 37 | `jpw-indev-sync` |
-| 14 kamenů | | 8 skriptů s ~20 subcommandy |
+| `repo-check.json` | 5 | nic — přidáno dodatečně, jediné workflow s větví `else` |
+| 15 kamenů | | 8 skriptů s ~20 subcommandy |
 
 V `sync` je 37 kroků proto, že pět rolí (ToSpec, ReadyToDev,
 ReadyToDev-Haiku, Assistent, Assistent-Haiku) je rozepsaných po čtyřech

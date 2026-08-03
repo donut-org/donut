@@ -378,7 +378,12 @@ legitimní a smí projít s varováním.
 Přepsáno: `jpw-indev-techlead`, `-developer`, `-developer-haiku`,
 `-assistent`, `-assistent-haiku` (→ `card-dev` 29 kroků, `card-spec`
 25 kroků) a `jpw-indev-sync` (→ `sync` 37 kroků). Počítáno včetně kroků
-vnořených v `if` a `foreach`. Nad 14 kameny.
+vnořených v `if` a `foreach`. Nad 15 kameny.
+
+K nim přibylo `repo-check` (5 kroků), které přepisem nevzniklo. Žádné ze
+tří přepsaných workflow nemá větev `else` — bash se nikde nevětví na dvě
+strany — a ta mezera nechala projít chybný předpoklad o klíči zapsaném
+v obou větvích `if`. `repo-check` tu cestu pokrývá.
 `jpw-queue-consume` zůstává v bashi — je to dohled nad procesem, ne workflow.
 
 ### Změny proti verzi 0.2
