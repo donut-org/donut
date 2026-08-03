@@ -69,8 +69,12 @@ donut                                 stručné použití, konec 2
 `--list` vypisuje jen workflow, ne kameny — kameny jsou implementační
 detail workflow a člověk je nespouští.
 
-Pořadí `donut --help <workflow>` se nepodporuje; nápověda ke konkrétnímu
-workflow se píše za jeho jménem, jak to ukazuje specifikace.
+**Na pořadí nezáleží.** `donut --help card-dev` udělá totéž co
+`donut card-dev --help` — rozklad argumentů pořadí nezachovává a rozhoduje
+se jen podle toho, jestli přišlo jméno workflow a jestli je zvednutý
+příznak. Ukázky výše píšou `--help` za jménem, protože tak to má
+specifikace, ale vynucovat to by znamenalo přidat pravidlo, které nikomu
+nepomůže.
 
 ### Standardní vstup
 
