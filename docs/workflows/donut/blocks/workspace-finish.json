@@ -7,23 +7,23 @@
       "finish"
     ],
     [
-      "--work-dir={%WORK_DIR%}"
+      "--work-dir={%workDir%}"
     ],
     [
-      "--repo={%REPO%}"
+      "--repo={%repo%}"
     ],
     [
-      "--message={%MESSAGE%}"
+      "--message={%message%}"
     ]
   ],
   "inputs": {
-    "WORK_DIR": {
+    "workDir": {
       "required": true
     },
-    "REPO": {
+    "repo": {
       "required": false
     },
-    "MESSAGE": {
+    "message": {
       "required": true,
       "description": "Text commitu"
     }

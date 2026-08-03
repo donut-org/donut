@@ -4,10 +4,10 @@
 
   "command": "echo",
   "args": [
-    ["{%TEXT%}"]
+    ["{%text%}"]
   ],
 
   "inputs": {
-    "TEXT": { "required": true, "description": "Text k vypsání" }
+    "text": { "required": true, "description": "Text k vypsání" }
   }
 }

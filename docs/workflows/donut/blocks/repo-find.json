@@ -7,11 +7,11 @@
       "repo-find"
     ],
     [
-      "--project={%PROJECT%}"
+      "--project={%project%}"
     ]
   ],
   "inputs": {
-    "PROJECT": {
+    "project": {
       "required": true
     }
   },

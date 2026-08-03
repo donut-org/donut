@@ -20,8 +20,8 @@ FileSystem::createDir($dir);
 
 file_put_contents($dir . '/echo.json', json_encode([
 	'name' => 'echo', 'command' => 'echo',
-	'args' => [['{%TEXT%}']],
-	'inputs' => ['TEXT' => ['required' => true]],
+	'args' => [['{%text%}']],
+	'inputs' => ['text' => ['required' => true]],
 ]));
 
 final class RecordingProcesses implements ProcessRunner
@@ -63,58 +63,58 @@ $run = function (array $data, ProcessRunner $procs, array $initial = []) use ($r
 $procs = new RecordingProcesses;
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['A' => []],
+	'inputs' => ['a' => []],
 	'steps' => [[
 		'type' => 'if',
-		'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => 'ano'],
-		'then' => [['type' => 'set', 'key' => 'V', 'value' => 'then']],
-		'else' => [['type' => 'set', 'key' => 'V', 'value' => 'else']],
+		'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'ano'],
+		'then' => [['type' => 'set', 'key' => 'v', 'value' => 'then']],
+		'else' => [['type' => 'set', 'key' => 'v', 'value' => 'else']],
 	]],
-], $procs, ['A' => 'ano']);
-Assert::same('then', $map['V']);
+], $procs, ['a' => 'ano']);
+Assert::same('then', $map['v']);
 
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['A' => []],
+	'inputs' => ['a' => []],
 	'steps' => [[
 		'type' => 'if',
-		'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => 'ano'],
-		'then' => [['type' => 'set', 'key' => 'V', 'value' => 'then']],
-		'else' => [['type' => 'set', 'key' => 'V', 'value' => 'else']],
+		'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'ano'],
+		'then' => [['type' => 'set', 'key' => 'v', 'value' => 'then']],
+		'else' => [['type' => 'set', 'key' => 'v', 'value' => 'else']],
 	]],
-], $procs, ['A' => 'ne']);
-Assert::same('else', $map['V']);
+], $procs, ['a' => 'ne']);
+Assert::same('else', $map['v']);
 
 // větev nemá vlastní scope — zápis je vidět i za ifem
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['A' => []],
+	'inputs' => ['a' => []],
 	'steps' => [
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%A%}', 'op' => 'not_empty'],
-			'then' => [['type' => 'set', 'key' => 'V', 'value' => 'uvnitr']],
-			'else' => [['type' => 'set', 'key' => 'V', 'value' => 'jinak']],
+			'condition' => ['left' => '{%a%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'uvnitr']],
+			'else' => [['type' => 'set', 'key' => 'v', 'value' => 'jinak']],
 		],
-		['type' => 'set', 'key' => 'PO', 'value' => 'videl-{%V%}'],
+		['type' => 'set', 'key' => 'po', 'value' => 'videl-{%v%}'],
 	],
-], $procs, ['A' => 'x']);
-Assert::same('videl-uvnitr', $map['PO']);
+], $procs, ['a' => 'x']);
+Assert::same('videl-uvnitr', $map['po']);
 
 // chybějící else prostě neudělá nic
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['A' => []],
+	'inputs' => ['a' => []],
 	'steps' => [
-		['type' => 'set', 'key' => 'V', 'value' => 'puvodni'],
+		['type' => 'set', 'key' => 'v', 'value' => 'puvodni'],
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => 'ne'],
-			'then' => [['type' => 'set', 'key' => 'V', 'value' => 'zmeneno']],
+			'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'ne'],
+			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'zmeneno']],
 		],
 	],
-], $procs, ['A' => 'ano']);
-Assert::same('puvodni', $map['V']);
+], $procs, ['a' => 'ano']);
+Assert::same('puvodni', $map['v']);
 
 // všechny čtyři if-případy výše používají jen set — žádný proces neměl start
 Assert::same([], $procs->args);
@@ -125,61 +125,61 @@ Assert::same([], $procs->args);
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
-		'inputs' => ['A' => []],
+		'inputs' => ['a' => []],
 		'steps' => [
 			[
 				'type' => 'if',
-				'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => 'ano'],
-				'then' => [['type' => 'set', 'key' => 'X', 'value' => 'jen-then']],
+				'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'ano'],
+				'then' => [['type' => 'set', 'key' => 'x', 'value' => 'jen-then']],
 			],
-			['type' => 'set', 'key' => 'PO', 'value' => '{%X%}'],
+			['type' => 'set', 'key' => 'po', 'value' => '{%x%}'],
 		],
-	], $procs, ['A' => 'ne']),
+	], $procs, ['a' => 'ne']),
 	RunFailedException::class,
-	"w.json:steps[1]: Klíč 'X' v mapě neexistuje."
+	"w.json:steps[1]: Klíč 'x' v mapě neexistuje."
 );
 
 // foreach: iterace přes řádky, prázdné se přeskočí, \r se odřízne
 $procs = new RecordingProcesses;
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['SEZNAM' => []],
+	'inputs' => ['seznam' => []],
 	'steps' => [[
-		'type' => 'foreach', 'over' => '{%SEZNAM%}', 'as' => 'RADEK',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%RADEK%}']]],
+		'type' => 'foreach', 'over' => '{%seznam%}', 'as' => 'radek',
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%radek%}']]],
 	]],
-], $procs, ['SEZNAM' => "a\r\n\nb\nc"]);
+], $procs, ['seznam' => "a\r\n\nb\nc"]);
 Assert::same([['a'], ['b'], ['c']], $procs->args);
 
 // po cyklu zůstává v klíči poslední hodnota
-Assert::same('c', $map['RADEK']);
+Assert::same('c', $map['radek']);
 
 // prázdný vstup znamená nula iterací
 $procs = new RecordingProcesses;
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['SEZNAM' => []],
+	'inputs' => ['seznam' => []],
 	'steps' => [[
-		'type' => 'foreach', 'over' => '{%SEZNAM%}', 'as' => 'RADEK',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%RADEK%}']]],
+		'type' => 'foreach', 'over' => '{%seznam%}', 'as' => 'radek',
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%radek%}']]],
 	]],
-], $procs, ['SEZNAM' => '']);
+], $procs, ['seznam' => '']);
 Assert::same([], $procs->args);
-Assert::false(isset($map['RADEK']));
+Assert::false(isset($map['radek']));
 
 // vnořený foreach uvnitř foreach
 $procs = new RecordingProcesses;
 $run([
 	'name' => 'w',
-	'inputs' => ['VNEJSI' => [], 'VNITRNI' => []],
+	'inputs' => ['vnejsi' => [], 'vnitrni' => []],
 	'steps' => [[
-		'type' => 'foreach', 'over' => '{%VNEJSI%}', 'as' => 'X',
+		'type' => 'foreach', 'over' => '{%vnejsi%}', 'as' => 'x',
 		'steps' => [[
-			'type' => 'foreach', 'over' => '{%VNITRNI%}', 'as' => 'Y',
-			'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%X%}{%Y%}']]],
+			'type' => 'foreach', 'over' => '{%vnitrni%}', 'as' => 'y',
+			'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%x%}{%y%}']]],
 		]],
 	]],
-], $procs, ['VNEJSI' => "1\n2", 'VNITRNI' => "a\nb"]);
+], $procs, ['vnejsi' => "1\n2", 'vnitrni' => "a\nb"]);
 Assert::same([['1a'], ['1b'], ['2a'], ['2b']], $procs->args);
 
 // hlášení: hodnota patří cestě foreache, tělo hlásí svoje vlastní cesty,
@@ -188,29 +188,29 @@ $procs = new RecordingProcesses;
 $reporter = new RecordingReporter;
 (new Runner($repo, $procs, $reporter))->run($parser->parseArray([
 	'name' => 'w',
-	'inputs' => ['VNEJSI' => [], 'VNITRNI' => []],
+	'inputs' => ['vnejsi' => [], 'vnitrni' => []],
 	'steps' => [[
-		'type' => 'foreach', 'over' => '{%VNEJSI%}', 'as' => 'X',
+		'type' => 'foreach', 'over' => '{%vnejsi%}', 'as' => 'x',
 		'steps' => [[
-			'type' => 'foreach', 'over' => '{%VNITRNI%}', 'as' => 'Y',
-			'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%X%}{%Y%}']]],
+			'type' => 'foreach', 'over' => '{%vnitrni%}', 'as' => 'y',
+			'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%x%}{%y%}']]],
 		]],
 	]],
-], 'w.json'), ['VNEJSI' => "1\n2", 'VNITRNI' => "a\nb"]);
+], 'w.json'), ['vnejsi' => "1\n2", 'vnitrni' => "a\nb"]);
 
 Assert::same([
 	['w.json:steps[0]', 'foreach'],
-	['w.json:steps[0]', 'X=1'],
+	['w.json:steps[0]', 'x=1'],
 	['w.json:steps[0].steps[0]', 'foreach'],
-	['w.json:steps[0].steps[0]', 'Y=a'],
+	['w.json:steps[0].steps[0]', 'y=a'],
 	['w.json:steps[0].steps[0].steps[0]', 'echo'],
-	['w.json:steps[0].steps[0]', 'Y=b'],
+	['w.json:steps[0].steps[0]', 'y=b'],
 	['w.json:steps[0].steps[0].steps[0]', 'echo'],
-	['w.json:steps[0]', 'X=2'],
+	['w.json:steps[0]', 'x=2'],
 	['w.json:steps[0].steps[0]', 'foreach'],
-	['w.json:steps[0].steps[0]', 'Y=a'],
+	['w.json:steps[0].steps[0]', 'y=a'],
 	['w.json:steps[0].steps[0].steps[0]', 'echo'],
-	['w.json:steps[0].steps[0]', 'Y=b'],
+	['w.json:steps[0].steps[0]', 'y=b'],
 	['w.json:steps[0].steps[0].steps[0]', 'echo'],
 ], $reporter->lines);
 

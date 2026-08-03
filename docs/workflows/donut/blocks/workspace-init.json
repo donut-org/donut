@@ -7,31 +7,31 @@
       "init"
     ],
     [
-      "--root={%WORK_ROOT%}"
+      "--root={%workRoot%}"
     ],
     [
-      "--project={%PROJECT%}"
+      "--project={%project%}"
     ],
     [
-      "--repo={%REPO%}"
+      "--repo={%repo%}"
     ],
     [
-      "--branch={%BRANCH%}"
+      "--branch={%branch%}"
     ]
   ],
   "inputs": {
-    "WORK_ROOT": {
+    "workRoot": {
       "required": true,
       "description": "Nadřazený adresář pro workspace"
     },
-    "PROJECT": {
+    "project": {
       "required": true
     },
-    "REPO": {
+    "repo": {
       "required": false,
       "description": "owner/name; nevyplněno = pracuje se bez repozitáře"
     },
-    "BRANCH": {
+    "branch": {
       "required": false
     }
   },

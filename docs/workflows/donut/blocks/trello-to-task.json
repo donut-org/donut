@@ -4,11 +4,11 @@
   "command": "olw-trello-to-task",
   "args": [
     [
-      "--my-id={%MY_ID%}"
+      "--my-id={%myId%}"
     ]
   ],
   "inputs": {
-    "MY_ID": {
+    "myId": {
       "required": false,
       "description": "ID přihlášeného člena; podle něj se komentáře značí rolí assistant"
     }

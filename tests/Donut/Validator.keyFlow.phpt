@@ -15,8 +15,8 @@ Nette\Utils\FileSystem::createDir($dir);
 file_put_contents($dir . '/echo.json', json_encode([
 	'name' => 'echo',
 	'command' => 'echo',
-	'args' => [['{%TEXT%}']],
-	'inputs' => ['TEXT' => ['required' => true]],
+	'args' => [['{%text%}']],
+	'inputs' => ['text' => ['required' => true]],
 ]));
 
 $repo = new BlockRepository($dir);
@@ -35,34 +35,34 @@ $warnings = function (array $data) use ($parser, $validator): array {
 Assert::same([], $errors([
 	'name' => 'w',
 	'steps' => [
-		['type' => 'set', 'key' => 'A', 'value' => 'x'],
-		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
+		['type' => 'set', 'key' => 'a', 'value' => 'x'],
+		['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%a%}']],
 	],
 ]));
 
 // STDIN a CWD jsou známé od začátku
 Assert::same([], $errors([
 	'name' => 'w',
-	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%CWD%}/{%STDIN%}']]],
+	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%CWD%}/{%STDIN%}']]],
 ]));
 
 // klíč, který nikdo nikdy nezapisuje = překlep
 Assert::same(
-	['w.json:steps[0]: šablona čte klíč "NENI", který žádný krok nezapisuje'],
+	['w.json:steps[0]: šablona čte klíč "neni", který žádný krok nezapisuje'],
 	$errors([
 		'name' => 'w',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%NENI%}']]],
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%neni%}']]],
 	])
 );
 
 // klíč zapsaný až později
 Assert::same(
-	['w.json:steps[0]: šablona čte klíč "A", který v tomto místě nemohl vzniknout'],
+	['w.json:steps[0]: šablona čte klíč "a", který v tomto místě nemohl vzniknout'],
 	$errors([
 		'name' => 'w',
 		'steps' => [
-			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
-			['type' => 'set', 'key' => 'A', 'value' => 'x'],
+			['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%a%}']],
+			['type' => 'set', 'key' => 'a', 'value' => 'x'],
 		],
 	])
 );
@@ -70,29 +70,29 @@ Assert::same(
 // zápis ve větvi if je za ifem jen "možná" -> varování
 Assert::same([], $errors([
 	'name' => 'w',
-	'inputs' => ['T' => []],
+	'inputs' => ['t' => []],
 	'steps' => [
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
-			'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
+			'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'set', 'key' => 'a', 'value' => 'x']],
 		],
-		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
+		['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%a%}']],
 	],
 ]));
 
 Assert::contains(
-	'w.json:steps[1]: šablona čte klíč "A", který nemusí existovat',
+	'w.json:steps[1]: šablona čte klíč "a", který nemusí existovat',
 	$warnings([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [
 			[
 				'type' => 'if',
-				'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
-				'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
+				'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
+				'then' => [['type' => 'set', 'key' => 'a', 'value' => 'x']],
 			],
-			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
+			['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%a%}']],
 		],
 	])
 );
@@ -100,13 +100,13 @@ Assert::contains(
 // uvnitř větve je zápis z téže větve jistý
 Assert::same([], $errors([
 	'name' => 'w',
-	'inputs' => ['T' => []],
+	'inputs' => ['t' => []],
 	'steps' => [[
 		'type' => 'if',
-		'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
+		'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
 		'then' => [
-			['type' => 'set', 'key' => 'A', 'value' => 'x'],
-			['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']],
+			['type' => 'set', 'key' => 'a', 'value' => 'x'],
+			['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%a%}']],
 		],
 	]],
 ]));
@@ -114,30 +114,30 @@ Assert::same([], $errors([
 // foreach: as je uvnitř těla jistý, za cyklem jen možný
 Assert::same([], $errors([
 	'name' => 'w',
-	'inputs' => ['T' => []],
+	'inputs' => ['t' => []],
 	'steps' => [[
 		'type' => 'foreach',
-		'over' => '{%T%}',
-		'as' => 'LINE',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%LINE%}']]],
+		'over' => '{%t%}',
+		'as' => 'line',
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%line%}']]],
 	]],
 ]));
 
 // podmínka čte přísně: "možná" nestačí
 Assert::same(
-	['w.json:steps[1]: podmínka čte klíč "A", který v tomto místě nemohl vzniknout'],
+	['w.json:steps[1]: podmínka čte klíč "a", který v tomto místě nemohl vzniknout'],
 	$errors([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [
 			[
 				'type' => 'if',
-				'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
-				'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
+				'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
+				'then' => [['type' => 'set', 'key' => 'a', 'value' => 'x']],
 			],
 			[
 				'type' => 'if',
-				'condition' => ['left' => '{%A%}', 'op' => 'eq', 'right' => 'x'],
+				'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'x'],
 				'then' => [],
 			],
 		],
@@ -146,13 +146,13 @@ Assert::same(
 
 // foreach.over čte přísně
 Assert::same(
-	['w.json:steps[0]: foreach čte klíč "NENI", který žádný krok nezapisuje'],
+	['w.json:steps[0]: foreach čte klíč "neni", který žádný krok nezapisuje'],
 	$errors([
 		'name' => 'w',
 		'steps' => [[
 			'type' => 'foreach',
-			'over' => '{%NENI%}',
-			'as' => 'L',
+			'over' => '{%neni%}',
+			'as' => 'l',
 			'steps' => [],
 		]],
 	])
@@ -162,26 +162,26 @@ Assert::same(
 Assert::same([], $errors([
 	'name' => 'w',
 	'steps' => [
-		['type' => 'set', 'key' => 'A', 'value' => 'x'],
-		['type' => 'set', 'key' => 'A', 'value' => '{%A%} y'],
+		['type' => 'set', 'key' => 'a', 'value' => 'x'],
+		['type' => 'set', 'key' => 'a', 'value' => '{%a%} y'],
 	],
 ]));
 
 // varování: klíč se zapisuje a nikdy nečte
 Assert::contains(
-	'w.json: klíč "NEPOUZITY" se zapisuje a nikdy nečte',
+	'w.json: klíč "nepouzity" se zapisuje a nikdy nečte',
 	$warnings([
 		'name' => 'w',
-		'steps' => [['type' => 'set', 'key' => 'NEPOUZITY', 'value' => 'x']],
+		'steps' => [['type' => 'set', 'key' => 'nepouzity', 'value' => 'x']],
 	])
 );
 
 // varování: vstup workflow se nikde nepoužívá
 Assert::contains(
-	'w.json: vstup "NEPOUZITY" se nikde nepoužívá',
+	'w.json: vstup "nepouzity" se nikde nepoužívá',
 	$warnings([
 		'name' => 'w',
-		'inputs' => ['NEPOUZITY' => []],
+		'inputs' => ['nepouzity' => []],
 		'steps' => [],
 	])
 );
@@ -194,56 +194,56 @@ Assert::same([], $warnings([
 
 // then a else jsou alternativy: klíč zapsaný jen v then nemůže existovat v else
 Assert::same(
-	['w.json:steps[0].else[0]: šablona čte klíč "A", který v tomto místě nemohl vzniknout'],
+	['w.json:steps[0].else[0]: šablona čte klíč "a", který v tomto místě nemohl vzniknout'],
 	$errors([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'if',
-			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
-			'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
-			'else' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%A%}']]],
+			'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'set', 'key' => 'a', 'value' => 'x']],
+			'else' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%a%}']]],
 		]],
 	])
 );
 
 // a symetricky: klíč zapsaný jen v else nemůže existovat v then
 Assert::same(
-	['w.json:steps[0].then[0]: šablona čte klíč "B", který v tomto místě nemohl vzniknout'],
+	['w.json:steps[0].then[0]: šablona čte klíč "b", který v tomto místě nemohl vzniknout'],
 	$errors([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'if',
-			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
-			'then' => [['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%B%}']]],
-			'else' => [['type' => 'set', 'key' => 'B', 'value' => 'x']],
+			'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%b%}']]],
+			'else' => [['type' => 'set', 'key' => 'b', 'value' => 'x']],
 		]],
 	])
 );
 
 // set čte klíč, který nikdo nikdy nezapisuje
 Assert::same(
-	['w.json:steps[0]: set čte klíč "NENI", který žádný krok nezapisuje'],
+	['w.json:steps[0]: set čte klíč "neni", který žádný krok nezapisuje'],
 	$errors([
 		'name' => 'w',
-		'steps' => [['type' => 'set', 'key' => 'A', 'value' => '{%NENI%}']],
+		'steps' => [['type' => 'set', 'key' => 'a', 'value' => '{%neni%}']],
 	])
 );
 
 // set čte klíč zapsaný jen ve větvi if -> varování
 Assert::contains(
-	'w.json:steps[1]: set čte klíč "A", který nemusí existovat',
+	'w.json:steps[1]: set čte klíč "a", který nemusí existovat',
 	$warnings([
 		'name' => 'w',
-		'inputs' => ['T' => []],
+		'inputs' => ['t' => []],
 		'steps' => [
 			[
 				'type' => 'if',
-				'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
-				'then' => [['type' => 'set', 'key' => 'A', 'value' => 'x']],
+				'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
+				'then' => [['type' => 'set', 'key' => 'a', 'value' => 'x']],
 			],
-			['type' => 'set', 'key' => 'B', 'value' => '{%A%}'],
+			['type' => 'set', 'key' => 'b', 'value' => '{%a%}'],
 		],
 	])
 );
@@ -251,32 +251,32 @@ Assert::contains(
 // klíč zapsaný v obou větvích if je za ním jistý, ne jen "možná"
 Assert::same([], $warnings([
 	'name' => 'w',
-	'inputs' => ['T' => []],
+	'inputs' => ['t' => []],
 	'steps' => [
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
-			'then' => [['type' => 'set', 'key' => 'V', 'value' => 'a']],
-			'else' => [['type' => 'set', 'key' => 'V', 'value' => 'b']],
+			'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'a']],
+			'else' => [['type' => 'set', 'key' => 'v', 'value' => 'b']],
 		],
-		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => '{%V%}']],
+		['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%v%}']],
 	],
 ]));
 
 // a totéž čtené přísně (podmínkou) nesmí být chyba
 Assert::same([], $errors([
 	'name' => 'w',
-	'inputs' => ['T' => []],
+	'inputs' => ['t' => []],
 	'steps' => [
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%T%}', 'op' => 'not_empty'],
-			'then' => [['type' => 'set', 'key' => 'V', 'value' => 'a']],
-			'else' => [['type' => 'set', 'key' => 'V', 'value' => 'b']],
+			'condition' => ['left' => '{%t%}', 'op' => 'not_empty'],
+			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'a']],
+			'else' => [['type' => 'set', 'key' => 'v', 'value' => 'b']],
 		],
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%V%}', 'op' => 'eq', 'right' => 'a'],
+			'condition' => ['left' => '{%v%}', 'op' => 'eq', 'right' => 'a'],
 			'then' => [],
 		],
 	],

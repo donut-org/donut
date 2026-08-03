@@ -15,35 +15,35 @@ $wf = (new WorkflowParser)->parseArray([
 	'name' => 'demo',
 	'description' => 'Ukázka.',
 	'inputs' => [
-		'ENV' => ['required' => true],
-		'TAG' => ['required' => false, 'default' => 'latest'],
+		'env' => ['required' => true],
+		'tag' => ['required' => false, 'default' => 'latest'],
 	],
 	'steps' => [
 		[
 			'type' => 'run',
 			'name' => 'stáhnout',
 			'block' => 'curl-get',
-			'in' => ['URL' => 'https://x/{%ENV%}'],
-			'out' => ['result' => 'BODY', 'exit_code' => 'RC'],
+			'in' => ['url' => 'https://x/{%env%}'],
+			'out' => ['result' => 'body', 'exit_code' => 'rc'],
 			'timeout' => 5,
 			'allow_failure' => [0, 1],
 		],
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%RC%}', 'op' => 'eq', 'right' => '0'],
+			'condition' => ['left' => '{%rc%}', 'op' => 'eq', 'right' => '0'],
 			'then' => [
-				['type' => 'set', 'key' => 'OK', 'value' => 'ano'],
+				['type' => 'set', 'key' => 'ok', 'value' => 'ano'],
 			],
 			'else' => [
-				['type' => 'set', 'key' => 'OK', 'value' => 'ne'],
+				['type' => 'set', 'key' => 'ok', 'value' => 'ne'],
 			],
 		],
 		[
 			'type' => 'foreach',
-			'over' => '{%BODY%}',
-			'as' => 'LINE',
+			'over' => '{%body%}',
+			'as' => 'line',
 			'steps' => [
-				['type' => 'set', 'key' => 'LAST', 'value' => '{%LINE%}'],
+				['type' => 'set', 'key' => 'last', 'value' => '{%line%}'],
 			],
 		],
 	],
@@ -51,34 +51,34 @@ $wf = (new WorkflowParser)->parseArray([
 
 Assert::same('demo', $wf->name);
 Assert::same('Ukázka.', $wf->description);
-Assert::same(['ENV', 'TAG'], array_keys($wf->inputs));
-Assert::same('latest', $wf->inputs['TAG']->default);
+Assert::same(['env', 'tag'], array_keys($wf->inputs));
+Assert::same('latest', $wf->inputs['tag']->default);
 Assert::count(3, $wf->steps);
 
 $run = $wf->steps[0];
 Assert::type(RunStep::class, $run);
 Assert::same('stáhnout', $run->name);
 Assert::same('curl-get', $run->block);
-Assert::same(['URL'], array_keys($run->in));
-Assert::same(['ENV'], $run->in['URL']->getKeys());
-Assert::same(['result' => 'BODY', 'exit_code' => 'RC'], $run->out);
+Assert::same(['url'], array_keys($run->in));
+Assert::same(['env'], $run->in['url']->getKeys());
+Assert::same(['result' => 'body', 'exit_code' => 'rc'], $run->out);
 Assert::same(5, $run->timeout);
 Assert::same([0, 1], $run->allowFailure);
 
 $if = $wf->steps[1];
 Assert::type(IfStep::class, $if);
 Assert::same('eq', $if->condition->op);
-Assert::same(['RC'], $if->condition->left->getKeys());
+Assert::same(['rc'], $if->condition->left->getKeys());
 Assert::same('0', $if->condition->right?->getSource());
 Assert::count(1, $if->then);
 Assert::count(1, $if->else);
 Assert::type(SetStep::class, $if->then[0]);
-Assert::same('OK', $if->then[0]->key);
+Assert::same('ok', $if->then[0]->key);
 
 $each = $wf->steps[2];
 Assert::type(ForeachStep::class, $each);
-Assert::same(['BODY'], $each->over->getKeys());
-Assert::same('LINE', $each->as);
+Assert::same(['body'], $each->over->getKeys());
+Assert::same('line', $each->as);
 Assert::count(1, $each->steps);
 
 // minimální run krok: bez in, out, name
@@ -98,7 +98,7 @@ $wf = (new WorkflowParser)->parseArray([
 	'name' => 'e',
 	'steps' => [[
 		'type' => 'if',
-		'condition' => ['left' => '{%A%}', 'op' => 'not_empty'],
+		'condition' => ['left' => '{%a%}', 'op' => 'not_empty'],
 		'then' => [],
 	]],
 ], 'e.json');

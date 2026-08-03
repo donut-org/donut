@@ -181,7 +181,7 @@ final class Runner
 		$this->reporter->step($at, $step->name ?? $block->name);
 
 		$commandLine = CommandLine::build($block, $step->in, $map, $at);
-		$stdin = isset($step->in['STDIN']) ? $step->in['STDIN']->render($map) : '';
+		$stdin = isset($step->in['stdin']) ? $step->in['stdin']->render($map) : '';
 		$captureStderr = isset($step->out['stderr']);
 		$timeout = $step->timeout ?? $block->timeout ?? self::DefaultTimeout;
 

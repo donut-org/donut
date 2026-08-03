@@ -18,8 +18,8 @@ FileSystem::createDir($dir);
 
 file_put_contents($dir . '/echo.json', json_encode([
 	'name' => 'echo', 'command' => 'echo',
-	'args' => [['{%TEXT%}']],
-	'inputs' => ['TEXT' => ['required' => true]],
+	'args' => [['{%text%}']],
+	'inputs' => ['text' => ['required' => true]],
 ]));
 
 file_put_contents($dir . '/upper.json', json_encode([
@@ -42,59 +42,59 @@ $run = fn(array $data, array $initial = []) => $runner->run($parser->parseArray(
 // celé workflow: proces -> mapa -> stdin dalšího procesu -> if -> foreach
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['JMENO' => []],
+	'inputs' => ['jmeno' => []],
 	'steps' => [
 		[
 			'type' => 'run', 'block' => 'echo',
-			'in' => ['TEXT' => 'ahoj {%JMENO%}'],
-			'out' => ['result' => 'POZDRAV'],
+			'in' => ['text' => 'ahoj {%jmeno%}'],
+			'out' => ['result' => 'pozdrav'],
 		],
 		[
 			'type' => 'run', 'block' => 'upper',
-			'in' => ['STDIN' => '{%POZDRAV%}'],
-			'out' => ['result' => 'HLASITE'],
+			'in' => ['stdin' => '{%pozdrav%}'],
+			'out' => ['result' => 'hlasite'],
 		],
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%HLASITE%}', 'op' => 'contains', 'right' => 'SVETE'],
-			'then' => [['type' => 'set', 'key' => 'KDO', 'value' => 'svet']],
-			'else' => [['type' => 'set', 'key' => 'KDO', 'value' => 'nekdo jiny']],
+			'condition' => ['left' => '{%hlasite%}', 'op' => 'contains', 'right' => 'SVETE'],
+			'then' => [['type' => 'set', 'key' => 'kdo', 'value' => 'svet']],
+			'else' => [['type' => 'set', 'key' => 'kdo', 'value' => 'nekdo jiny']],
 		],
 	],
-], ['JMENO' => 'svete']);
+], ['jmeno' => 'svete']);
 
-Assert::same('ahoj svete', $map['POZDRAV']);
-Assert::same('AHOJ SVETE', $map['HLASITE']);
-Assert::same('svet', $map['KDO']);
+Assert::same('ahoj svete', $map['pozdrav']);
+Assert::same('AHOJ SVETE', $map['hlasite']);
+Assert::same('svet', $map['kdo']);
 
 // foreach nad skutečným víceřádkovým výstupem procesu
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['RADKY' => []],
+	'inputs' => ['radky' => []],
 	'steps' => [
 		[
 			'type' => 'run', 'block' => 'echo',
-			'in' => ['TEXT' => '{%RADKY%}'],
-			'out' => ['result' => 'SEZNAM'],
+			'in' => ['text' => '{%radky%}'],
+			'out' => ['result' => 'seznam'],
 		],
 		[
-			'type' => 'foreach', 'over' => '{%SEZNAM%}', 'as' => 'R',
-			'steps' => [['type' => 'set', 'key' => 'POSLEDNI', 'value' => 'radek-{%R%}']],
+			'type' => 'foreach', 'over' => '{%seznam%}', 'as' => 'r',
+			'steps' => [['type' => 'set', 'key' => 'posledni', 'value' => 'radek-{%r%}']],
 		],
 	],
-], ['RADKY' => "prvni\ndruhy\ntreti"]);
+], ['radky' => "prvni\ndruhy\ntreti"]);
 
-Assert::same('radek-treti', $map['POSLEDNI']);
+Assert::same('radek-treti', $map['posledni']);
 
 // koncové odřádkování se odřezává, takže hodnota jde rovnou do argumentu
 $map = $run([
 	'name' => 'w',
 	'steps' => [
-		['type' => 'run', 'block' => 'echo', 'in' => ['TEXT' => 'x'], 'out' => ['result' => 'V']],
-		['type' => 'set', 'key' => 'URL', 'value' => 'https://api/{%V%}/end'],
+		['type' => 'run', 'block' => 'echo', 'in' => ['text' => 'x'], 'out' => ['result' => 'v']],
+		['type' => 'set', 'key' => 'url', 'value' => 'https://api/{%v%}/end'],
 	],
 ]);
-Assert::same('https://api/x/end', $map['URL']);
+Assert::same('https://api/x/end', $map['url']);
 
 // selhání skutečného procesu zastaví běh
 Assert::exception(
@@ -102,7 +102,7 @@ Assert::exception(
 		'name' => 'w',
 		'steps' => [
 			['type' => 'run', 'block' => 'fail'],
-			['type' => 'set', 'key' => 'NEMELO_BY', 'value' => 'x'],
+			['type' => 'set', 'key' => 'nemeloBy', 'value' => 'x'],
 		],
 	]),
 	RunFailedException::class,
@@ -114,10 +114,10 @@ $map = $run([
 	'name' => 'w',
 	'steps' => [[
 		'type' => 'run', 'block' => 'echo',
-		'in' => ['TEXT' => 'a; rm -rf /tmp/neexistuje'],
-		'out' => ['result' => 'V'],
+		'in' => ['text' => 'a; rm -rf /tmp/neexistuje'],
+		'out' => ['result' => 'v'],
 	]],
 ]);
-Assert::same('a; rm -rf /tmp/neexistuje', $map['V']);
+Assert::same('a; rm -rf /tmp/neexistuje', $map['v']);
 
 FileSystem::delete(TEMP_DIR);

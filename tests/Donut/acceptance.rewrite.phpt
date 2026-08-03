@@ -40,14 +40,14 @@ foreach ($files as $file) {
 $cardDev = $parser->parseFile($root . '/workflows/card-dev.json');
 Assert::same('card-dev', $cardDev->name);
 Assert::count(27, $cardDev->steps);
-Assert::true(isset($cardDev->inputs['SHORT_ID']));
-Assert::false($cardDev->inputs['CURLRC']->required);
+Assert::true(isset($cardDev->inputs['shortId']));
+Assert::false($cardDev->inputs['curlrc']->required);
 
 $sync = $parser->parseFile($root . '/workflows/sync.json');
 Assert::same('sync', $sync->name);
 Assert::count(7, $sync->steps);
 
-// repo-check je v přepisu kvůli větvi else: MESSAGE vzniká v then i v else
+// repo-check je v přepisu kvůli větvi else: message vzniká v then i v else
 // a čte se za ifem. Bez obou větví by to byl klíč zapsaný jen v jedné větvi,
 // tedy varování — a tvrzení o nule varování výše by spadlo. Kdyby někdo tu
 // druhou větev odstranil, musí spadnout tohle, ne až něco vzdáleného.
@@ -56,5 +56,5 @@ $branching = $repoCheck->steps[1];
 Assert::type(Donut\Format\IfStep::class, $branching);
 Assert::count(1, $branching->then);
 Assert::count(1, $branching->else);
-Assert::same('MESSAGE', $branching->then[0]->key);
-Assert::same('MESSAGE', $branching->else[0]->key);
+Assert::same('message', $branching->then[0]->key);
+Assert::same('message', $branching->else[0]->key);

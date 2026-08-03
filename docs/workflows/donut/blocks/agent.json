@@ -4,25 +4,25 @@
   "command": "olw-agent",
   "args": [
     [
-      "--model={%MODEL%}"
+      "--model={%model%}"
     ],
     [
-      "--system-prompt-file={%SYSTEM_PROMPT%}"
+      "--system-prompt-file={%systemPrompt%}"
     ],
     [
-      "--work-dir={%WORK_DIR%}"
+      "--work-dir={%workDir%}"
     ]
   ],
   "inputs": {
-    "MODEL": {
+    "model": {
       "required": true,
       "description": "opus | sonnet | haiku | dummy"
     },
-    "SYSTEM_PROMPT": {
+    "systemPrompt": {
       "required": true,
       "description": "Cesta k souboru se systémovým promptem"
     },
-    "WORK_DIR": {
+    "workDir": {
       "required": false,
       "description": "Adresář, ze kterého agent běží"
     }

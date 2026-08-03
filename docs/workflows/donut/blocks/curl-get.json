@@ -9,18 +9,18 @@
     ],
     [
       "--config",
-      "{%CURLRC%}"
+      "{%curlrc%}"
     ],
     [
-      "{%URL%}"
+      "{%url%}"
     ]
   ],
   "inputs": {
-    "URL": {
+    "url": {
       "required": true,
       "description": "Úplná adresa včetně query stringu"
     },
-    "CURLRC": {
+    "curlrc": {
       "required": false,
       "description": "Soubor s přihlašovací hlavičkou (curl --config)"
     }
