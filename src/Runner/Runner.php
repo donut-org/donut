@@ -56,7 +56,7 @@ final class Runner
 		if ($result->hasErrors()) {
 			$messages = \implode("\n", \array_map(strval(...), $result->getErrors()));
 
-			throw new RunFailedException("Statická validace neprošla:\n{$messages}");
+			throw new CannotStartException("Statická validace neprošla:\n{$messages}");
 		}
 
 		$map = $this->composeInitialMap($workflow, $initialMap);
@@ -86,7 +86,7 @@ final class Runner
 			}
 
 			if (!isset($map[$name]) && $input->required) {
-				throw new RunFailedException("{$workflow->name}.json: povinný vstup \"{$name}\" nemá hodnotu.");
+				throw new CannotStartException("{$workflow->name}.json: povinný vstup \"{$name}\" nemá hodnotu.");
 			}
 		}
 
@@ -182,6 +182,7 @@ final class Runner
 
 		$commandLine = CommandLine::build($block, $step->in, $map, $at);
 		$stdin = isset($step->in['stdin']) ? $step->in['stdin']->render($map) : '';
+		$captureStdout = isset($step->out['result']);
 		$captureStderr = isset($step->out['stderr']);
 		$timeout = $step->timeout ?? $block->timeout ?? self::DefaultTimeout;
 
@@ -190,6 +191,7 @@ final class Runner
 				$commandLine->command,
 				$commandLine->args,
 				$stdin,
+				$captureStdout,
 				$captureStderr,
 				$timeout,
 			);
@@ -213,7 +215,7 @@ final class Runner
 		// se pak workflow rozhoduje v `if`.
 		foreach ($step->out as $channel => $key) {
 			$map[$key] = match ($channel) {
-				'result' => $result->stdout,
+				'result' => $result->stdout ?? '',
 				'stderr' => $result->stderr ?? '',
 				'exit_code' => (string) $result->exitCode,
 				default => throw new RunFailedException("{$at}: neznámý kanál \"{$channel}\"."),

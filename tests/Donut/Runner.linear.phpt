@@ -42,7 +42,7 @@ file_put_contents($dir . '/maybe.json', json_encode([
  */
 final class FakeProcesses implements ProcessRunner
 {
-	/** @var array<int, array{string, list<string>, string, bool, ?int}> */
+	/** @var array<int, array{string, list<string>, string, bool, bool, ?int}> */
 	public array $calls = [];
 
 	/** @param array<int, ProcessResult|\Throwable> $results */
@@ -50,9 +50,9 @@ final class FakeProcesses implements ProcessRunner
 	{
 	}
 
-	public function run(string $command, array $args, string $stdin, bool $captureStderr, ?int $timeout): ProcessResult
+	public function run(string $command, array $args, string $stdin, bool $captureStdout, bool $captureStderr, ?int $timeout): ProcessResult
 	{
-		$this->calls[] = [$command, $args, $stdin, $captureStderr, $timeout];
+		$this->calls[] = [$command, $args, $stdin, $captureStdout, $captureStderr, $timeout];
 
 		$result = \array_shift($this->results) ?? new ProcessResult('', null, 0);
 
@@ -100,7 +100,7 @@ $map = $run([
 Assert::same('vysledek', $map['r']);
 Assert::same('0', $map['rc']);
 Assert::count(1, $procs->calls);
-Assert::same(['echo', ['ahoj'], '', false, 60], $procs->calls[0]);
+Assert::same(['echo', ['ahoj'], '', true, false, 60], $procs->calls[0]);
 
 // stdin se plní z in a stderr se zachytává, jen když ho krok mapuje
 $procs = new FakeProcesses([new ProcessResult('', 'chyba', 0)]);
@@ -115,7 +115,7 @@ $map = $run([
 ], $procs, ['in' => 'text']);
 
 Assert::same('chyba', $map['e']);
-Assert::same(['cat', [], 'text', true, 60], $procs->calls[0]);
+Assert::same(['cat', [], 'text', false, true, 60], $procs->calls[0]);
 
 // krok bez out mapu nemění — kromě STDIN a CWD, které run() sám doplní
 $procs = new FakeProcesses([new ProcessResult('nic', null, 0)]);
@@ -125,6 +125,28 @@ $map = $run([
 	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%t%}']]],
 ], $procs, ['t' => 'x']);
 Assert::same(['t' => 'x', 'STDIN' => '', 'CWD' => getcwd()], $map);
+
+// krok bez result ve výstupu si stdout nezachytává
+$procs = new FakeProcesses([new ProcessResult(null, null, 0)]);
+$run([
+	'name' => 'w',
+	'inputs' => ['t' => []],
+	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%t%}']]],
+], $procs, ['t' => 'x']);
+Assert::false($procs->calls[0][3]);
+
+// krok s result ve výstupu si ho zachytává
+$procs = new FakeProcesses([new ProcessResult('v', null, 0)]);
+$run([
+	'name' => 'w',
+	'inputs' => ['t' => []],
+	'steps' => [[
+		'type' => 'run', 'block' => 'echo',
+		'in' => ['text' => '{%t%}'],
+		'out' => ['result' => 'r'],
+	]],
+], $procs, ['t' => 'x']);
+Assert::true($procs->calls[0][3]);
 
 // nenulový exit code zastaví běh
 $procs = new FakeProcesses([new ProcessResult('', null, 3)]);
@@ -172,7 +194,7 @@ $map = $run([
 	]],
 ], $procs);
 Assert::same('9', $map['rc']);
-Assert::same(5, $procs->calls[0][4]);
+Assert::same(5, $procs->calls[0][5]);
 
 // vypršení limitu není exit code, allow_failure ho nepohltí
 $procs = new FakeProcesses([new ProcessTimeoutException('vypršel čas')]);
@@ -253,5 +275,36 @@ Assert::same('', $map['STDIN']);
 // CWD dodané volajícím run() nepřepíše
 $map = $run(['name' => 'w', 'steps' => []], $procs, ['CWD' => '/od/volajiciho']);
 Assert::same('/od/volajiciho', $map['CWD']);
+
+// neúspěšná validace: běh se nespustil vůbec
+$procs = new FakeProcesses;
+Assert::exception(
+	fn() => $run(['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'neexistuje']]], $procs),
+	Donut\Runner\CannotStartException::class
+);
+Assert::same([], $procs->calls);
+
+// chybějící povinný vstup workflow: taky se nespustil
+Assert::exception(
+	fn() => $run([
+		'name' => 'w',
+		'inputs' => ['nutny' => ['required' => true]],
+		'steps' => [['type' => 'set', 'key' => 'v', 'value' => '{%nutny%}']],
+	], new FakeProcesses),
+	Donut\Runner\CannotStartException::class,
+	'w.json: povinný vstup "nutny" nemá hodnotu.'
+);
+
+// selhání kroku zůstává RunFailedException, ne CannotStartException
+$procs = new FakeProcesses([new ProcessResult('', null, 3)]);
+$e = Assert::exception(
+	fn() => $run([
+		'name' => 'w',
+		'inputs' => ['t' => []],
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%t%}']]],
+	], $procs, ['t' => 'x']),
+	Donut\Runner\RunFailedException::class
+);
+Assert::false($e instanceof Donut\Runner\CannotStartException);
 
 FileSystem::delete(TEMP_DIR);

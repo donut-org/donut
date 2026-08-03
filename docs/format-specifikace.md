@@ -225,6 +225,10 @@ nedotčené — odřezává se jen konec.
 Kanál, který krok v `out` neuvede, se zahodí — krok mapující jen `result`
 zahazuje `stderr` i `exit_code`. Krok bez `out` mapu nemění.
 
+Standardní výstup se řídí stejným pravidlem jako chybový: **zachytí se, jen
+když si ho krok vyžádá do `out`**. Jinak teče na terminál. Bez toho by krok
+nad `echo` nevypsal nic a workflow by nemělo jak dát člověku vědět.
+
 Něco jiného je jméno, které kanál **vůbec není** (`stdout`, `retcode`).
 Takový klíč by nikdo nikdy nezapsal, zatímco autor workflow počítá s tím,
 že vznikne. To je překlep a validace ho odmítne, viz sekce 5.

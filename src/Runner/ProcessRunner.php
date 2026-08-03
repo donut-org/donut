@@ -15,6 +15,7 @@ interface ProcessRunner
 {
 	/**
 	 * @param  list<string> $args
+	 * @param  bool $captureStdout true = do paměti, false = streamovat na terminál
 	 * @param  bool $captureStderr true = do paměti, false = streamovat na terminál
 	 * @param  ?int $timeout sekundy; null vypíná limit
 	 * @throws \Nette\Utils\ProcessTimeoutException
@@ -24,6 +25,7 @@ interface ProcessRunner
 		string $command,
 		array $args,
 		string $stdin,
+		bool $captureStdout,
 		bool $captureStderr,
 		?int $timeout,
 	): ProcessResult;
