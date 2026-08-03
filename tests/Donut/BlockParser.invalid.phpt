@@ -55,7 +55,12 @@ $assertFails(
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'timeout' => -1],
-	"x.json: 'timeout' musí být nezáporné celé číslo."
+	"x.json: 'timeout' musí být kladné celé číslo."
+);
+
+$assertFails(
+	['name' => 'x', 'command' => 'x', 'args' => [], 'timeout' => 0],
+	"x.json: 'timeout' musí být kladné celé číslo."
 );
 
 $assertFails(

@@ -133,7 +133,12 @@ $assertFails(
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'timeout' => -1]]],
-	'w.json: steps[0].timeout musí být nezáporné celé číslo.'
+	'w.json: steps[0].timeout musí být kladné celé číslo.'
+);
+
+$assertFails(
+	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'timeout' => 0]]],
+	'w.json: steps[0].timeout musí být kladné celé číslo.'
 );
 
 $assertFails(
