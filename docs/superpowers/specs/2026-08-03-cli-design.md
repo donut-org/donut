@@ -209,6 +209,38 @@ neexistujícím workflow, hláška při neznámém argumentu.
 adresářem s kameny a workflow, a ověří se jeho stdout, stderr i návratový
 kód. Bez toho by zůstalo neověřené právě to, co dělá z knihovny nástroj.
 
+## Co zbývá dodělat
+
+Nálezy ze závěrečné revize, které se vědomě neopravovaly. Žádný nebrání
+používání, ale všechny jsou skutečné.
+
+**Hygiena CLI** — `--help=x`, `--list=x` a `--=x` tiše propadnou do
+pojmenovaných hodnot místo odmítnutí; `--list` spadne celý na jednom vadném
+souboru, a to až po částečném výpisu; hláška o neexistujícím workflow
+neřekne, kde se hledalo, což u nástroje závislého na pracovním adresáři
+mate nejvíc; použití při chybě jde na stdout, ačkoliv chyby patří na stderr.
+
+**`Application` nemá záchytný `catch` pro `Donut\Exception`** — jakákoliv
+výjimka balíčku, kterou dnes nikdo nehází, by prolezla jako neošetřená
+s návratovým kódem PHP.
+
+**`run()` nedeklaruje `CannotStartException`** v `@throws`, ačkoliv ji hází
+ze tří míst.
+
+**Kámen smí deklarovat vstup jménem `stdin`**, což by kolidovalo se jménem
+kanálu. Validace to nezakazuje.
+
+**Hygiena přijímacího testu** — `proc_open` nemá připnutý deskriptor 0
+a roury se čtou sekvenčně bez `stream_select`. Dnes je to bezpečné jen
+proto, že nette/tester zavírá zápisový konec stdin; při jiném způsobu
+spuštění by se test mohl zaseknout.
+
+**Kosmetika** — po přejmenování se rozpadlo zarovnání sloupců v JSON
+souborech přepisu.
+
+**Kořenový `readme.md` popisuje úplně jiný balíček** — zůstal z původního
+projektu před překopáním.
+
 ## Vědomě odložené
 
 - **`--dry-run`.** Vypsat poskládané příkazové řádky bez spuštění by bylo
