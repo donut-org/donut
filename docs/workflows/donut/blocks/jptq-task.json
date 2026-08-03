@@ -19,28 +19,28 @@
       "{%workflow%}"
     ],
     [
-      "--SHORT_ID={%shortId%}"
+      "--shortId={%shortId%}"
     ],
     [
-      "--EXPECT_STATUS={%expectStatus%}"
+      "--expectStatus={%expectStatus%}"
     ],
     [
-      "--MODEL={%model%}"
+      "--model={%model%}"
     ],
     [
-      "--SYSTEM_PROMPT={%systemPrompt%}"
+      "--systemPrompt={%systemPrompt%}"
     ],
     [
-      "--TARGET_LIST={%targetList%}"
+      "--targetList={%targetList%}"
     ],
     [
-      "--TAG={%tag%}"
+      "--tag={%tag%}"
     ],
     [
-      "--CURLRC={%curlrc%}"
+      "--curlrc={%curlrc%}"
     ],
     [
-      "--WORK_ROOT={%workRoot%}"
+      "--workRoot={%workRoot%}"
     ]
   ],
   "inputs": {

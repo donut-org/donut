@@ -47,6 +47,27 @@ $sync = $parser->parseFile($root . '/workflows/sync.json');
 Assert::same('sync', $sync->name);
 Assert::count(7, $sync->steps);
 
+// jptq-task skládá `donut <workflow> --flag=…` do textového literálu, mimo
+// dosah statické validace (ta zná jen {%…%} uvnitř args). Jméno přepínače
+// musí být jméno vstupu, které card-dev i card-spec doopravdy deklarují —
+// jinak fronta naplní úlohy, které při konzumaci spadnou na kódu 2.
+$cardSpec = $parser->parseFile($root . '/workflows/card-spec.json');
+$jptqTask = $repo->get('jptq-task');
+$flagsChecked = 0;
+
+foreach ($jptqTask->args as $group) {
+	foreach ($group as $template) {
+		if (\preg_match('~^--([A-Za-z0-9_]+)=~', $template->getSource(), $m) === 1) {
+			$flag = $m[1];
+			Assert::true(isset($cardDev->inputs[$flag]), "card-dev deklaruje vstup \"{$flag}\"");
+			Assert::true(isset($cardSpec->inputs[$flag]), "card-spec deklaruje vstup \"{$flag}\"");
+			$flagsChecked++;
+		}
+	}
+}
+
+Assert::same(8, $flagsChecked);
+
 // repo-check je v přepisu kvůli větvi else: message vzniká v then i v else
 // a čte se za ifem. Bez obou větví by to byl klíč zapsaný jen v jedné větvi,
 // tedy varování — a tvrzení o nule varování výše by spadlo. Kdyby někdo tu
