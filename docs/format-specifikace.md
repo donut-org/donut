@@ -355,6 +355,7 @@ je chyba před spuštěním prvního kroku.
 - šablona čte klíč, který v žádné předchozí větvi nemohl vzniknout
 - podmínka nebo `foreach.over` čte klíč, který nemohl vzniknout
 - `{%STDIN%}` použito v `args`
+- `args` kamene odkazuje proměnnou, kterou kámen nedeklaruje jako `inputs`
 - `out` uvádí jméno, které není kanál (`result`, `stderr`, `exit_code`)
 - neznámý operátor v podmínce
 - binární operátor v podmínce nemá `right`

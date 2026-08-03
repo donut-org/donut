@@ -162,6 +162,7 @@ final class Validator
 		}
 
 		$this->checkStdinNotInArgs($block, $at, $result);
+		$this->checkArgsInputsDeclared($block, $at, $result);
 
 		foreach ($step->out as $channel => $key) {
 			if (!\in_array($channel, RunStep::Channels, true)) {
@@ -185,6 +186,34 @@ final class Validator
 					));
 
 					return;
+				}
+			}
+		}
+	}
+
+
+	/**
+	 * Klíč v args, který kámen nedeklaruje jako vstup, není chybějící hodnota
+	 * — je to překlep, který CommandLine nemůže odlišit od legitimně
+	 * nevyplněného vstupu a tiše by mu vypadla celá skupina argumentů.
+	 * {%STDIN%} v args řeší checkStdinNotInArgs() vlastní hláškou.
+	 */
+	private function checkArgsInputsDeclared(Block $block, string $at, Result $result): void
+	{
+		$reported = [];
+
+		foreach ($block->args as $group) {
+			foreach ($group as $template) {
+				foreach ($template->getKeys() as $key) {
+					if ($key === 'STDIN' || isset($block->inputs[$key]) || isset($reported[$key])) {
+						continue;
+					}
+
+					$reported[$key] = true;
+					$result->add(Problem::error(
+						$at,
+						"kámen \"{$block->name}\" používá v args proměnnou \"{$key}\", kterou nedeklaruje"
+					));
 				}
 			}
 		}

@@ -43,6 +43,13 @@ file_put_contents($dir . '/badStdinArg.json', json_encode([
 	'stdin' => ['required' => true],
 ]));
 
+file_put_contents($dir . '/badArgsInput.json', json_encode([
+	'name' => 'badArgsInput',
+	'command' => 'echo',
+	'args' => [['--tag={%TGA%}']],
+	'inputs' => ['TAG' => ['required' => true]],
+]));
+
 $repo = new BlockRepository($dir);
 $parser = new WorkflowParser;
 $validator = new Validator($repo);
@@ -132,6 +139,19 @@ Assert::same(
 			'type' => 'run',
 			'block' => 'badStdinArg',
 			'in' => ['STDIN' => 'x'],
+		]],
+	])
+);
+
+// args kamene odkazuje proměnnou, kterou kámen nedeklaruje jako vstup
+Assert::same(
+	['w.json:steps[0]: kámen "badArgsInput" používá v args proměnnou "TGA", kterou nedeklaruje'],
+	$messages([
+		'name' => 'w',
+		'steps' => [[
+			'type' => 'run',
+			'block' => 'badArgsInput',
+			'in' => ['TAG' => 'v1'],
 		]],
 	])
 );
