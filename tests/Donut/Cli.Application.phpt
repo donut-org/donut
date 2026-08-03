@@ -73,14 +73,32 @@ Assert::contains('Pozdraví.', $out);
 Assert::contains('spadne', $out);
 Assert::true(strpos($out, 'pozdrav') < strpos($out, 'spadne'));
 
-// nápověda k workflow vypíše vstupy, povinnost i popis
+// nápověda k workflow vypíše vstupy, povinnost i popis — u toho, ke kterému
+// patří, ne jen někde ve výstupu; jinak by prohozený ternář v Application
+// (povinný <-> volitelný) test neshodil
 [$code, $out] = spust($dir, ['donut', 'pozdrav', '--help']);
 Assert::same(0, $code);
-Assert::contains('--kdo=', $out);
-Assert::contains('povinný', $out);
-Assert::contains('Koho pozdravit', $out);
-Assert::contains('--tag=', $out);
-Assert::contains('volitelný', $out);
+
+$radky = \explode("\n", $out);
+$kdo = null;
+$tag = null;
+
+foreach ($radky as $radek) {
+	if (\str_contains($radek, '--kdo=')) {
+		$kdo = $radek;
+	} elseif (\str_contains($radek, '--tag=')) {
+		$tag = $radek;
+	}
+}
+
+Assert::notNull($kdo, 'řádek s --kdo= existuje');
+Assert::contains('povinný', $kdo);
+Assert::notContains('volitelný', $kdo);
+Assert::contains('Koho pozdravit', $kdo);
+
+Assert::notNull($tag, 'řádek s --tag= existuje');
+Assert::contains('volitelný', $tag);
+Assert::notContains('povinný', $tag);
 
 // běh doběhne, kód 0
 [$code] = spust($dir, ['donut', 'pozdrav', '--kdo=svete']);
