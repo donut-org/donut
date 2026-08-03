@@ -339,10 +339,10 @@ tímhle odpadá.
 ## 4. CLI
 
 ```
-nastroj <workflow> --ENV=prod --TAG=v1.2
+nastroj <workflow> --env=prod --tag=v1.2
 nastroj <workflow> --help
 nastroj --list
-cat data.txt | nastroj <workflow> --ENV=prod
+cat data.txt | nastroj <workflow> --env=prod
 ```
 
 Argumenty jsou pojmenované podle `inputs` workflow. Chybějící povinný vstup
