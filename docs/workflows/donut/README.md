@@ -2,7 +2,7 @@
 
 Ověřovací přepis existujících bashových workflow z `../jpw/` do formátu
 popsaného v `../../format-specifikace.md`. Slouží k ověření formátu —
-engine, který by to spustil, zatím neexistuje.
+engine (`bin/donut`), který to spouští, viz níže.
 
 Návrh a jeho zdůvodnění: `../../superpowers/specs/2026-07-31-prepis-workflow-design.md`
 
@@ -38,13 +38,16 @@ opravené implementaci dává nula chyb a nula varování; proti té chybné
 přijímací test spadne. Ta větev `else` není ozdoba — je to jediné, co
 tenhle druh chyby v přepisu odhalí.
 
-## Spuštění (až engine vznikne)
+## Spuštění
+
+`donut` hledá `blocks/` a `workflows/` **v aktuálním pracovním adresáři** —
+tyhle příkazy je proto potřeba spouštět z `docs/workflows/donut/`.
 
 ```
-donut sync      --QUEUE_FILE=… --PROMPTS_DIR=… --WORK_ROOT=… --CURLRC=…
-donut card-dev  --SHORT_ID=… --EXPECT_STATUS=ReadyToDev --MODEL=sonnet \
-                --SYSTEM_PROMPT=… --TARGET_LIST=Testing --TAG=#developer \
-                --WORK_ROOT=… --CURLRC=…
+donut sync      --queueFile=… --promptsDir=… --workRoot=… --curlrc=…
+donut card-dev  --shortId=… --expectStatus=ReadyToDev --model=sonnet \
+                --systemPrompt=… --targetList=Testing --tag=#developer \
+                --workRoot=… --curlrc=…
 ```
 
 `sync` sám sestavuje tahle volání a zařazuje je do fronty přes `jptq`.
