@@ -94,8 +94,7 @@ final class Validator
 				$this->checkSteps($step->then, "{$at}.then", $result, $then);
 				$this->checkSteps($step->else, "{$at}.else", $result, $else);
 
-				$flow->mergeAsMaybe($then);
-				$flow->mergeAsMaybe($else);
+				$flow->mergeBranches($then, $else);
 
 			} elseif ($step instanceof SetStep) {
 				$this->checkKeyName($step->key, $at, $result);
@@ -196,6 +195,14 @@ final class Validator
 	{
 		if (!\in_array($condition->op, Condition::Operators, true)) {
 			$result->add(Problem::error($at, "neznámý operátor \"{$condition->op}\""));
+		}
+
+		if (
+			\in_array($condition->op, Condition::Operators, true)
+			&& !\in_array($condition->op, Condition::UnaryOperators, true)
+			&& $condition->right === null
+		) {
+			$result->add(Problem::error($at, "operátor \"{$condition->op}\" vyžaduje 'right'"));
 		}
 	}
 
