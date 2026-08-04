@@ -28,6 +28,7 @@ Assert::same(
 
 // NullReporter nesmí nic dělat a nesmí spadnout
 $null = new NullReporter;
-$null->step('steps[0]', 'x');
-$null->warning('y');
-Assert::true(true);
+Assert::noError(function () use ($null): void {
+	$null->step('steps[0]', 'x');
+	$null->warning('y');
+});
