@@ -45,9 +45,13 @@ $bin = escapeshellarg(__DIR__ . '/../../bin/donut');
 /** @return array{int, string, string} */
 function donut(string $dir, string $bin, string $args): array
 {
-	$descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+	// deskriptor 0 je připnutý schválně: donut si stdin čte, když to není
+	// terminál. Bez toho by závisel na tom, co proces zdědil, a mohl by se
+	// na čtení zaseknout.
+	$descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
 	$process = proc_open("php {$bin} {$args}", $descriptors, $pipes, $dir);
 	Assert::type('resource', $process);
+	fclose($pipes[0]);
 	$out = (string) stream_get_contents($pipes[1]);
 	$err = (string) stream_get_contents($pipes[2]);
 	fclose($pipes[1]);

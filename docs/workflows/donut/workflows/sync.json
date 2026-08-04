@@ -6,7 +6,7 @@
     "queueFile":  { "required": true,  "description": "Soubor s frontou úloh" },
     "promptsDir": { "required": true,  "description": "Adresář se systémovými prompty" },
     "workRoot":   { "required": true,  "description": "Nadřazený adresář pro workspace, předává se dál" },
-    "curlrc":      { "required": false, "description": "Soubor s přihlašovací hlavičkou pro Trello API" }
+    "curlrc":     { "required": false, "description": "Soubor s přihlašovací hlavičkou pro Trello API" }
   },
 
   "steps": [
