@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Donut\Cli\Application;
+use Donut\Runner\ProcessResult;
+use Donut\Runner\ProcessRunner;
 use Nette\Utils\FileSystem;
 use Tester\Assert;
 
@@ -59,13 +61,14 @@ file_put_contents($dir . '/workflows/bez-defaultu.json', json_encode([
  * Od toho je přijímací test v Cli.acceptance.phpt, který pouští donut jako
  * samostatný proces přes proc_open.
  *
+ * @param  array<int, string> $argv
  * @return array{int, string, string} kód, stdout, stderr
  */
-function spust(string $dir, array $argv): array
+function spust(string $dir, array $argv, ?ProcessRunner $processes = null): array
 {
 	$out = fopen('php://memory', 'r+');
 	$err = fopen('php://memory', 'r+');
-	$code = (new Application($dir, $out, $err, ''))->run($argv);
+	$code = (new Application($dir, $out, $err, '', $processes))->run($argv);
 	rewind($out);
 	rewind($err);
 	$result = [$code, stream_get_contents($out), stream_get_contents($err)];
@@ -129,24 +132,65 @@ Assert::contains('exit code 1', $err);
 Assert::same(2, $code);
 Assert::contains('povinný vstup "kdo" nemá hodnotu', $err);
 
-// neexistující workflow je kód 2
+// neexistující workflow je kód 2 a hláška řekne, kde se hledalo — pracovní
+// adresář je nejostřejší hrana nástroje a nejčastější příčina téhle chyby
 [$code, , $err] = spust($dir, ['donut', 'neexistuje']);
 Assert::same(2, $code);
-Assert::same("Chyba: Workflow \"neexistuje\" neexistuje.\n", $err);
+Assert::contains('Workflow "neexistuje" neexistuje.', $err);
+Assert::contains($dir . '/workflows/', $err);
 
 // neznámý argument je kód 2
 [$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=x', '--neznamy=y']);
 Assert::same(2, $code);
 Assert::same("Chyba: Workflow \"pozdrav\" nezná vstup \"neznamy\".\n", $err);
 
-// holé volání vypíše použití a skončí dvojkou
-[$code, $out] = spust($dir, ['donut']);
+// holé volání je chyba — použití jde na stderr a stdout zůstává prázdný
+[$code, $out, $err] = spust($dir, ['donut']);
 Assert::same(2, $code);
-Assert::contains('donut', $out);
+Assert::same('', $out);
+Assert::contains('donut --list', $err);
 
-// --help bez workflow vypíše použití a skončí nulou
-[$code, $out] = spust($dir, ['donut', '--help']);
+// --help bez workflow vypíše použití a skončí nulou — na stdout, není to chyba
+[$code, $out, $err] = spust($dir, ['donut', '--help']);
 Assert::same(0, $code);
 Assert::contains('--list', $out);
+Assert::same('', $err);
+
+// --list přežije vadný soubor: dobrá workflow jdou na stdout, vadné se hlásí
+// na stderr a kód je 2. Jeden rozbitý soubor nesmí schovat ostatní — zvlášť
+// ne ve chvíli, kdy je adresář rozdělaný a člověk potřebuje vidět, co má.
+file_put_contents($dir . '/workflows/rozbite.json', '{ tohle není JSON');
+
+[$code, $out, $err] = spust($dir, ['donut', '--list']);
+Assert::same(2, $code);
+Assert::contains('pozdrav', $out);
+Assert::contains('spadne', $out);
+Assert::notContains('rozbite', $out);
+Assert::contains('rozbite.json', $err);
+
+unlink($dir . '/workflows/rozbite.json');
+
+// neočekávaná Donut\Exception se zachytí a skončí dvojkou. Dnes ji nic nehází,
+// takže se musí podstrčit — jinak by ta větev nešla spustit vůbec.
+$vybuchne = new class implements ProcessRunner {
+	/**
+	 * @param list<string> $args
+	 */
+	public function run(
+		string $command,
+		array $args,
+		string $stdin,
+		bool $captureStdout,
+		bool $captureStderr,
+		?int $timeout,
+	): ProcessResult
+	{
+		throw new Donut\Exception('rozbité vnitřnosti');
+	}
+};
+
+[$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=svete'], $vybuchne);
+Assert::same(2, $code);
+Assert::contains('Vnitřní chyba nástroje: rozbité vnitřnosti', $err);
 
 FileSystem::delete(TEMP_DIR);

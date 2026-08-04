@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Donut\Cli;
 
 use Donut\BlockRepository;
+use Donut\Exception as DonutException;
 use Donut\Format\Workflow;
 use Donut\Parser\ParseException;
 use Donut\Parser\WorkflowParser;
 use Donut\Runner\CannotStartException;
 use Donut\Runner\ConsoleReporter;
 use Donut\Runner\NetteProcessRunner;
+use Donut\Runner\ProcessRunner;
 use Donut\Runner\RunFailedException;
 use Donut\Runner\Runner;
 
@@ -35,15 +37,17 @@ final class Application
 
 
 	/**
-	 * @param resource|null $stdout
-	 * @param resource|null $stderr
-	 * @param string|null   $stdin obsah standardního vstupu; null = přečíst si ho sám
+	 * @param resource|null      $stdout
+	 * @param resource|null      $stderr
+	 * @param string|null        $stdin     obsah standardního vstupu; null = přečíst si ho sám
+	 * @param ProcessRunner|null $processes null = NetteProcessRunner; jiná hodnota jen v testech
 	 */
 	public function __construct(
 		private readonly string $directory,
 		$stdout = null,
 		$stderr = null,
 		private readonly ?string $stdin = null,
+		private readonly ?ProcessRunner $processes = null,
 	) {
 		$this->stdout = $stdout ?? STDOUT;
 		$this->stderr = $stderr ?? STDERR;
@@ -63,7 +67,7 @@ final class Application
 			}
 
 			if ($arguments->workflow === null) {
-				$this->printUsage();
+				$this->printUsage(isError: !$arguments->help);
 
 				return $arguments->help ? self::Success : self::NotStarted;
 			}
@@ -87,18 +91,41 @@ final class Application
 			\fwrite($this->stderr, "Chyba: {$e->getMessage()}\n");
 
 			return self::Failed;
+
+		// Kód 2, i když neproběhl krok: z významu „nespustilo se" je tady
+		// podstatnější druhá polovina — neopakuj to. Opakovat neklasifikovanou
+		// vnitřní chybu je marné. Odlišená hláška říká, že selhal nástroj,
+		// ne workflow.
+		} catch (DonutException $e) {
+			\fwrite($this->stderr, "Vnitřní chyba nástroje: {$e->getMessage()}\n");
+
+			return self::NotStarted;
 		}
 	}
 
 
 	private function listWorkflows(): int
 	{
+		$code = self::Success;
+
 		foreach ($this->workflowNames() as $name) {
-			$workflow = $this->loadWorkflow($name);
+			try {
+				$workflow = $this->loadWorkflow($name);
+
+			} catch (ParseException | UsageException $e) {
+				// --list je poznávací příkaz. Jeden vadný soubor nesmí schovat
+				// ostatní, ale nesmí ani protéct do stdout, aby se výpis dal
+				// dál zpracovat.
+				\fwrite($this->stderr, "Chyba: {$e->getMessage()}\n");
+				$code = self::NotStarted;
+
+				continue;
+			}
+
 			\fwrite($this->stdout, \sprintf("  %-12s %s\n", $name, $workflow->description ?? ''));
 		}
 
-		return self::Success;
+		return $code;
 	}
 
 
@@ -137,7 +164,11 @@ final class Application
 		}
 
 		$blocks = new BlockRepository($this->directory . '/blocks');
-		$runner = new Runner($blocks, new NetteProcessRunner, new ConsoleReporter($this->stderr));
+		$runner = new Runner(
+			$blocks,
+			$this->processes ?? new NetteProcessRunner,
+			new ConsoleReporter($this->stderr),
+		);
 
 		$runner->run($workflow, $values + ['STDIN' => $this->readStdin()]);
 
@@ -147,10 +178,13 @@ final class Application
 
 	private function loadWorkflow(string $name): Workflow
 	{
-		$path = $this->directory . '/workflows/' . $name . '.json';
+		$directory = $this->directory . '/workflows/';
+		$path = $directory . $name . '.json';
 
 		if (!\is_file($path)) {
-			throw new UsageException("Workflow \"{$name}\" neexistuje.");
+			throw new UsageException(
+				"Workflow \"{$name}\" neexistuje. Hledal jsem v: {$directory}"
+			);
 		}
 
 		return (new WorkflowParser)->parseFile($path);
@@ -189,9 +223,9 @@ final class Application
 	}
 
 
-	private function printUsage(): void
+	private function printUsage(bool $isError): void
 	{
-		\fwrite($this->stdout, <<<'TEXT'
+		\fwrite($isError ? $this->stderr : $this->stdout, <<<'TEXT'
 			donut --list                          seznam workflow
 			donut <workflow> --help               nápověda k workflow
 			donut <workflow> [--klic=hodnota …]   spuštění
