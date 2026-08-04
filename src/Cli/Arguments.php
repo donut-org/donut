@@ -43,6 +43,12 @@ final class Arguments
 
 			} elseif (\str_starts_with($arg, '--')) {
 				$name = \substr($arg, 2);
+
+				// pokrývá holé "--" i "--=hodnota"; obojí je klíč bez jména
+				if ($name === '' || \str_starts_with($name, '=')) {
+					throw new UsageException("Argument \"{$arg}\" nemá jméno klíče.");
+				}
+
 				$position = \strpos($name, '=');
 
 				if ($position === false) {
@@ -50,6 +56,10 @@ final class Arguments
 				}
 
 				$key = \substr($name, 0, $position);
+
+				if ($key === 'help' || $key === 'list') {
+					throw new UsageException("Argument --{$key} je příznak, nemá hodnotu.");
+				}
 
 				if (isset($values[$key])) {
 					throw new UsageException("Argument --{$key} je uvedený víckrát.");

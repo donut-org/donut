@@ -70,3 +70,29 @@ Assert::exception(
 	UsageException::class,
 	'Neznámý argument "-t=a".'
 );
+
+// --help a --list jsou příznaky, ne vstupy
+Assert::exception(
+	fn() => Arguments::parse(['donut', '--help=x']),
+	UsageException::class,
+	'Argument --help je příznak, nemá hodnotu.'
+);
+
+Assert::exception(
+	fn() => Arguments::parse(['donut', '--list=x']),
+	UsageException::class,
+	'Argument --list je příznak, nemá hodnotu.'
+);
+
+// prázdné jméno klíče není jméno
+Assert::exception(
+	fn() => Arguments::parse(['donut', '--=x']),
+	UsageException::class,
+	'Argument "--=x" nemá jméno klíče.'
+);
+
+Assert::exception(
+	fn() => Arguments::parse(['donut', '--']),
+	UsageException::class,
+	'Argument "--" nemá jméno klíče.'
+);
