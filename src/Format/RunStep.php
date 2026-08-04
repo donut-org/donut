@@ -13,7 +13,7 @@ final class RunStep implements Step
 	public const Channels = ['result', 'stderr', 'exit_code'];
 
 	/**
-	 * @param array<string, Template> $in  vstup kamene => šablona; klíč STDIN plní standardní vstup
+	 * @param array<string, Template> $in  vstup kamene => šablona; klíč stdin plní standardní vstup
 	 * @param array<string, string>   $out kanál => klíč v mapě enginu
 	 * @param bool|array<int, int>|null $allowFailure null = převzít z kamene
 	 */
