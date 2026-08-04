@@ -158,7 +158,7 @@ Assert::same('c', $map['radek']);
 $procs = new RecordingProcesses;
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['seznam' => []],
+	'inputs' => ['seznam' => ['required' => false]],
 	'steps' => [[
 		'type' => 'foreach', 'over' => '{%seznam%}', 'as' => 'radek',
 		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%radek%}']]],

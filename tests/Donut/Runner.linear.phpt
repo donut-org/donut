@@ -255,6 +255,14 @@ $map = $run([
 ], $procs, ['tag' => 'v2']);
 Assert::same('v2', $map['out']);
 
+// prázdný řetězec od volajícího je totéž jako nedodáno — default se uplatní
+$map = $run([
+	'name' => 'w',
+	'inputs' => ['tag' => ['required' => false, 'default' => 'latest']],
+	'steps' => [['type' => 'set', 'key' => 'out', 'value' => '{%tag%}']],
+], $procs, ['tag' => '']);
+Assert::same('latest', $map['out']);
+
 // volitelný vstup bez default, který volající nedodá, je v mapě jako
 // prázdný řetězec — ne chybějící klíč (spec sekce 6: „nevyplněno" a ''
 // jsou jedna a táž věc)

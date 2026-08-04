@@ -132,6 +132,11 @@ Assert::contains('exit code 1', $err);
 Assert::same(2, $code);
 Assert::contains('povinný vstup "kdo" nemá hodnotu', $err);
 
+// prázdný povinný vstup je totéž co nevyplněný — kód 2, ne rozjetý běh
+[$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=']);
+Assert::same(2, $code);
+Assert::contains('povinný vstup "kdo" nemá hodnotu', $err);
+
 // neexistující workflow je kód 2 a hláška řekne, kde se hledalo — pracovní
 // adresář je nejostřejší hrana nástroje a nejčastější příčina téhle chyby
 [$code, , $err] = spust($dir, ['donut', 'neexistuje']);
