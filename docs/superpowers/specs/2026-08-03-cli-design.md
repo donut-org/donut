@@ -189,8 +189,11 @@ přestane existovat.
 v kódu, která znají `STDIN` jako jméno kanálu — `Validator` dvakrát,
 `Runner` jednou.
 
-Pravidlo na tvar jména klíče (`[A-Za-z0-9_]+`, musí obsahovat písmeno) se
-**nemění** — camelCase mu vyhovuje. Mění se doporučení, ne kontrola.
+Pravidlo na tvar jména klíče je `[A-Za-z0-9_]+` — camelCase mu vyhovuje.
+Požadavek na písmeno, navržený proti kolizi s `%20%` v URL, padl
+s přechodem na dvouznakové delimitery `{%…%}`, které tu kolizi vyřešily
+jinak; je tedy platné i čistě číselné jméno jako `20`. Mění se doporučení,
+ne kontrola.
 
 Ověřitelnost: přijímací test musí po přejmenování dál hlásit **0 chyb
 a 0 varování** na referenční zátěži.
