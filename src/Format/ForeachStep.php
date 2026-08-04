@@ -17,10 +17,4 @@ final class ForeachStep implements Step
 		public readonly ?string $name = null,
 	) {
 	}
-
-
-	public function getName(): ?string
-	{
-		return $this->name;
-	}
 }

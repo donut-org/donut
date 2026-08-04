@@ -10,5 +10,4 @@ namespace Donut\Format;
  */
 interface Step
 {
-	public function getName(): ?string;
 }

@@ -12,8 +12,8 @@ use Donut\Parser\ParseException;
 /**
  * Kameny z adresáře blocks/, hledané podle jména.
  *
- * Soubory se parsují líně, ale seznam jmen zná hned — kvůli --list
- * a kvůli hlášce „kámen neexistuje" ve validátoru.
+ * Soubory se parsují líně, ale seznam jmen zná hned — kvůli validátorově
+ * kontrole „kámen neexistuje" (--list vypisuje workflow, ne kameny).
  */
 final class BlockRepository
 {
@@ -72,11 +72,5 @@ final class BlockRepository
 	public function getNames(): array
 	{
 		return \array_keys($this->files);
-	}
-
-
-	public function getDirectory(): string
-	{
-		return $this->directory;
 	}
 }

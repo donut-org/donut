@@ -15,10 +15,4 @@ final class SetStep implements Step
 		public readonly ?string $name = null,
 	) {
 	}
-
-
-	public function getName(): ?string
-	{
-		return $this->name;
-	}
 }
