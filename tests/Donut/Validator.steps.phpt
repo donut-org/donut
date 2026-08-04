@@ -50,6 +50,13 @@ file_put_contents($dir . '/badArgsInput.json', json_encode([
 	'inputs' => ['tag' => ['required' => true]],
 ]));
 
+file_put_contents($dir . '/stdinInput.json', json_encode([
+	'name' => 'stdinInput',
+	'command' => 'cat',
+	'args' => [],
+	'inputs' => ['stdin' => ['required' => true]],
+]));
+
 $repo = new BlockRepository($dir);
 $parser = new WorkflowParser;
 $validator = new Validator($repo);
@@ -219,6 +226,16 @@ Assert::same(
 			'as' => 'A B',
 			'steps' => [],
 		]],
+	])
+);
+
+// kámen nesmí deklarovat vstup jménem stdin — je to jméno kanálu, ne klíč mapy,
+// a u kroku by nešlo poznat, jestli "in": { "stdin": … } plní vstup, nebo kanál
+Assert::contains(
+	'w.json:steps[0]: kámen "stdinInput" nesmí mít vstup jménem "stdin" — je to jméno kanálu',
+	$messages([
+		'name' => 'w',
+		'steps' => [['type' => 'run', 'block' => 'stdinInput']],
 	])
 );
 

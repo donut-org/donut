@@ -128,6 +128,13 @@ final class Validator
 
 		$block = $this->blocks->get($step->block);
 
+		if (isset($block->inputs['stdin'])) {
+			$result->add(Problem::error(
+				$at,
+				"kámen \"{$block->name}\" nesmí mít vstup jménem \"stdin\" — je to jméno kanálu"
+			));
+		}
+
 		foreach ($step->in as $name => $template) {
 			if ($name === 'stdin') {
 				if ($block->stdin === null) {
