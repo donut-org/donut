@@ -79,7 +79,8 @@ line:
 }
 ```
 
-Run it:
+Run it. The first line is progress, written to stderr as each step runs;
+the second is the step's own output:
 
 ```
 $ vendor/bin/donut hello --who=world
