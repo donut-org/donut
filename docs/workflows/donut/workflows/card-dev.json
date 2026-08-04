@@ -5,12 +5,12 @@
   "inputs": {
     "shortId":      { "required": true,  "description": "shortLink karty v Trellu" },
     "expectStatus": { "required": true,  "description": "Seznam, ve kterém karta musí být, jinak se běh zastaví" },
-    "model":         { "required": true,  "description": "sonnet | haiku | opus" },
+    "model":        { "required": true,  "description": "sonnet | haiku | opus" },
     "systemPrompt": { "required": true,  "description": "Cesta k souboru se systémovým promptem" },
     "targetList":   { "required": true,  "description": "Seznam, kam se karta na konci přesune" },
-    "tag":           { "required": true,  "description": "Značka na začátku komentáře, např. #developer" },
+    "tag":          { "required": true,  "description": "Značka na začátku komentáře, např. #developer" },
     "workRoot":     { "required": true,  "description": "Nadřazený adresář pro workspace" },
-    "curlrc":        { "required": false, "description": "Soubor s přihlašovací hlavičkou pro Trello API" }
+    "curlrc":       { "required": false, "description": "Soubor s přihlašovací hlavičkou pro Trello API" }
   },
 
   "steps": [

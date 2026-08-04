@@ -42,6 +42,7 @@ final class Runner
 	/**
 	 * @param  array<string, string> $initialMap
 	 * @return array<string, string> výsledná mapa
+	 * @throws CannotStartException neúspěšná validace nebo chybějící povinný vstup — neproběhl ani jeden krok
 	 * @throws RunFailedException
 	 * @throws \Donut\Parser\ParseException kámen v blocks/ se nedá naparsovat
 	 */
