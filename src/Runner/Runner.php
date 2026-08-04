@@ -82,15 +82,17 @@ final class Runner
 		$map = $initialMap;
 
 		foreach ($workflow->inputs as $name => $input) {
-			if (!isset($map[$name]) && $input->default !== null) {
+			// Prázdný řetězec je totéž co nevyplněno — specifikace sekce 6.
+			// Stejné pravidlo má o vrstvu níž CommandLine::resolveValues().
+			if (($map[$name] ?? '') === '' && $input->default !== null) {
 				$map[$name] = $input->default;
 			}
 
-			if (!isset($map[$name]) && $input->required) {
+			if (($map[$name] ?? '') === '' && $input->required) {
 				throw new CannotStartException("{$workflow->name}.json: povinný vstup \"{$name}\" nemá hodnotu.");
 			}
 
-			if (!isset($map[$name]) && !$input->required) {
+			if (($map[$name] ?? '') === '' && !$input->required) {
 				$map[$name] = '';
 			}
 		}
