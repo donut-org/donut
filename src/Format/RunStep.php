@@ -26,10 +26,4 @@ final class RunStep implements Step
 		public readonly ?string $name = null,
 	) {
 	}
-
-
-	public function getName(): ?string
-	{
-		return $this->name;
-	}
 }
