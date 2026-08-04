@@ -364,7 +364,11 @@ je chyba před spuštěním prvního kroku.
 - kámen nedeklaruje vstup jménem `stdin` — je to jméno kanálu, ne klíč mapy
 - šablona čte klíč, který **žádný krok nikdy nezapisuje** (překlep)
 - šablona čte klíč, který v žádné předchozí větvi nemohl vzniknout
-- podmínka nebo `foreach.over` čte klíč, který nemohl vzniknout
+- podmínka nebo `foreach.over` čte klíč, který nemohl vzniknout — včetně
+  klíče zapsaného jen v jedné větvi `if` nebo uvnitř `foreach`; obecné
+  pravidlo „může, ale nemusí existovat" tu neplatí, protože se z podmínky
+  a z `foreach.over` odvíjí, které kroky vůbec poběží, a z toho se nedá
+  vycouvat
 - `{%STDIN%}` použito v `args`
 - `args` kamene odkazuje proměnnou, kterou kámen nedeklaruje jako `inputs`
 - `out` uvádí jméno, které není kanál (`result`, `stderr`, `exit_code`)

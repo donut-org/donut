@@ -125,7 +125,7 @@ Assert::same([], $errors([
 
 // podmínka čte přísně: "možná" nestačí
 Assert::same(
-	['w.json:steps[1]: podmínka čte klíč "a", který v tomto místě nemohl vzniknout'],
+	['w.json:steps[1]: podmínka čte klíč "a", který vzniká jen v některých průchodech — nesmí se od něj odvíjet větvení'],
 	$errors([
 		'name' => 'w',
 		'inputs' => ['t' => []],

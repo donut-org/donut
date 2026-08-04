@@ -300,9 +300,15 @@ final class Validator
 		foreach ($template->getKeys() as $key) {
 			$flow->markRead($key);
 
-			if (!$flow->isKnown($key)) {
-				$result->add(Problem::error($at, $this->missingKeyMessage($what, $key)));
+			if ($flow->isKnown($key)) {
+				continue;
 			}
+
+			$message = $flow->isMaybe($key)
+				? "{$what} čte klíč \"{$key}\", který vzniká jen v některých průchodech — nesmí se od něj odvíjet větvení"
+				: $this->missingKeyMessage($what, $key);
+
+			$result->add(Problem::error($at, $message));
 		}
 	}
 
