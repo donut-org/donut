@@ -361,6 +361,7 @@ je chyba před spuštěním prvního kroku.
 - povinný vstup kamene nemá hodnotu v `in` ani `default`
 - povinný `stdin` kamene není v `in` naplněn
 - `in` obsahuje jméno, které kámen nedeklaruje (ani `stdin`, když kámen `stdin` nemá)
+- kámen nedeklaruje vstup jménem `stdin` — je to jméno kanálu, ne klíč mapy
 - šablona čte klíč, který **žádný krok nikdy nezapisuje** (překlep)
 - šablona čte klíč, který v žádné předchozí větvi nemohl vzniknout
 - podmínka nebo `foreach.over` čte klíč, který nemohl vzniknout
