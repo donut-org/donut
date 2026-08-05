@@ -305,7 +305,7 @@ final class Validator
 			}
 
 			$message = $flow->isMaybe($key)
-				? "{$what} čte klíč \"{$key}\", který vzniká jen v některých průchodech — nesmí se od něj odvíjet větvení"
+				? "{$what} čte klíč \"{$key}\", který vzniká jen v některých průchodech — nesmí se od něj odvíjet, které kroky poběží"
 				: $this->missingKeyMessage($what, $key);
 
 			$result->add(Problem::error($at, $message));
