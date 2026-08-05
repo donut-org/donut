@@ -390,7 +390,9 @@ je chyba před spuštěním prvního kroku.
 
 Rozdíl mezi první a druhou odrážkou u chyb je podstatný: klíč, který nikdo
 nikdy nezapisuje, je překlep a musí spadnout. Klíč zapisovaný podmíněně je
-legitimní a smí projít s varováním.
+legitimní a smí projít s varováním — kromě `condition.left`/`right` a
+`foreach.over`, kde se od takového čtení odvíjí, které kroky poběží; tam je
+to chyba (viz odrážka výše).
 
 ---
 
