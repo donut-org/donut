@@ -111,8 +111,8 @@ ta špatná.
 zvaliduje znovu. Je jich devatenáct a jsou malé. Cache by teď jen zaváděla
 nesoulad mezi tím, co je na disku, a tím, co je vidět.
 
-**Spouštění:** `php -S 127.0.0.1:8000 -t . gui/www/index.php`, spuštěné
-z adresáře projektu, s `index.php` jako router scriptem (bez něj by
+**Spouštění:** `php -S 127.0.0.1:8000 -t . <cesta k repu>/gui/www/index.php`,
+spuštěné z adresáře projektu, s `index.php` jako router scriptem (bez něj by
 vestavěný server udělal `chdir()` do docrootu a GUI by hledalo `blocks/` a
 `workflows/` v `gui/www`). Žádný Docker, žádný build.
 
