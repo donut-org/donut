@@ -49,7 +49,11 @@ Formát souborů: viz `format-specifikace.md`.
    z celé vrstvy, `olw-lib.sh` smazaná. **Zbývá ověření na ostro:** bashová
    sada testuje jednotlivé příkazy, ne to, že si s donutem sedí argumenty.
    To prověří teprve `donut card-dev` na skutečné kartě.
-5. Teprve pak GUI
+5. GUI — autorské prostředí, staví se po vrstvách,
+   viz `superpowers/specs/2026-08-05-gui-design.md` a `gui/`
+   - ~~vrstva 1: validace u kroku a přehled kamenů~~ — hotovo, jen pro čtení
+   - vrstva 2: tok klíčů — vyžaduje evidenci cest ve `Validator`u
+   - vrstva 3: builder — vyžaduje serializér v donutu
 
 Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi
 a GUI z něj bude žít.
