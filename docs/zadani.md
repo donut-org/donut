@@ -44,7 +44,11 @@ Formát souborů: viz `format-specifikace.md`.
 1. ~~Parser + **validátor**~~ — hotovo, viz sekce 5 specifikace
 2. ~~Runner~~ — hotovo, viz `superpowers/specs/2026-08-03-runner-design.md`
 3. ~~CLI wrapper~~ — hotovo, viz `superpowers/specs/2026-08-03-cli-design.md`
-4. Přepsat `olw-*` skripty podle rozhraní v návrhu
+4. ~~Přepsat `olw-*` skripty podle rozhraní v návrhu~~ — hotovo,
+   viz `superpowers/specs/2026-08-05-olw-prepis-design.md`. Obálka zmizela
+   z celé vrstvy, `olw-lib.sh` smazaná. **Zbývá ověření na ostro:** bashová
+   sada testuje jednotlivé příkazy, ne to, že si s donutem sedí argumenty.
+   To prověří teprve `donut card-dev` na skutečné kartě.
 5. Teprve pak GUI
 
 Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi
