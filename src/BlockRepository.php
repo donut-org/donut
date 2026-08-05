@@ -30,7 +30,7 @@ final class BlockRepository
 	 * @throws ParseException
 	 */
 	public function __construct(
-		private readonly string $directory,
+		string $directory,
 		?BlockParser $parser = null,
 	) {
 		$this->parser = $parser ?? new BlockParser;
