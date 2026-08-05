@@ -82,7 +82,7 @@ final class Runner
 		$map = $initialMap;
 
 		foreach ($workflow->inputs as $name => $input) {
-			// Prázdný řetězec je totéž co nevyplněno — specifikace sekce 6.
+			// Prázdný řetězec je totéž co nevyplněno — specifikace sekce 1 a 4.
 			// Stejné pravidlo má o vrstvu níž CommandLine::resolveValues().
 			if (($map[$name] ?? '') === '' && $input->default !== null) {
 				$map[$name] = $input->default;

@@ -264,7 +264,7 @@ $map = $run([
 Assert::same('latest', $map['out']);
 
 // volitelný vstup bez default, který volající nedodá, je v mapě jako
-// prázdný řetězec — ne chybějící klíč (spec sekce 6: „nevyplněno" a ''
+// prázdný řetězec — ne chybějící klíč (spec sekce 1 a 4: „nevyplněno" a ''
 // jsou jedna a táž věc)
 $map = $run([
 	'name' => 'w',
