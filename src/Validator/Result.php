@@ -16,6 +16,8 @@ final class Result
 	/** @var list<string> */
 	private array $writtenKeys = [];
 
+	private bool $keysSet = false;
+
 
 	public function add(Problem $problem): void
 	{
@@ -55,11 +57,21 @@ final class Result
 	 * jen sběrač problémů a tyhle množiny existují kvůli GUI, které si
 	 * tutéž mapu odvozuje vlastním průchodem a testem se s tímhle porovnává.
 	 *
+	 * Dnes to drží jen shodou okolností — `new Result` je v repozitáři
+	 * jediné a validate() nemá časný return. Druhé volání (cizí i vlastní)
+	 * by tiše přepsalo obě množiny, proto se to hlídá explicitně.
+	 *
 	 * @param array<int, string> $read
 	 * @param array<int, string> $written
 	 */
 	public function setKeys(array $read, array $written): void
 	{
+		if ($this->keysSet) {
+			throw new \LogicException('setKeys() už bylo jednou zavoláno.');
+		}
+
+		$this->keysSet = true;
+
 		\sort($read);
 		\sort($written);
 
