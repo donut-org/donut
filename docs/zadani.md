@@ -52,7 +52,8 @@ Formát souborů: viz `format-specifikace.md`.
 5. GUI — autorské prostředí, staví se po vrstvách,
    viz `superpowers/specs/2026-08-05-gui-design.md` a `gui/`
    - ~~vrstva 1: validace u kroku a přehled kamenů~~ — hotovo, jen pro čtení
-   - vrstva 2: tok klíčů — viz `superpowers/specs/2026-08-06-gui-vrstva2-design.md`
+   - ~~vrstva 2: tok klíčů~~ — hotovo,
+     viz `superpowers/specs/2026-08-06-gui-vrstva2-design.md`
    - vrstva 3: builder — vyžaduje serializér v donutu
 
 Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi
