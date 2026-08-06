@@ -65,6 +65,8 @@ final class Validator
 			}
 		}
 
+		$result->setKeys($read, $flow->getWritten());
+
 		return $result;
 	}
 
