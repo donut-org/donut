@@ -67,3 +67,13 @@ $prazdne = $validator->validate($parser->parseArray(
 
 Assert::same([], $prazdne->getWrittenKeys());
 Assert::same([], $prazdne->getReadKeys());
+
+// Klíč složený jen z číslic (I2): array_keys() by "456" tiše zkonvertovalo
+// na int, GUI ho pak porovnává jako string z URL a nikdy by nesedělo.
+$cislo = $validator->validate($parser->parseArray([
+	'name' => 'w',
+	'inputs' => [],
+	'steps' => [['type' => 'set', 'key' => '456', 'value' => 'x']],
+], 'w.json'));
+
+Assert::same(['456'], $cislo->getWrittenKeys());

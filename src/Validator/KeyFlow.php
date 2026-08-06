@@ -135,16 +135,22 @@ final class KeyFlow
 	}
 
 
-	/** @return array<int, string> */
+	/**
+	 * array_keys() konvertuje klíč pole složený jen z číslic na int — jméno
+	 * klíče "456" je platné (Template::isKeyName()), strval() ho vrátí zpátky
+	 * na string, jak deklaruje návratový typ.
+	 *
+	 * @return array<int, string>
+	 */
 	public function getWritten(): array
 	{
-		return \array_keys($this->written);
+		return \array_map(\strval(...), \array_keys($this->written));
 	}
 
 
 	/** @return array<int, string> */
 	public function getRead(): array
 	{
-		return \array_keys($this->read);
+		return \array_map(\strval(...), \array_keys($this->read));
 	}
 }
