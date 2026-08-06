@@ -142,8 +142,12 @@ známý výsledek: čtyři workflow, patnáct kamenů, nula chyb a nula varován
 
 ### Vrstva 2 — tok klíčů
 
-Vizualizace, kde klíč vzniká a kdo ho čte. Vyžaduje evidenci cest ve
-`Validator`u (viz výše) — mění donut, ne jen GUI.
+Vizualizace, kde klíč vzniká a kdo ho čte.
+
+**Oprava:** tenhle odstavec původně tvrdil, že vrstva 2 vyžaduje evidenci cest
+ve `Validator`u a mění donut. Nevyžaduje — `Template::getKeys()` je veřejná
+a GUI si mapu odvodí z naparsovaného stromu samo. Podrobnosti a skutečný
+rozsah viz `2026-08-06-gui-vrstva2-design.md`.
 
 ### Vrstva 3 — builder
 
