@@ -11,6 +11,8 @@ use Donut\Format\SetStep;
 use Donut\Format\Step;
 use Donut\Format\Workflow;
 use Donut\Template;
+use Nette\Utils\FileSystem;
+use Nette\Utils\Json;
 
 
 /**
@@ -41,6 +43,25 @@ final class WorkflowWriter
 		$data['steps'] = $this->stepsToArray($workflow->steps);
 
 		return $data;
+	}
+
+
+	/**
+	 * Cesta se dostává zvenčí, neodvozuje se ze jména — viz BlockWriter.
+	 *
+	 * @throws WriteException když jméno workflow neodpovídá názvu souboru
+	 */
+	public function writeFile(Workflow $workflow, string $path): void
+	{
+		$expected = \basename($path, '.json');
+
+		if ($workflow->name !== $expected) {
+			throw new WriteException(
+				"{$path}: name '{$workflow->name}' neodpovídá názvu souboru '{$expected}'."
+			);
+		}
+
+		FileSystem::write($path, Json::encode($this->toArray($workflow), Json::PRETTY) . "\n");
 	}
 
 

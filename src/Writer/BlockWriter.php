@@ -6,6 +6,8 @@ namespace Donut\Writer;
 
 use Donut\Format\Block;
 use Donut\Template;
+use Nette\Utils\FileSystem;
+use Nette\Utils\Json;
 
 
 /**
@@ -63,5 +65,27 @@ final class BlockWriter
 		}
 
 		return $data;
+	}
+
+
+	/**
+	 * Cesta se dostává zvenčí, neodvozuje se ze jména: repository už ji pro
+	 * každé známé jméno drží a druhý výklad téhož pravidla by se s ním mohl
+	 * rozejít. Kontroluje se ale, že spolu sedí — parser to při čtení
+	 * vynucuje taky.
+	 *
+	 * @throws WriteException když jméno kamene neodpovídá názvu souboru
+	 */
+	public function writeFile(Block $block, string $path): void
+	{
+		$expected = \basename($path, '.json');
+
+		if ($block->name !== $expected) {
+			throw new WriteException(
+				"{$path}: name '{$block->name}' neodpovídá názvu souboru '{$expected}'."
+			);
+		}
+
+		FileSystem::write($path, Json::encode($this->toArray($block), Json::PRETTY) . "\n");
 	}
 }
