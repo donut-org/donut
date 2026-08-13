@@ -11,8 +11,10 @@ use Donut\Format\SetStep;
 use Donut\Format\Step;
 use Donut\Format\Workflow;
 use Donut\Template;
+use Nette\IOException;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Json;
+use Nette\Utils\JsonException;
 
 
 /**
@@ -49,7 +51,8 @@ final class WorkflowWriter
 	/**
 	 * Cesta se dostává zvenčí, neodvozuje se ze jména — viz BlockWriter.
 	 *
-	 * @throws WriteException když jméno workflow neodpovídá názvu souboru
+	 * @throws WriteException když jméno workflow neodpovídá názvu souboru, data
+	 *                        nejde zakódovat do JSON, nebo soubor nejde zapsat
 	 */
 	public function writeFile(Workflow $workflow, string $path): void
 	{
@@ -61,17 +64,34 @@ final class WorkflowWriter
 			);
 		}
 
-		FileSystem::write($path, Json::encode($this->toArray($workflow), Json::PRETTY) . "\n");
+		try {
+			$content = Json::encode($this->toArray($workflow), Json::PRETTY) . "\n";
+
+		} catch (JsonException $e) {
+			throw new WriteException("{$path}: data se nepodařilo zakódovat do JSON: {$e->getMessage()}", 0, $e);
+		}
+
+		try {
+			FileSystem::writeAtomic($path, $content);
+
+		} catch (IOException $e) {
+			throw new WriteException("{$path}: soubor nejde zapsat: {$e->getMessage()}", 0, $e);
+		}
 	}
 
 
 	/**
+	 * array_map() zachovává klíče; steps je array<int, Step>, ne list, takže
+	 * mezera (např. po unset() v GUI) by se bez array_values() zakódovala
+	 * jako JSON objekt místo pole. Jedno místo pokrývá kořenové steps, then,
+	 * else i foreach.steps — všechny sem chodí přes tuhle metodu.
+	 *
 	 * @param  array<int, Step> $steps
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function stepsToArray(array $steps): array
 	{
-		return \array_map(fn(Step $step): array => $this->stepToArray($step), $steps);
+		return \array_values(\array_map(fn(Step $step): array => $this->stepToArray($step), $steps));
 	}
 
 

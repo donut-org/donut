@@ -6,8 +6,10 @@ namespace Donut\Writer;
 
 use Donut\Format\Block;
 use Donut\Template;
+use Nette\IOException;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Json;
+use Nette\Utils\JsonException;
 
 
 /**
@@ -32,13 +34,16 @@ final class BlockWriter
 
 		$data['command'] = $block->command;
 
-		$data['args'] = \array_map(
-			fn(array $group): array => \array_map(
+		// array_map() zachovává klíče; args je array<int, array<int, Template>>,
+		// ne list, takže mezera v jednom z polí (např. po unset() v GUI) by se
+		// bez array_values() zakódovala jako JSON objekt místo pole.
+		$data['args'] = \array_values(\array_map(
+			fn(array $group): array => \array_values(\array_map(
 				fn(Template $template): string => $template->getSource(),
 				$group,
-			),
+			)),
 			$block->args,
-		);
+		));
 
 		if ($block->inputs !== []) {
 			$data['inputs'] = InputWriter::toArray($block->inputs);
@@ -74,7 +79,8 @@ final class BlockWriter
 	 * rozejít. Kontroluje se ale, že spolu sedí — parser to při čtení
 	 * vynucuje taky.
 	 *
-	 * @throws WriteException když jméno kamene neodpovídá názvu souboru
+	 * @throws WriteException když jméno kamene neodpovídá názvu souboru, data
+	 *                        nejde zakódovat do JSON, nebo soubor nejde zapsat
 	 */
 	public function writeFile(Block $block, string $path): void
 	{
@@ -86,6 +92,18 @@ final class BlockWriter
 			);
 		}
 
-		FileSystem::write($path, Json::encode($this->toArray($block), Json::PRETTY) . "\n");
+		try {
+			$content = Json::encode($this->toArray($block), Json::PRETTY) . "\n";
+
+		} catch (JsonException $e) {
+			throw new WriteException("{$path}: data se nepodařilo zakódovat do JSON: {$e->getMessage()}", 0, $e);
+		}
+
+		try {
+			FileSystem::writeAtomic($path, $content);
+
+		} catch (IOException $e) {
+			throw new WriteException("{$path}: soubor nejde zapsat: {$e->getMessage()}", 0, $e);
+		}
 	}
 }

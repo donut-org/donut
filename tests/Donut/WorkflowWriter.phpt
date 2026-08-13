@@ -123,6 +123,53 @@ Assert::same(
 	]))['steps'][0],
 );
 
+// Vnořený foreach uvnitř if — tvar, který spec výslovně žádá pokrýt
+// a který se jinak (referenční zátěž ani zbytek téhle fixture) nevyskytuje.
+Assert::same(
+	[
+		'type' => 'if',
+		'condition' => ['left' => '{%a%}', 'op' => 'not_empty'],
+		'then' => [
+			[
+				'type' => 'foreach',
+				'over' => '{%seznam%}',
+				'as' => 'radek',
+				'steps' => [['type' => 'set', 'key' => 'x', 'value' => '{%radek%}']],
+			],
+		],
+	],
+	$writer->toArray(new Workflow(name: 'w', steps: [
+		new IfStep(
+			condition: new Condition(left: Template::parse('{%a%}'), op: 'not_empty'),
+			then: [
+				new ForeachStep(
+					over: Template::parse('{%seznam%}'),
+					as: 'radek',
+					steps: [new SetStep(key: 'x', value: Template::parse('{%radek%}'))],
+				),
+			],
+		),
+	]))['steps'][0],
+);
+
+// array_map() zachovává klíče; steps je array<int, Step>, ne list. Mezera po
+// unset() (přirozený způsob, jak GUI smaže krok) by se bez array_values()
+// v stepsToArray() zakódovala jako JSON objekt místo pole.
+$steps = [
+	new SetStep(key: 'a', value: Template::parse('1')),
+	new SetStep(key: 'b', value: Template::parse('2')),
+	new SetStep(key: 'c', value: Template::parse('3')),
+];
+unset($steps[1]);
+
+Assert::same(
+	[
+		['type' => 'set', 'key' => 'a', 'value' => '1'],
+		['type' => 'set', 'key' => 'c', 'value' => '3'],
+	],
+	$writer->toArray(new Workflow(name: 'w', steps: $steps))['steps'],
+);
+
 // Hlavička workflow: pořadí klíčů a vynechání prázdných inputs
 Assert::same(
 	[
