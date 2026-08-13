@@ -154,6 +154,17 @@ rozsah viz `2026-08-06-gui-vrstva2-design.md`.
 Formulářové skládání kroků. Vyžaduje serializér (viz výše). Největší kus;
 teprve tady GUI začne zapisovat.
 
+**Rozpadá se na tři projekty**, protože je na jeden spec příliš velká —
+každý má vlastní návrh, plán a použitelný výsledek:
+
+1. **Serializér** — `2026-08-06-serializer-design.md`. Žádné GUI.
+2. **Editace kamene** — nejmenší objekt bez vnořování; ověří celou zápisovou
+   cestu na tvaru, který se dá udržet v hlavě.
+3. **Editace workflow** — hlavička, vstupy, kroky (přidat, upravit, přesunout,
+   smazat). Až se ukáže jeho skutečná velikost, může se ještě rozpůlit.
+
+Pořadí není libovolné: serializér musí být první, kámen před workflow.
+
 ## Co se vědomě nedělá
 
 - **Spouštění workflow z GUI.** Běhy zůstávají na CLI a cronu. `Runner::run()`
