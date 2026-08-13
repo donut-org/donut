@@ -54,11 +54,12 @@ foreach ($workflows === false ? [] : $workflows as $path) {
 	$znovu = $workflowParser->parseFile($cil);
 
 	// Assert::equal() má limit vnoření natvrdo na 10 (Assert.php:657) a strom
-	// sync.json je hlubší. Porovnání přes print_r drží stejnou strukturální
-	// sémantiku jako ==, a navíc na rozdíl od Assert::true() ukáže rozdíl.
+	// sync.json je hlubší. print_r nerozliší null/false/'' (jediné pole, kde
+	// na tom záleží, je allow_failure) — serialize() je typově přesné a při
+	// pádu díky Assert::same pořád ukáže skutečný rozdíl.
 	Assert::same(
-		\print_r($puvodni, true),
-		\print_r($znovu, true),
+		\serialize($puvodni),
+		\serialize($znovu),
 		'round-trip workflow ' . \basename($path),
 	);
 }
@@ -92,5 +93,21 @@ Assert::exception(
 // Správné jméno projde
 $blockWriter->writeFile(new Block(name: 'spravne', command: 'echo', args: []), $temp . '/spravne.json');
 Assert::same('spravne', $blockParser->parseFile($temp . '/spravne.json')->name);
+
+// --- neplatné UTF-8 nesmí uniknout jako Nette\Utils\JsonException ---
+// Json::encode() na neplatném UTF-8 (typicky text napsaný do GUI formuláře)
+// hodí JsonException; vrstva zapisovače ji musí zabalit do WriteException,
+// stejně jako FileSystem::writeAtomic() svůj Nette\IOException — jinak by ji
+// volající chytající jedním catch přes Donut\Exception (viz JsonSource) propásl.
+// Zápis do read-only adresáře je pro tenhle druhý případ míň spolehlivý napříč
+// prostředími (uid 0 v CI permise obchází), proto se testuje jen JsonException.
+
+Assert::exception(
+	fn() => $blockWriter->writeFile(
+		new Block(name: 'spatne', command: 'echo', args: [], description: "\xB1\x31"),
+		$temp . '/spatne.json',
+	),
+	Donut\Writer\WriteException::class,
+);
 
 FileSystem::delete(TEMP_DIR);

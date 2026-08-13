@@ -92,3 +92,25 @@ Assert::false(
 $holy = $writer->toArray(new Block(name: 'x', command: 'c', args: []));
 Assert::false(\array_key_exists('inputs', $holy));
 Assert::true(\array_key_exists('args', $holy));
+
+// array_map() zachovává klíče; args je array<int, array<int, Template>>, ne
+// list, na obou úrovních. Mezera po unset() (přirozený způsob, jak GUI smaže
+// skupinu nebo argument) by se bez array_values() zakódovala jako JSON
+// objekt místo pole — testuje se mezera na obou úrovních zanoření zároveň.
+$vnitrni = [Template::parse('a'), Template::parse('b'), Template::parse('c')];
+unset($vnitrni[1]);
+
+$args = [
+	$vnitrni,
+	[Template::parse('x')],
+	[Template::parse('y')],
+];
+unset($args[1]);
+
+Assert::same(
+	[
+		['a', 'c'],
+		['y'],
+	],
+	$writer->toArray(new Block(name: 'x', command: 'c', args: $args))['args'],
+);

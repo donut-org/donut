@@ -55,7 +55,7 @@ Formát souborů: viz `format-specifikace.md`.
    - ~~vrstva 2: tok klíčů~~ — hotovo,
      viz `superpowers/specs/2026-08-06-gui-vrstva2-design.md`
    - vrstva 3: builder — rozpadá se na tři projekty:
-     serializér (`superpowers/specs/2026-08-06-serializer-design.md`),
+     ~~serializér~~ (`superpowers/specs/2026-08-06-serializer-design.md`) — hotovo,
      editace kamene, editace workflow
 
 Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi

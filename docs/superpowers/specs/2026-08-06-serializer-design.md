@@ -69,10 +69,10 @@ workflow:
 
 | soubor | dnes | po uložení | |
 |---|---|---|---|
-| `card-dev.json` | 170 | 353 | +108 % |
-| `sync.json` | 241 | 435 | +80 % |
-| `repo-check.json` | 31 | 51 | +65 % |
-| `echo.json` | 13 | 15 | |
+| `card-dev.json` | 170 | 354 | +108 % |
+| `sync.json` | 241 | 436 | +81 % |
+| `repo-check.json` | 31 | 52 | +68 % |
+| `echo.json` | 13 | 16 | |
 
 Ta úspora není náhoda: `card-dev` drží 29 kroků na 170 řádcích tím, že píše
 `"type": "run", "name": "…"` na jedné řádce a mapy `in`/`out` po jedné řádce
