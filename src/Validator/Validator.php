@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Donut\Validator;
 
 use Donut\BlockRepository;
-use Donut\Format\Block;
 use Donut\Format\Condition;
 use Donut\Format\ForeachStep;
 use Donut\Format\IfStep;
@@ -27,10 +26,13 @@ final class Validator
 	/** @var array<int, string> */
 	private array $writtenAnywhere = [];
 
+	private readonly BlockValidator $blockValidator;
+
 
 	public function __construct(
 		private readonly BlockRepository $blocks,
 	) {
+		$this->blockValidator = new BlockValidator;
 	}
 
 
@@ -170,8 +172,9 @@ final class Validator
 			));
 		}
 
-		$this->checkStdinNotInArgs($block, $at, $result);
-		$this->checkArgsInputsDeclared($block, $at, $result);
+		foreach ($this->blockValidator->validate($block, $at)->getProblems() as $problem) {
+			$result->add($problem);
+		}
 
 		foreach ($step->out as $channel => $key) {
 			if (!\in_array($channel, RunStep::Channels, true)) {
@@ -180,51 +183,6 @@ final class Validator
 
 			$this->checkKeyName($key, $at, $result);
 			$flow->write($key);
-		}
-	}
-
-
-	private function checkStdinNotInArgs(Block $block, string $at, Result $result): void
-	{
-		foreach ($block->args as $group) {
-			foreach ($group as $template) {
-				if (\in_array('STDIN', $template->getKeys(), true)) {
-					$result->add(Problem::error(
-						$at,
-						"{%STDIN%} použito v args kamene \"{$block->name}\""
-					));
-
-					return;
-				}
-			}
-		}
-	}
-
-
-	/**
-	 * Klíč v args, který kámen nedeklaruje jako vstup, není chybějící hodnota
-	 * — je to překlep, který CommandLine nemůže odlišit od legitimně
-	 * nevyplněného vstupu a tiše by mu vypadla celá skupina argumentů.
-	 * {%STDIN%} v args řeší checkStdinNotInArgs() vlastní hláškou.
-	 */
-	private function checkArgsInputsDeclared(Block $block, string $at, Result $result): void
-	{
-		$reported = [];
-
-		foreach ($block->args as $group) {
-			foreach ($group as $template) {
-				foreach ($template->getKeys() as $key) {
-					if ($key === 'STDIN' || isset($block->inputs[$key]) || isset($reported[$key])) {
-						continue;
-					}
-
-					$reported[$key] = true;
-					$result->add(Problem::error(
-						$at,
-						"kámen \"{$block->name}\" používá v args proměnnou \"{$key}\", kterou nedeklaruje"
-					));
-				}
-			}
 		}
 	}
 
