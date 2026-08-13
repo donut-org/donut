@@ -160,6 +160,12 @@ Je to vědomá díra, ne přehlédnutí.
 - **Detekce souběhu.** Převzato ze serializéru: soubor upravený v editoru
   mezi vykreslením formuláře a uložením se přepíše bez varování. Lokální
   nástroj pro jednoho člověka, soubory jsou v gitu.
+- **CSRF ochrana a session.** `Form::addProtection()` potřebuje session, kterou
+  GUI nemá. Ze stejného důvodu se nepoužijí ani flash zprávy — odmítnutí se
+  ukáže jako chyba formuláře. Je to důsledek téhož rozhodnutí jako
+  „`127.0.0.1`, žádná autentizace" v návrhu GUI. Cena je reálná: stránka
+  otevřená v témž prohlížeči by teoreticky mohla poslat POST na localhost.
+  U nástroje pro jednoho člověka, jehož data jsou v gitu, se to přijímá.
 - **Přejmenování kamene.** Změna jména by znamenala přesun souboru a úpravu
   všech workflow, která na kámen odkazují. Jméno je ve formuláři jen při
   zakládání.
