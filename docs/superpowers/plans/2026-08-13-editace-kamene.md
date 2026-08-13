@@ -433,7 +433,13 @@ final class BlockUsage
 		$result = [];
 
 		foreach ($usage as $block => $names) {
-			$result[$block] = \array_keys($names);
+			$names = \array_keys($names);
+
+			// Seřadit i vnitřní seznam: bez toho by pořadí určilo pořadí
+			// souborů v adresáři a výpis „používá: …" by se měnil bez
+			// zjevného důvodu.
+			\sort($names);
+			$result[$block] = $names;
 		}
 
 		\ksort($result);
@@ -1493,7 +1499,7 @@ $vadny = ['name' => 'vadny', 'args' => [0 => [0 => '{%chybi%}']], 'inputs' => []
 );
 
 // Žádné přesměrování — formulář se vrátil s chybou.
-Assert::notType(RedirectResponse::class, $response);
+Assert::false($response instanceof RedirectResponse);
 Assert::contains('chybi', $html);
 Assert::false(is_file($projekt . '/blocks/vadny.json'));
 
@@ -2055,7 +2061,7 @@ Assert::contains('w', $html);
 	['name' => 'pouzity', 'delete' => 'Smazat'],
 );
 
-Assert::notType(RedirectResponse::class, $response);
+Assert::false($response instanceof RedirectResponse);
 Assert::true(is_file($projekt . '/blocks/pouzity.json'));
 
 // --- volný kámen se smaže a přesměruje se do přehledu ---
