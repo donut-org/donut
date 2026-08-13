@@ -53,13 +53,14 @@ foreach ($workflows === false ? [] : $workflows as $path) {
 	$workflowWriter->writeFile($puvodni, $cil);
 	$znovu = $workflowParser->parseFile($cil);
 
-	// Assert::equal() má tvrdý limit na hloubku zanoření (Nette Tester,
-	// úroveň 10) a strom kroků sync.json ho i s poctivým zápisem přesahuje
-	// (foreach > if > run, každý RunStep navíc nese Template s vlastním
-	// segments polem). Porovnává se proto přímo přes ==, jak popisuje
-	// komentář výš — Assert::equal je jen jeho hezčí obal, který tu na
-	// nejhlubší workflow nejde použít.
-	Assert::true($puvodni == $znovu, 'round-trip workflow ' . \basename($path));
+	// Assert::equal() má limit vnoření natvrdo na 10 (Assert.php:657) a strom
+	// sync.json je hlubší. Porovnání přes print_r drží stejnou strukturální
+	// sémantiku jako ==, a navíc na rozdíl od Assert::true() ukáže rozdíl.
+	Assert::same(
+		\print_r($puvodni, true),
+		\print_r($znovu, true),
+		'round-trip workflow ' . \basename($path),
+	);
 }
 
 // --- soubor končí novým řádkem ---
