@@ -56,7 +56,8 @@ Formát souborů: viz `format-specifikace.md`.
      viz `superpowers/specs/2026-08-06-gui-vrstva2-design.md`
    - vrstva 3: builder — rozpadá se na tři projekty:
      ~~serializér~~ (`superpowers/specs/2026-08-06-serializer-design.md`) — hotovo,
-     editace kamene, editace workflow
+     editace kamene (`superpowers/specs/2026-08-13-editace-kamene-design.md`),
+     editace workflow
 
 Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi
 a GUI z něj bude žít.
