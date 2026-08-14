@@ -967,6 +967,26 @@ Assert::same([2], StepMapper::toStep(['allowFailure' => 'list', 'allowFailureCod
 // Prázdný výčet u 'list' spadne na inherit — pole [] by parser odmítl.
 Assert::null(StepMapper::toStep(['allowFailure' => 'list'] + $base)->allowFailure);
 
+// --- pořadí řádků drží ksort, ne pořadí zápisu ---
+//
+// Pořadí klíčů z POSTu není zaručené a u in i out na pořadí záleží. Bez
+// sestupného případu by se vypuštění ksort() v rows() nijak neprojevilo —
+// referenční zátěž má klíče vždycky vzestupně a ruční případy jen s dírami.
+
+$reversed = StepMapper::toStep([
+	'in' => [
+		1 => ['key' => 'druhy', 'value' => 'b'],
+		0 => ['key' => 'prvni', 'value' => 'a'],
+	],
+	'out' => [
+		1 => ['channel' => 'stderr', 'value' => 'err'],
+		0 => ['channel' => 'result', 'value' => 'res'],
+	],
+] + $base);
+
+Assert::same(['prvni', 'druhy'], \array_keys($reversed->in));
+Assert::same(['result' => 'res', 'stderr' => 'err'], $reversed->out);
+
 // --- prázdné řádky vypadnou ---
 
 $sPrazdnymi = StepMapper::toStep([
