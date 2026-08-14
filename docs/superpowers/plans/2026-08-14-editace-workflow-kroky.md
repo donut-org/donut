@@ -2137,18 +2137,26 @@ Assert::count(1, $if->then, 'větev then se úpravou podmínky nesmí ztratit');
 Assert::contains('neexistuje', $html);
 
 // --- neplatné workflow se uloží i tak: validace neblokuje ---
+//
+// Kámen jq vyžaduje vstup filter i stdin; krok, který nevyplní ani jeden,
+// je pro validátor chyba. Uložit se přesto musí.
+//
+// Pozn.: neplatnost se schválně nevyrábí neexistujícím jménem kamene —
+// pole `block` je addSelect nad seznamem kamenů a Nette hodnotu mimo seznam
+// odmítne dřív, než se k uložení vůbec dojde. Testovalo by se tím chování
+// formuláře, ne to, že validace workflow neblokuje.
 
 runWorkflowPresenterIn(
 	$project,
 	['action' => 'step', 'name' => 'w', 'at' => 'w.json:steps[0]', 'do' => 'stepForm-submit'],
 	[
-		'type' => 'run', 'name' => '', 'block' => 'neexistujici-kamen',
+		'type' => 'run', 'name' => '', 'block' => 'jq',
 		'in' => [], 'out' => [], 'timeout' => '',
 		'allowFailure' => 'inherit', 'allowFailureCodes' => '', 'save' => 'Uložit',
 	],
 );
 
-Assert::same('neexistujici-kamen', $steps()[0]->block);
+Assert::same([], $steps()[0]->in, 'krok bez povinných vstupů se uloží i tak');
 
 FileSystem::delete(TEMP_DIR);
 ```
