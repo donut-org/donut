@@ -151,12 +151,10 @@ foreach ([
 	'',
 	'card-dev.json:steps[0];rm -rf /',
 ] as $bad) {
-	Assert::exception(
-		fn() => StepPath::parse($bad),
-		InvalidArgumentException::class,
-		null,
-		"mělo být odmítnuto: {$bad}",
-	);
+	// Assert::exception() bere jako čtvrtý parametr kód výjimky, ne popisek —
+	// popisek by se porovnával s kódem 0 a test by padal i proti správné
+	// implementaci. Který tvar selhal, řekne hláška z parse(), která ho nese.
+	Assert::exception(fn() => StepPath::parse($bad), InvalidArgumentException::class);
 }
 
 // --- cesty, které skládá šablona, musí jít rozebrat ---
