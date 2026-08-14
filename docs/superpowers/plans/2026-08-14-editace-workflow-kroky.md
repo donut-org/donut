@@ -399,11 +399,20 @@ foreach ($files === false ? [] : $files as $file) {
 			"remove+insert na {$at}",
 		);
 
-		// moveDown a hned moveUp taky — a na konci seznamu jsou obě no-op
+		// Tentýž pohyb dvakrát na téže pozici je identita: prohodí tutéž
+		// dvojici tam a zpátky. Pozor, `moveUp(moveDown($w, $at), $at)`
+		// identita **není** — `$at` je pozice, ne krok, takže druhý swap
+		// míří na jiný pár než první.
 		Assert::same(
 			$before,
-			\serialize(StepTree::moveUp(StepTree::moveDown($workflow, $at), $at)),
-			"moveDown+moveUp na {$at}",
+			\serialize(StepTree::moveDown(StepTree::moveDown($workflow, $at), $at)),
+			"moveDown dvakrát na {$at}",
+		);
+
+		Assert::same(
+			$before,
+			\serialize(StepTree::moveUp(StepTree::moveUp($workflow, $at), $at)),
+			"moveUp dvakrát na {$at}",
 		);
 	}
 }
