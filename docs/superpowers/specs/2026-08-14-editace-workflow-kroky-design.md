@@ -218,5 +218,10 @@ vyrobit tiše špatný soubor.
   mezi vykreslením a uložením se přepíše bez varování.
 - **CSRF ochrana a session.** Převzato z editace kamene: `Form::addProtection()`
   potřebuje session, kterou GUI nemá. Důsledek „`127.0.0.1`, žádná
-  autentizace" z návrhu GUI.
+  autentizace" z návrhu GUI. Ručně psané formuláře (`steps.latte` — přesun,
+  mazání) přesto nejsou bez ochrany úplně: Nette `AccessPolicy::applyInternalRules()`
+  připojí `Requires(sameOrigin: true)` ke každé `handle*` metodě automaticky,
+  pokud si signál sám nevyžádá jinak — Fetch Metadata (`Sec-Fetch-Site`)
+  kontrola tedy platí i tady, bez session. Nedoplňuj proto `Form::addProtection()`
+  ani session — už jsou pokryté.
 - **Prohlížečové testy.** Viz výše.
