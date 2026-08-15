@@ -49,17 +49,17 @@ Formát souborů: viz `format-specifikace.md`.
    z celé vrstvy, `olw-lib.sh` smazaná. **Zbývá ověření na ostro:** bashová
    sada testuje jednotlivé příkazy, ne to, že si s donutem sedí argumenty.
    To prověří teprve `donut card-dev` na skutečné kartě.
-5. GUI — autorské prostředí, staví se po vrstvách,
+5. ~~GUI~~ — hotovo, autorské prostředí, stavělo se po vrstvách,
    viz `superpowers/specs/2026-08-05-gui-design.md` a `gui/`
    - ~~vrstva 1: validace u kroku a přehled kamenů~~ — hotovo, jen pro čtení
    - ~~vrstva 2: tok klíčů~~ — hotovo,
      viz `superpowers/specs/2026-08-06-gui-vrstva2-design.md`
-   - vrstva 3: builder — rozpadá se na tři projekty:
+   - ~~vrstva 3: builder~~ — hotovo, rozpadala se na tři projekty:
      ~~serializér~~ (`superpowers/specs/2026-08-06-serializer-design.md`) — hotovo,
      ~~editace kamene~~ (`superpowers/specs/2026-08-13-editace-kamene-design.md`) — hotovo,
-     editace workflow — rozpadá se na dva projekty: ~~kroky~~
+     editace workflow — rozpadala se na dva projekty: ~~kroky~~
      (`superpowers/specs/2026-08-14-editace-workflow-kroky-design.md`) — hotovo,
-     a obálka (`superpowers/specs/2026-08-15-obalka-workflow-design.md`)
+     a ~~obálka~~ (`superpowers/specs/2026-08-15-obalka-workflow-design.md`) — hotovo
 
 Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi
 a GUI z něj bude žít.
