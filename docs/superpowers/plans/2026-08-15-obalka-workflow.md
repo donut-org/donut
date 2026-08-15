@@ -1359,9 +1359,6 @@ final class WorkflowEditTemplate extends Template
 	public ?string $name = null;
 
 	public ?string $error = null;
-
-	/** @var array<int, string> */
-	public array $problems = [];
 }
 ```
 
