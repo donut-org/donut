@@ -59,7 +59,7 @@ Formát souborů: viz `format-specifikace.md`.
      ~~editace kamene~~ (`superpowers/specs/2026-08-13-editace-kamene-design.md`) — hotovo,
      editace workflow — rozpadá se na dva projekty: ~~kroky~~
      (`superpowers/specs/2026-08-14-editace-workflow-kroky-design.md`) — hotovo,
-     a obálka (založit/smazat workflow, hlavička, vstupy)
+     a obálka (`superpowers/specs/2026-08-15-obalka-workflow-design.md`)
 
 Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi
 a GUI z něj bude žít.
