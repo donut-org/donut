@@ -126,27 +126,34 @@ dvakrát způsobila ztrátu dat.
 
 ### Co se rozbije
 
-Změřeno: **čtyři aserce**.
+Změřeno: **tři aserce**.
 
 | soubor | aserce | co se stane |
 |---|---|---|
-| `BlockPresenter.delete.phpt:32` | `contains('používá')` | spadne — malé „p" zmizí |
-| `BlockPresenter.delete.phpt:46` | `contains('používá')` | spadne ze stejného důvodu |
-| `BlockPresenter.default.phpt:25` | `notContains('používá')` | projde dál, ale **stane se vakuovou** |
+| `BlockPresenter.delete.phpt:32` | `contains('používá')` na přehledu | spadne — malé „p" zmizí |
+| `BlockPresenter.default.phpt:25` | `notContains('používá')` na přehledu | projde dál, ale **stane se vakuovou** |
 | `Layout.phpt:96` | `k` jako poslední aktivní drobeček u `Block:edit` | jméno se stane odkazem, poslední bude `úprava` |
 
-První tři visí na českém slově „používá", které dnes stojí ve větě pod
-nadpisem kamene a v tabulce se z něj stane hlavička sloupce „Používá".
-Přepíšou se na něco silnějšího než shoda českého slova: na **jméno
-workflow v řádku**. `contains('card-dev')` říká, že kámen opravdu někdo
-používá; prázdná buňka u nepoužitého kamene se ověří adresně. Je to
-zpřesnění, ne oslabení.
+První dvě visí na českém slově „používá", které dnes stojí ve větě pod
+nadpisem kamene (`Block/default.latte:23`) a v tabulce se z něj stane
+hlavička sloupce „Používá". Přepíšou se na něco silnějšího než shoda
+českého slova: na **obsah buňky ve sloupci Používá**. Třetí je důsledek
+posunu drobečků a přepíše se na nový tvar.
 
-Čtvrtá je důsledek posunu drobečků a přepíše se na nový tvar — jméno
-kamene jako odkaz, `úprava` jako poslední položka.
+Dvě aserce, které by se rozbít mohly zdát, se **nerozbijí** — obě jsou
+na stránce editace, ne na přehledu:
 
-`BlockPresenter.delete.phpt:89` (`contains('class=error')`) je na
-stránce editace, ne na přehledu — B1 se jí nedotkne.
+- `BlockPresenter.delete.phpt:46` (`contains('používá')`) míří na větu
+  „Nejde smazat — používá ho: w." z `Block/edit.latte:134`
+- `BlockPresenter.delete.phpt:89` (`contains('class=error')`) míří na
+  chybu rozbitého kamene při editaci
+
+### Vakuová aserce, která tu je už dnes
+
+`BlockPresenter.delete.phpt:33` je `Assert::contains('w', $html)` — jméno
+testovacího workflow je jediné písmeno a to je v HTML všude (`workflow`,
+`www`, `switch`). Aserce tedy neříká nic. Při přepisu se zpřesní na
+obsah buňky, takže projekt tuhle díru zavře mimochodem.
 
 Platí pravidlo z předchozích projektů: **žádná stávající aserce se nesmí
 oslabit**, a každá změněná se v hlášení vyjmenuje i s tím, co tvrdila
