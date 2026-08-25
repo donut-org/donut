@@ -11,4 +11,4 @@ foreach ([__DIR__ . '/../vendor/autoload.php', __DIR__ . '/../../../autoload.php
 	}
 }
 
-exit((new Donut\Cli\Application(\getcwd() ?: '.'))->run($argv));
+exit(Donut\Cli\Application::main($argv, \getenv()));
