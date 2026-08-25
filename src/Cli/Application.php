@@ -7,8 +7,10 @@ namespace Donut\Cli;
 use Donut\BlockRepository;
 use Donut\Exception as DonutException;
 use Donut\Format\Workflow;
+use Donut\MissingDir;
 use Donut\Parser\ParseException;
 use Donut\Parser\WorkflowParser;
+use Donut\Profile;
 use Donut\Runner\CannotStartException;
 use Donut\Runner\ConsoleReporter;
 use Donut\Runner\NetteProcessRunner;
@@ -20,7 +22,7 @@ use Donut\Runner\Runner;
 /**
  * Vstupní bod z příkazové řádky.
  *
- * Adresář a streamy bere v konstruktoru, aby šla testovat bez skutečného
+ * Profil a streamy bere v konstruktoru, aby šla testovat bez skutečného
  * terminálu — stejný důvod, proč má Reporter rozhraní.
  */
 final class Application
@@ -43,7 +45,7 @@ final class Application
 	 * @param ProcessRunner|null $processes null = NetteProcessRunner; jiná hodnota jen v testech
 	 */
 	public function __construct(
-		private readonly string $directory,
+		private readonly Profile $profile,
 		$stdout = null,
 		$stderr = null,
 		private readonly ?string $stdin = null,
@@ -51,6 +53,31 @@ final class Application
 	) {
 		$this->stdout = $stdout ?? STDOUT;
 		$this->stderr = $stderr ?? STDERR;
+	}
+
+
+	/**
+	 * Vstupní bod z bin/donut: složí profil z prostředí a chybu prostředí
+	 * přeloží na návratový kód. Je to tady, a ne v bin/donut, protože ve
+	 * skriptu, který se nedá spustit z testu, nesmí zůstat žádná větev.
+	 *
+	 * @param array<int, string>    $argv
+	 * @param array<string, string> $env
+	 * @param resource|null         $stdout
+	 * @param resource|null         $stderr
+	 */
+	public static function main(array $argv, array $env, $stdout = null, $stderr = null): int
+	{
+		try {
+			$profile = Profile::fromEnvironment($env);
+
+		} catch (DonutException $e) {
+			\fwrite($stderr ?? STDERR, "Chyba: {$e->getMessage()}\n");
+
+			return self::NotStarted;
+		}
+
+		return (new self($profile, $stdout, $stderr))->run($argv);
 	}
 
 
@@ -106,6 +133,20 @@ final class Application
 
 	private function listWorkflows(): int
 	{
+		$directory = $this->profile->workflowsDir();
+
+		// Prázdný výpis a chybějící adresář vypadají na terminálu stejně —
+		// jako ticho. Rozdíl musí říct hláška, jinak je čerstvý profil slepá
+		// ulička.
+		if (!\is_dir($directory)) {
+			\fwrite(
+				$this->stderr,
+				"Chyba: Adresář s workflow '{$directory}' neexistuje. " . MissingDir::hint($directory) . "\n"
+			);
+
+			return self::NotStarted;
+		}
+
 		$code = self::Success;
 
 		foreach ($this->workflowNames() as $name) {
@@ -163,7 +204,7 @@ final class Application
 			}
 		}
 
-		$blocks = new BlockRepository($this->directory . '/blocks');
+		$blocks = new BlockRepository($this->profile->blocksDir());
 		$runner = new Runner(
 			$blocks,
 			$this->processes ?? new NetteProcessRunner,
@@ -178,12 +219,16 @@ final class Application
 
 	private function loadWorkflow(string $name): Workflow
 	{
-		$directory = $this->directory . '/workflows/';
+		$directory = $this->profile->workflowsDir() . '/';
 		$path = $directory . $name . '.json';
 
 		if (!\is_file($path)) {
+			// Rada `mkdir -p` dává smysl jen u chybějícího adresáře, ne
+			// u překlepu ve jméně workflow.
+			$hint = \is_dir($directory) ? '' : ' ' . MissingDir::hint($this->profile->workflowsDir());
+
 			throw new UsageException(
-				"Workflow \"{$name}\" neexistuje. Hledal jsem v: {$directory}"
+				"Workflow \"{$name}\" neexistuje. Hledal jsem v: {$directory}{$hint}"
 			);
 		}
 
@@ -196,7 +241,7 @@ final class Application
 	 */
 	private function workflowNames(): array
 	{
-		$paths = \glob($this->directory . '/workflows/*.json');
+		$paths = \glob($this->profile->workflowsDir() . '/*.json');
 		$names = [];
 
 		foreach ($paths === false ? [] : $paths as $path) {
@@ -225,12 +270,13 @@ final class Application
 
 	private function printUsage(bool $isError): void
 	{
-		\fwrite($isError ? $this->stderr : $this->stdout, <<<'TEXT'
+		\fwrite($isError ? $this->stderr : $this->stdout, <<<TEXT
 			donut --list                          seznam workflow
 			donut <workflow> --help               nápověda k workflow
 			donut <workflow> [--klic=hodnota …]   spuštění
 
-			Kameny a workflow se hledají v ./blocks a ./workflows.
+			Profil: {$this->profile->name()}  ({$this->profile->dir()})
+			Jiný profil: DONUT_PROFILE=jmeno, jiný kořen: DONUT_HOME=cesta
 
 			TEXT);
 	}

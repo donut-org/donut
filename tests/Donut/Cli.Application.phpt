@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Donut\Cli\Application;
+use Donut\Profile;
 use Donut\Runner\ProcessResult;
 use Donut\Runner\ProcessRunner;
 use Nette\Utils\FileSystem;
@@ -68,7 +69,7 @@ function spust(string $dir, array $argv, ?ProcessRunner $processes = null): arra
 {
 	$out = fopen('php://memory', 'r+');
 	$err = fopen('php://memory', 'r+');
-	$code = (new Application($dir, $out, $err, '', $processes))->run($argv);
+	$code = (new Application(new Profile('testovaci', $dir), $out, $err, '', $processes))->run($argv);
 	rewind($out);
 	rewind($err);
 	$result = [$code, stream_get_contents($out), stream_get_contents($err)];
@@ -137,8 +138,8 @@ Assert::contains('povinný vstup "kdo" nemá hodnotu', $err);
 Assert::same(2, $code);
 Assert::contains('povinný vstup "kdo" nemá hodnotu', $err);
 
-// neexistující workflow je kód 2 a hláška řekne, kde se hledalo — pracovní
-// adresář je nejostřejší hrana nástroje a nejčastější příčina téhle chyby
+// neexistující workflow je kód 2 a hláška řekne, kde se hledalo — profil je
+// nejostřejší hrana nástroje a nejčastější příčina téhle chyby
 [$code, , $err] = spust($dir, ['donut', 'neexistuje']);
 Assert::same(2, $code);
 Assert::contains('Workflow "neexistuje" neexistuje.', $err);
@@ -197,5 +198,63 @@ $vybuchne = new class implements ProcessRunner {
 [$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=svete'], $vybuchne);
 Assert::same(2, $code);
 Assert::contains('Vnitřní chyba nástroje: rozbité vnitřnosti', $err);
+
+// --- nápověda říká, ze kterého profilu se čte ---
+// Bez toho se „donut --list nic nevypisuje" nedá odladit: uživatel nevidí,
+// kam se nástroj díval, a pracovní adresář mu to už neprozradí.
+[$code, $out] = spust($dir, ['donut', '--help']);
+Assert::same(0, $code);
+Assert::contains('Profil: testovaci', $out);
+Assert::contains($dir, $out);
+Assert::contains('DONUT_PROFILE=', $out);
+Assert::contains('DONUT_HOME=', $out);
+
+// --- chybějící adresář workflows: --list není ticho, ale návod ---
+// Prázdný výpis a chybějící profil vypadají na terminálu stejně. Čerstvá
+// instalace je přesně ten případ, kdy rozdíl potřebuješ vidět.
+$prazdny = TEMP_DIR . '/bez-profilu';
+FileSystem::createDir($prazdny);
+
+[$code, $out, $err] = spust($prazdny, ['donut', '--list']);
+Assert::same(2, $code);
+Assert::same('', $out);
+Assert::contains('neexistuje', $err);
+Assert::contains('mkdir -p ' . $prazdny . '/workflows', $err);
+
+// --- a totéž při pokusu o spuštění workflow ---
+[$code, , $err] = spust($prazdny, ['donut', 'cokoliv']);
+Assert::same(2, $code);
+Assert::contains('mkdir -p ' . $prazdny . '/workflows', $err);
+
+// --- main() přeloží nemožné prostředí na kód 2, ne na fatal ---
+// Jediný důvod, proč main() existuje: v bin/donut nesmí zůstat větev, která
+// se nedá otestovat.
+$out = fopen('php://memory', 'r+');
+$err = fopen('php://memory', 'r+');
+$code = Application::main(['donut', '--list'], [], $out, $err);
+rewind($err);
+$hlaska = stream_get_contents($err);
+fclose($out);
+fclose($err);
+
+Assert::same(2, $code);
+Assert::contains('DONUT_HOME', $hlaska);
+
+// --- main() s použitelným prostředím doběhne do Application ---
+$out = fopen('php://memory', 'r+');
+$err = fopen('php://memory', 'r+');
+$code = Application::main(
+	['donut', '--list'],
+	['DONUT_HOME' => dirname($dir), 'DONUT_PROFILE' => basename($dir)],
+	$out,
+	$err,
+);
+rewind($out);
+$vypis = stream_get_contents($out);
+fclose($out);
+fclose($err);
+
+Assert::same(0, $code);
+Assert::contains('pozdrav', $vypis);
 
 FileSystem::delete(TEMP_DIR);

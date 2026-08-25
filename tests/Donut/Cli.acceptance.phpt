@@ -42,14 +42,27 @@ file_put_contents($dir . '/workflows/hlasite.json', json_encode([
 
 $bin = escapeshellarg(__DIR__ . '/../../bin/donut');
 
-/** @return array{int, string, string} */
+/**
+ * Definice se berou z profilu (DONUT_HOME/DONUT_PROFILE), pracovní adresář
+ * zůstává fixtura — z něj běží kroky a z něj je klíč CWD.
+ *
+ * Prostředí se procesu předává celé, ne přidáním k zděděnému: PATH tam musí
+ * být kvůli `php` i kvůli příkazům kroků (echo, tr).
+ *
+ * @return array{int, string, string}
+ */
 function donut(string $dir, string $bin, string $args): array
 {
 	// deskriptor 0 je připnutý schválně: donut si stdin čte, když to není
 	// terminál. Bez toho by závisel na tom, co proces zdědil, a mohl by se
 	// na čtení zaseknout.
 	$descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-	$process = proc_open("php {$bin} {$args}", $descriptors, $pipes, $dir);
+	$env = [
+		'PATH' => (string) getenv('PATH'),
+		'DONUT_HOME' => dirname($dir),
+		'DONUT_PROFILE' => basename($dir),
+	];
+	$process = proc_open("php {$bin} {$args}", $descriptors, $pipes, $dir, $env);
 	Assert::type('resource', $process);
 	fclose($pipes[0]);
 	$out = (string) stream_get_contents($pipes[1]);
@@ -87,5 +100,26 @@ Assert::contains('kdo', $err);
 [$code, , $err] = donut($dir, $bin, 'hlasite --kdo=x --neznamy=y');
 Assert::same(2, $code);
 Assert::contains('neznamy', $err);
+
+// Pracovní adresář o definicích nerozhoduje: běh z /tmp najde workflow
+// stejně, protože profil je v prostředí.
+$jinde = TEMP_DIR . '/jinde';
+FileSystem::createDir($jinde);
+
+$descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+$env = [
+	'PATH' => (string) getenv('PATH'),
+	'DONUT_HOME' => dirname($dir),
+	'DONUT_PROFILE' => basename($dir),
+];
+$process = proc_open("php {$bin} --list", $descriptors, $pipes, $jinde, $env);
+Assert::type('resource', $process);
+fclose($pipes[0]);
+$out = (string) stream_get_contents($pipes[1]);
+fclose($pipes[1]);
+fclose($pipes[2]);
+
+Assert::same(0, proc_close($process));
+Assert::contains('hlasite', $out);
 
 FileSystem::delete(TEMP_DIR);
