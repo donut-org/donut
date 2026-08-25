@@ -36,6 +36,7 @@ Formát souborů: viz `format-specifikace.md`.
 | Velká data | Stdin/stdout přes mapu. |
 | Vstup 1. kroku | STDIN CLI volání, v mapě jako `STDIN` |
 | Argumenty CLI | Pojmenované (`--ENV=prod`), podle `inputs` workflow |
+| Kde jsou definice | Profil `$DONUT_HOME/$DONUT_PROFILE/{blocks,workflows}`, výchozí `~/.config/donut/default`. Pracovní adresář nerozhoduje; jeho jediná role je klíč `CWD` a adresář, ve kterém běží kroky. |
 
 ## Pořadí prací
 
@@ -60,6 +61,8 @@ Formát souborů: viz `format-specifikace.md`.
      editace workflow — rozpadala se na dva projekty: ~~kroky~~
      (`superpowers/specs/2026-08-14-editace-workflow-kroky-design.md`) — hotovo,
      a ~~obálka~~ (`superpowers/specs/2026-08-15-obalka-workflow-design.md`) — hotovo
+6. ~~Profily a XDG cesty~~ — hotovo, viz
+   `superpowers/specs/2026-08-25-profily-a-xdg-design.md`
 
 Validátor dělej hned, ne potom. Je to hlavní přidaná hodnota proti Bashi
 a GUI z něj bude žít.

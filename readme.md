@@ -32,14 +32,25 @@ composer require donut-org/donut
 
 Donut requires PHP 8.1 or later.
 
+Donut reads blocks and workflows from a profile, not from the current
+directory. Create the default one:
+
+```
+mkdir -p ~/.config/donut/default/{blocks,workflows}
+```
+
+`DONUT_PROFILE=name` picks another profile, `DONUT_HOME=path` another root
+of profiles. To use a set that lives elsewhere — in a project repository,
+say — symlink it in: `ln -s ~/projects/olw/donut ~/.config/donut/olw`.
+
 
 ## Example
 
-Donut looks for `blocks/` and `workflows/` **in the current working
-directory**:
+Donut looks for `blocks/` and `workflows/` **in the profile**, by default
+`~/.config/donut/default/`:
 
 ```
-myproject/
+~/.config/donut/default/
 	blocks/
 		greet.json
 	workflows/
