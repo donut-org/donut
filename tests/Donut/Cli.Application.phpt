@@ -144,6 +144,9 @@ Assert::contains('povinný vstup "kdo" nemá hodnotu', $err);
 Assert::same(2, $code);
 Assert::contains('Workflow "neexistuje" neexistuje.', $err);
 Assert::contains($dir . '/workflows/', $err);
+// adresář workflows/ existuje — jen soubor v něm chybí, takže rada
+// `mkdir -p` by tu byla zavádějící (viz $prazdny níž, kde naopak je)
+Assert::notContains('mkdir', $err);
 
 // neznámý argument je kód 2
 [$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=x', '--neznamy=y']);
@@ -225,6 +228,21 @@ Assert::contains('mkdir -p ' . $prazdny . '/workflows', $err);
 [$code, , $err] = spust($prazdny, ['donut', 'cokoliv']);
 Assert::same(2, $code);
 Assert::contains('mkdir -p ' . $prazdny . '/workflows', $err);
+
+// --- chybí jen blocks/: workflow existuje, spuštění na něj teprve narazí ---
+// workflows/ je v pořádku, takže loadWorkflow() radu nedá — runWorkflow()
+// musí mít vlastní guard, jinak dostane uživatel jen "adresář neexistuje"
+// bez návodu, co s tím.
+$jenWorkflows = TEMP_DIR . '/jen-workflows';
+FileSystem::createDir($jenWorkflows . '/workflows');
+file_put_contents($jenWorkflows . '/workflows/prazdne.json', json_encode([
+	'name' => 'prazdne',
+	'steps' => [],
+]));
+
+[$code, , $err] = spust($jenWorkflows, ['donut', 'prazdne']);
+Assert::same(2, $code);
+Assert::contains('mkdir -p ' . $jenWorkflows . '/blocks', $err);
 
 // --- main() přeloží nemožné prostředí na kód 2, ne na fatal ---
 // Jediný důvod, proč main() existuje: v bin/donut nesmí zůstat větev, která
