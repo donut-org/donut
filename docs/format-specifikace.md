@@ -7,6 +7,10 @@ změny proti 0.2 vycházejí z toho, na co přepis narazil — viz sekce 6.
 
 ## 1. Stavební kámen (`blocks/<jmeno>.json`)
 
+Cesty v nadpisech jsou relativní k profilu, tedy k
+`$DONUT_HOME/$DONUT_PROFILE/` (ve výchozím stavu
+`~/.config/donut/default/`).
+
 Kámen je parametrizovaná funkce nad jedním příkazem. Neví nic o workflow,
 které ho volá, ani o klíčích v mapě enginu.
 
@@ -155,6 +159,8 @@ nevytváří ani neuklízí žádné soubory; cesty, které ve workflow vystupuj
 ---
 
 ## 2. Workflow (`workflows/<jmeno>.json`)
+
+Cesta je relativní k profilu, viz sekci 1.
 
 ```json
 {
