@@ -137,14 +137,12 @@ final class Application
 
 		// Prázdný výpis a chybějící adresář vypadají na terminálu stejně —
 		// jako ticho. Rozdíl musí říct hláška, jinak je čerstvý profil slepá
-		// ulička.
+		// ulička. Výjimka místo přímého zápisu na stderr, ať prefix i konec
+		// řádku přilepí catch v run() stejně jako u ostatních chyb.
 		if (!\is_dir($directory)) {
-			\fwrite(
-				$this->stderr,
-				"Chyba: Adresář s workflow '{$directory}' neexistuje. " . MissingDir::hint($directory) . "\n"
+			throw new UsageException(
+				"Adresář s workflow '{$directory}' neexistuje. " . MissingDir::hint($directory)
 			);
-
-			return self::NotStarted;
 		}
 
 		$code = self::Success;
@@ -204,7 +202,18 @@ final class Application
 			}
 		}
 
-		$blocks = new BlockRepository($this->profile->blocksDir());
+		$blocksDir = $this->profile->blocksDir();
+
+		// Stejný guard jako v listWorkflows() pro workflows/: BlockRepository
+		// sama hlásí jen "adresář neexistuje", bez rady. Tady je to jediné
+		// místo, kudy runWorkflow() k chybějícímu blocks/ vůbec dojde.
+		if (!\is_dir($blocksDir)) {
+			throw new UsageException(
+				"Adresář s kameny '{$blocksDir}' neexistuje. " . MissingDir::hint($blocksDir)
+			);
+		}
+
+		$blocks = new BlockRepository($blocksDir);
 		$runner = new Runner(
 			$blocks,
 			$this->processes ?? new NetteProcessRunner,
