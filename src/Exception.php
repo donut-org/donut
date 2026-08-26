@@ -6,7 +6,8 @@ namespace Donut;
 
 
 /**
- * Základ všech výjimek balíčku, aby je volající mohl chytat jedním catch.
+ * The base of all the package's exceptions, so a caller can catch them all
+ * with a single catch.
  */
 class Exception extends \Exception
 {

@@ -136,7 +136,7 @@ Assert::exception(
 		],
 	], $procs, ['a' => 'no']),
 	RunFailedException::class,
-	"w.json:steps[1]: Klíč 'x' v mapě neexistuje."
+	"w.json:steps[1]: Key 'x' does not exist in the map."
 );
 
 // foreach: iterates over lines, empty ones are skipped, \r is stripped

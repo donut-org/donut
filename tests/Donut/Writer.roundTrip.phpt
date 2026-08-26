@@ -21,91 +21,93 @@ $root = __DIR__ . '/../../docs/workflows/donut';
 $temp = TEMP_DIR . '/writer';
 FileSystem::createDir($temp);
 
-// --- round-trip nad referenční zátěží ---
+// --- round-trip over the reference workload ---
 //
-// Objekt → soubor → objekt. Porovnává se přes ==, které na těchhle
-// objektech drží strukturálně včetně Template.
+// Object → file → object. Compared via ==, which holds structurally on
+// these objects, including Template.
 //
-// Pozor: sama tahle zátěž NESTAČÍ. Pět volitelných polí se v ní
-// nevyskytuje ani jednou (default u vstupů, timeout a allow_failure
-// u kroku, name u setu) — ta hlídají BlockWriter.phpt a WorkflowWriter.phpt.
+// Careful: this workload alone is NOT ENOUGH. Five optional fields do not
+// occur even once in it (default on inputs, timeout and allow_failure on
+// a step, name on a set) — those are covered by BlockWriter.phpt and
+// WorkflowWriter.phpt.
 
 $blocks = \glob($root . '/blocks/*.json');
 Assert::count(15, $blocks === false ? [] : $blocks);
 
 foreach ($blocks === false ? [] : $blocks as $path) {
-	$puvodni = $blockParser->parseFile($path);
-	$cil = $temp . '/' . \basename($path);
+	$original = $blockParser->parseFile($path);
+	$target = $temp . '/' . \basename($path);
 
-	$blockWriter->writeFile($puvodni, $cil);
-	$znovu = $blockParser->parseFile($cil);
+	$blockWriter->writeFile($original, $target);
+	$again = $blockParser->parseFile($target);
 
-	Assert::equal($puvodni, $znovu, 'round-trip kamene ' . \basename($path));
+	Assert::equal($original, $again, 'round-trip of block ' . \basename($path));
 }
 
 $workflows = \glob($root . '/workflows/*.json');
 Assert::count(4, $workflows === false ? [] : $workflows);
 
 foreach ($workflows === false ? [] : $workflows as $path) {
-	$puvodni = $workflowParser->parseFile($path);
-	$cil = $temp . '/' . \basename($path);
+	$original = $workflowParser->parseFile($path);
+	$target = $temp . '/' . \basename($path);
 
-	$workflowWriter->writeFile($puvodni, $cil);
-	$znovu = $workflowParser->parseFile($cil);
+	$workflowWriter->writeFile($original, $target);
+	$again = $workflowParser->parseFile($target);
 
-	// Assert::equal() má limit vnoření natvrdo na 10 (Assert.php:657) a strom
-	// sync.json je hlubší. print_r nerozliší null/false/'' (jediné pole, kde
-	// na tom záleží, je allow_failure) — serialize() je typově přesné a při
-	// pádu díky Assert::same pořád ukáže skutečný rozdíl.
+	// Assert::equal() has a hardcoded nesting limit of 10 (Assert.php:657) and
+	// the sync.json tree is deeper. print_r doesn't distinguish null/false/''
+	// (the only field where that matters is allow_failure) — serialize() is
+	// type-precise and, on failure, Assert::same still shows the real diff.
 	Assert::same(
-		\serialize($puvodni),
-		\serialize($znovu),
-		'round-trip workflow ' . \basename($path),
+		\serialize($original),
+		\serialize($again),
+		'round-trip of workflow ' . \basename($path),
 	);
 }
 
-// --- soubor končí novým řádkem ---
-// Všech 19 souborů referenční zátěže tak končí a git to má rád.
+// --- the file ends with a newline ---
+// All 19 files of the reference workload end that way, and git likes it.
 
-$obsah = FileSystem::read($temp . '/card-dev.json');
-Assert::same("\n", \substr($obsah, -1));
+$content = FileSystem::read($temp . '/card-dev.json');
+Assert::same("\n", \substr($content, -1));
 
-// --- jméno musí odpovídat souboru ---
-// Parser to při čtení vynucuje; zapisovač to hlídá při zápisu, aby ta dvě
-// pravidla nemohla přestat platit současně.
+// --- the name must match the file ---
+// The parser enforces it on read; the writer checks it on write, so those
+// two rules can't drift out of sync.
 
 Assert::exception(
 	fn() => $blockWriter->writeFile(
-		new Block(name: 'jedno', command: 'echo', args: []),
-		$temp . '/druhe.json',
+		new Block(name: 'one', command: 'echo', args: []),
+		$temp . '/other.json',
 	),
 	Donut\Writer\WriteException::class,
 );
 
 Assert::exception(
 	fn() => $workflowWriter->writeFile(
-		new Donut\Format\Workflow(name: 'jedno'),
-		$temp . '/druhe.json',
+		new Donut\Format\Workflow(name: 'one'),
+		$temp . '/other.json',
 	),
 	Donut\Writer\WriteException::class,
 );
 
-// Správné jméno projde
-$blockWriter->writeFile(new Block(name: 'spravne', command: 'echo', args: []), $temp . '/spravne.json');
-Assert::same('spravne', $blockParser->parseFile($temp . '/spravne.json')->name);
+// A matching name passes
+$blockWriter->writeFile(new Block(name: 'correct', command: 'echo', args: []), $temp . '/correct.json');
+Assert::same('correct', $blockParser->parseFile($temp . '/correct.json')->name);
 
-// --- neplatné UTF-8 nesmí uniknout jako Nette\Utils\JsonException ---
-// Json::encode() na neplatném UTF-8 (typicky text napsaný do GUI formuláře)
-// hodí JsonException; vrstva zapisovače ji musí zabalit do WriteException,
-// stejně jako FileSystem::writeAtomic() svůj Nette\IOException — jinak by ji
-// volající chytající jedním catch přes Donut\Exception (viz JsonSource) propásl.
-// Zápis do read-only adresáře je pro tenhle druhý případ míň spolehlivý napříč
-// prostředími (uid 0 v CI permise obchází), proto se testuje jen JsonException.
+// --- invalid UTF-8 must not leak out as Nette\Utils\JsonException ---
+// Json::encode() on invalid UTF-8 (typically text typed into a GUI form)
+// throws JsonException; the writer layer must wrap it in WriteException,
+// just like it wraps FileSystem::writeAtomic()'s own Nette\IOException —
+// otherwise a caller catching everything with a single catch on
+// Donut\Exception (see JsonSource) would miss it. Writing to a read-only
+// directory is less reliable across environments for this second case
+// (uid 0 in CI bypasses the permission), so only JsonException is tested.
 
 Assert::exception(
 	fn() => $blockWriter->writeFile(
-		new Block(name: 'spatne', command: 'echo', args: [], description: "\xB1\x31"),
-		$temp . '/spatne.json',
+		new Block(name: 'wrong', command: 'echo', args: [], description: "\xB1\x31"),
+		$temp . '/wrong.json',
 	),
 	Donut\Writer\WriteException::class,
 );

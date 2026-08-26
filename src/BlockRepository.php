@@ -10,16 +10,17 @@ use Donut\Parser\ParseException;
 
 
 /**
- * Kameny z adresáře blocks/, hledané podle jména.
+ * Blocks from the blocks/ directory, looked up by name.
  *
- * Soubory se parsují líně, ale seznam jmen zná hned — kvůli validátorově
- * kontrole „kámen neexistuje" (--list vypisuje workflow, ne kameny).
+ * Files are parsed lazily, but the list of names is known right away —
+ * for the validator's "block does not exist" check (--list prints
+ * workflows, not blocks).
  */
 final class BlockRepository
 {
 	private readonly BlockParser $parser;
 
-	/** @var array<string, string> jméno => cesta k souboru */
+	/** @var array<string, string> name => file path */
 	private array $files = [];
 
 	/** @var array<string, Block> */
@@ -36,7 +37,7 @@ final class BlockRepository
 		$this->parser = $parser ?? new BlockParser;
 
 		if (!\is_dir($directory)) {
-			throw new ParseException("Adresář s kameny '{$directory}' neexistuje.");
+			throw new ParseException("Blocks directory '{$directory}' does not exist.");
 		}
 
 		$paths = \glob($directory . '/*.json');
@@ -61,7 +62,7 @@ final class BlockRepository
 	public function get(string $name): Block
 	{
 		if (!isset($this->files[$name])) {
-			throw new ParseException("Kámen '{$name}' neexistuje.");
+			throw new ParseException("Block '{$name}' does not exist.");
 		}
 
 		return $this->loaded[$name] ??= $this->parser->parseFile($this->files[$name]);

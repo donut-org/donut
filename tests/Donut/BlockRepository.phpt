@@ -32,20 +32,20 @@ Assert::false($repo->has('nope'));
 Assert::same('echo', $repo->get('echo')->name);
 Assert::same('cat', $repo->get('cat')->command);
 
-// stejná instance při opakovaném volání (načítá se jednou)
+// same instance on a repeated call (loaded once)
 Assert::same($repo->get('echo'), $repo->get('echo'));
 
 Assert::exception(
 	fn() => $repo->get('nope'),
 	ParseException::class,
-	"Kámen 'nope' neexistuje."
+	"Block 'nope' does not exist."
 );
 
-// neexistující adresář
+// nonexistent directory
 Assert::exception(
-	fn() => new BlockRepository($dir . '/chybi'),
+	fn() => new BlockRepository($dir . '/missing'),
 	ParseException::class,
-	"Adresář s kameny '{$dir}/chybi' neexistuje."
+	"Blocks directory '{$dir}/missing' does not exist."
 );
 
 Nette\Utils\FileSystem::delete(TEMP_DIR);

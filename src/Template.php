@@ -6,12 +6,13 @@ namespace Donut;
 
 
 /**
- * Text s dosazovacími místy tvaru {%KLIC%}.
+ * Text with substitution placeholders of the form {%KEY%}.
  *
- * Delimitery jsou dvouznakové, aby se nesrazily s procentem v datech: {% ani
- * %} nevznikne percent-encodingem, byly by to %7B a %7D. Samotné procento
- * proto nemá význam a žádný escape neexistuje — `date +%Y`, `printf '%d\n'`
- * i `?path=%2Ffoo` projdou beze změny.
+ * The delimiters are two characters so they don't collide with a percent
+ * sign in data: neither {% nor %} can arise from percent-encoding, that
+ * would be %7B and %7D. A lone percent sign therefore has no meaning and no
+ * escape exists — `date +%Y`, `printf '%d\n'` and `?path=%2Ffoo` all pass
+ * through unchanged.
  */
 final class Template
 {
@@ -35,7 +36,7 @@ final class Template
 		);
 
 		if ($parts === false) {
-			throw new Exception("Šablonu '{$source}' se nepodařilo rozparsovat.");
+			throw new Exception("Template '{$source}' could not be parsed.");
 		}
 
 		$segments = [];
@@ -60,7 +61,7 @@ final class Template
 
 
 	/**
-	 * Klíče, které šablona čte. Unikátní, v pořadí prvního výskytu.
+	 * Keys the template reads. Unique, in order of first occurrence.
 	 *
 	 * @return list<string>
 	 */
@@ -79,8 +80,8 @@ final class Template
 
 
 	/**
-	 * Dosadí hodnoty jedním průchodem. Výsledek se dál nezpracovává, takže
-	 * data obsahující {%NECO%} se nevyhodnocují.
+	 * Substitutes values in a single pass. The result is not processed
+	 * further, so data containing {%SOMETHING%} is not evaluated.
 	 *
 	 * @param  array<string, string> $map
 	 * @throws MissingKeyException
