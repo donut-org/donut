@@ -10,9 +10,9 @@ use Donut\Template;
 
 
 /**
- * JSON souboru z blocks/ na objekt Block.
+ * JSON file from blocks/ into a Block object.
  *
- * Kontroluje jen strukturu jednoho souboru. Vazby mezi soubory řeší validátor.
+ * Checks only the structure of a single file. Links between files are handled by the validator.
  */
 final class BlockParser
 {
@@ -26,7 +26,7 @@ final class BlockParser
 
 		if ($block->name !== $expected) {
 			throw new ParseException(
-				"{$path}: name '{$block->name}' neodpovídá názvu souboru '{$expected}'."
+				"{$path}: name '{$block->name}' does not match the file name '{$expected}'."
 			);
 		}
 
@@ -47,21 +47,21 @@ final class BlockParser
 		$command = $this->requireString($data, 'command', $location);
 
 		if (!isset($data['args']) || !\is_array($data['args'])) {
-			throw new ParseException("{$location}: klíč 'args' je povinný a musí být pole.");
+			throw new ParseException("{$location}: key 'args' is required and must be an array.");
 		}
 
 		$args = [];
 
 		foreach ($data['args'] as $i => $group) {
 			if (!\is_array($group)) {
-				throw new ParseException("{$location}: args[{$i}] musí být pole řetězců.");
+				throw new ParseException("{$location}: args[{$i}] must be an array of strings.");
 			}
 
 			$parsedGroup = [];
 
 			foreach ($group as $j => $element) {
 				if (!\is_string($element)) {
-					throw new ParseException("{$location}: args[{$i}][{$j}] musí být řetězec.");
+					throw new ParseException("{$location}: args[{$i}][{$j}] must be a string.");
 				}
 
 				$parsedGroup[] = Template::parse($element);
@@ -74,7 +74,7 @@ final class BlockParser
 
 		if (isset($data['stdin'])) {
 			if (!\is_array($data['stdin'])) {
-				throw new ParseException("{$location}: klíč 'stdin' musí být objekt.");
+				throw new ParseException("{$location}: key 'stdin' must be an object.");
 			}
 
 			JsonSource::rejectUnknownKeys($data['stdin'], ['required', 'description'], $location, 'stdin');
@@ -89,7 +89,7 @@ final class BlockParser
 
 		if (isset($data['timeout'])) {
 			if (!\is_int($data['timeout']) || $data['timeout'] < 1) {
-				throw new ParseException("{$location}: 'timeout' musí být kladné celé číslo.");
+				throw new ParseException("{$location}: 'timeout' must be a positive integer.");
 			}
 
 			$timeout = $data['timeout'];
@@ -117,7 +117,7 @@ final class BlockParser
 	private function requireString(array $data, string $key, string $location): string
 	{
 		if (!isset($data[$key]) || !\is_string($data[$key]) || $data[$key] === '') {
-			throw new ParseException("{$location}: klíč '{$key}' je povinný a musí být neprázdný řetězec.");
+			throw new ParseException("{$location}: key '{$key}' is required and must be a non-empty string.");
 		}
 
 		return $data[$key];

@@ -10,11 +10,11 @@ use Nette\Utils\JsonException;
 
 
 /**
- * Části parsování společné kamenům i workflow.
+ * Parsing parts shared by blocks and workflows.
  *
- * Oba formáty se čtou stejně a oba deklarují inputs; kámen a krok navíc
- * sdílejí tvar allow_failure. Bez tohohle místa by se to opisovalo
- * a měnilo dvakrát.
+ * Both formats are read the same way and both declare inputs; a block and a step
+ * additionally share the allow_failure shape. Without this place it would be
+ * duplicated and changed twice.
  */
 final class JsonSource
 {
@@ -27,18 +27,18 @@ final class JsonSource
 		$content = @\file_get_contents($path);
 
 		if ($content === false) {
-			throw new ParseException("Soubor '{$path}' nejde přečíst.");
+			throw new ParseException("File '{$path}' cannot be read.");
 		}
 
 		try {
 			$data = Json::decode($content, forceArrays: true);
 
 		} catch (JsonException $e) {
-			throw new ParseException("Soubor '{$path}' není platný JSON: {$e->getMessage()}", 0, $e);
+			throw new ParseException("File '{$path}' is not valid JSON: {$e->getMessage()}", 0, $e);
 		}
 
 		if (!\is_array($data)) {
-			throw new ParseException("Soubor '{$path}' musí obsahovat objekt.");
+			throw new ParseException("File '{$path}' must contain an object.");
 		}
 
 		return $data;
@@ -46,9 +46,9 @@ final class JsonSource
 
 
 	/**
-	 * Odmítne klíče, které nejsou v seznamu známých — pro libovolnou úroveň
-	 * vnoření, ne jen kořen souboru. `$what` je jak se v hlášce odkázat na
-	 * místo; prázdný řetězec pro kořen souboru.
+	 * Rejects keys that are not in the list of known ones — for any nesting
+	 * level, not just the file root. `$what` is how to refer to the location
+	 * in the message; an empty string for the file root.
 	 *
 	 * @param  array<mixed> $data
 	 * @param  array<int, string> $known
@@ -62,8 +62,8 @@ final class JsonSource
 			}
 
 			$message = $what === ''
-				? "neznámý klíč '{$key}'."
-				: "{$what} má neznámý klíč '{$key}'.";
+				? "unknown key '{$key}'."
+				: "{$what} has an unknown key '{$key}'.";
 
 			throw new ParseException("{$location}: {$message}");
 		}
@@ -71,9 +71,9 @@ final class JsonSource
 
 
 	/**
-	 * Přečte klíč `inputs`. Chybějící klíč znamená prázdnou deklaraci.
+	 * Reads the `inputs` key. A missing key means an empty declaration.
 	 *
-	 * @param  array<mixed> $data celý objekt kamene nebo workflow
+	 * @param  array<mixed> $data the whole block or workflow object
 	 * @return array<string, Input>
 	 * @throws ParseException
 	 */
@@ -84,27 +84,27 @@ final class JsonSource
 		}
 
 		if (!\is_array($data['inputs'])) {
-			throw new ParseException("{$location}: klíč 'inputs' musí být objekt.");
+			throw new ParseException("{$location}: key 'inputs' must be an object.");
 		}
 
 		$inputs = [];
 
 		foreach ($data['inputs'] as $name => $spec) {
 			if (!\is_string($name)) {
-				throw new ParseException("{$location}: jména vstupů musí být řetězce.");
+				throw new ParseException("{$location}: input names must be strings.");
 			}
 
 			if (!\is_array($spec)) {
-				throw new ParseException("{$location}: vstup '{$name}' musí být objekt.");
+				throw new ParseException("{$location}: input '{$name}' must be an object.");
 			}
 
-			self::rejectUnknownKeys($spec, ['required', 'default', 'description'], $location, "vstup '{$name}'");
+			self::rejectUnknownKeys($spec, ['required', 'default', 'description'], $location, "input '{$name}'");
 
 			$inputs[$name] = new Input(
 				name: $name,
 				required: isset($spec['required']) ? (bool) $spec['required'] : true,
-				default: self::optionalString($spec, 'default', $location, "default vstupu '{$name}'"),
-				description: self::optionalString($spec, 'description', $location, "description vstupu '{$name}'"),
+				default: self::optionalString($spec, 'default', $location, "default of input '{$name}'"),
+				description: self::optionalString($spec, 'description', $location, "description of input '{$name}'"),
 			);
 		}
 
@@ -113,11 +113,11 @@ final class JsonSource
 
 
 	/**
-	 * Nepovinná textová hodnota. Chybí -> null. Skalár -> text.
-	 * Pole nebo objekt -> chyba, protože v mapě jsou jen texty.
+	 * Optional text value. Missing -> null. Scalar -> text.
+	 * Array or object -> error, because the map holds only text.
 	 *
 	 * @param  array<mixed> $data
-	 * @param  string $what jak se na hodnotu odkázat v hlášce
+	 * @param  string $what how to refer to the value in the message
 	 * @throws ParseException
 	 */
 	public static function optionalString(array $data, string $key, string $location, string $what): ?string
@@ -127,7 +127,7 @@ final class JsonSource
 		}
 
 		if (!\is_scalar($data[$key])) {
-			throw new ParseException("{$location}: {$what} musí být řetězec.");
+			throw new ParseException("{$location}: {$what} must be a string.");
 		}
 
 		return (string) $data[$key];
@@ -135,8 +135,8 @@ final class JsonSource
 
 
 	/**
-	 * @param  string $what jak se na pole odkázat v hlášce (`allow_failure`,
-	 *                      nebo `steps[0].allow_failure` u kroku)
+	 * @param  string $what how to refer to the field in the message (`allow_failure`,
+	 *                      or `steps[0].allow_failure` for a step)
 	 * @return bool|array<int, int>
 	 * @throws ParseException
 	 */
@@ -152,7 +152,7 @@ final class JsonSource
 			foreach ($value as $code) {
 				if (!\is_int($code)) {
 					throw new ParseException(
-						"{$location}: {$what} jako pole musí obsahovat jen celá čísla."
+						"{$location}: {$what} as an array must contain only integers."
 					);
 				}
 
@@ -163,7 +163,7 @@ final class JsonSource
 		}
 
 		throw new ParseException(
-			"{$location}: {$what} musí být true, false, nebo pole celých čísel."
+			"{$location}: {$what} must be true, false, or an array of integers."
 		);
 	}
 }
