@@ -6,7 +6,7 @@ namespace Donut\Runner;
 
 
 /**
- * Mlčí. Pro testy a pro volající, které průběh nezajímá.
+ * Stays silent. For tests and for callers that don't care about progress.
  */
 final class NullReporter implements Reporter
 {

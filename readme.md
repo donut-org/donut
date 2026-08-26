@@ -18,7 +18,7 @@ inputs up front, checks before it starts that every value a step reads is
 written by something earlier, and refuses to run a workflow that fails the
 check.
 
-**The documentation is in Czech**, and so are the messages Donut prints.
+**The documentation is in Czech**; the messages Donut prints are English.
 `docs/format-specifikace.md` is the reference for the format.
 
 
@@ -108,8 +108,8 @@ $ vendor/bin/donut --list
 $ vendor/bin/donut hello --help
 hello — Greets someone.
 
-Vstupy:
-  --who=…          povinný   Whom to greet
+Inputs:
+  --who=…          required   Whom to greet
 ```
 
 Commands never go through a shell — Donut passes arguments to `execve` as a

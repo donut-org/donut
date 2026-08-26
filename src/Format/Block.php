@@ -8,16 +8,16 @@ use Donut\Template;
 
 
 /**
- * Parametrizovaná funkce nad jedním příkazem. Neví nic o workflow, které ji
- * volá, ani o klíčích v mapě enginu.
+ * A parametrized function over a single command. Knows nothing about the
+ * workflow that calls it, nor about keys in the engine map.
  */
 final class Block
 {
 	/**
-	 * @param array<int, array<int, Template>> $args   skupiny argumentů
-	 * @param array<string, Input>             $inputs klíčem je jméno vstupu
+	 * @param array<int, array<int, Template>> $args   argument groups
+	 * @param array<string, Input>             $inputs keyed by input name
 	 * @param bool|array<int, int>             $allowFailure
-	 *        false = jen 0, true = cokoliv, pole = výčet povolených exit kódů
+	 *        false = only 0, true = anything, array = list of allowed exit codes
 	 */
 	public function __construct(
 		public readonly string $name,

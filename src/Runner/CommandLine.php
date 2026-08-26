@@ -9,11 +9,12 @@ use Donut\Template;
 
 
 /**
- * Příkaz a jeho argumenty, poskládané z kamene a z hodnot, které mu krok předal.
+ * A command and its arguments, assembled from a block and the values a step
+ * passed to it.
  *
- * Skupina argumentů vypadne, když se v ní některá proměnná vyhodnotí na
- * prázdno. Nevyplněný vstup a vstup vyhodnocený na prázdný řetězec jsou
- * totéž — viz sekce Skupiny argumentů ve specifikaci.
+ * An argument group drops out when one of its variables evaluates to empty.
+ * An unfilled input and an input evaluated to an empty string are the same
+ * thing — see the Argument groups section of the specification.
  */
 final class CommandLine
 {
@@ -26,9 +27,9 @@ final class CommandLine
 
 
 	/**
-	 * @param  array<string, Template> $in  vstup kamene => šablona ze kroku
-	 * @param  array<string, string>   $map mapa enginu
-	 * @param  string                  $location cesta ke kroku pro hlášky
+	 * @param  array<string, Template> $in  block input => template from the step
+	 * @param  array<string, string>   $map engine map
+	 * @param  string                  $location step path for messages
 	 * @throws RunFailedException
 	 * @throws \Donut\MissingKeyException
 	 */
@@ -52,12 +53,12 @@ final class CommandLine
 
 
 	/**
-	 * Hodnota vstupu: co předal krok, jinak default kamene, jinak nevyplněno.
-	 * Rozhoduje výsledná hodnota, ne to, odkud přišla.
+	 * The input's value: what the step passed, else the block's default, else
+	 * unfilled. The resulting value decides, not where it came from.
 	 *
 	 * @param  array<string, Template> $in
 	 * @param  array<string, string>   $map
-	 * @return array<string, string>   nevyplněné vstupy v poli chybí
+	 * @return array<string, string>   unfilled inputs are missing from the array
 	 * @throws RunFailedException
 	 */
 	private static function resolveValues(Block $block, array $in, array $map, string $location): array
@@ -78,7 +79,7 @@ final class CommandLine
 			if ($value === null || $value === '') {
 				if ($input->required) {
 					throw new RunFailedException(
-						"{$location}: povinný vstup \"{$name}\" kamene \"{$block->name}\" má prázdnou hodnotu."
+						"{$location}: required input \"{$name}\" of block \"{$block->name}\" has an empty value."
 					);
 				}
 

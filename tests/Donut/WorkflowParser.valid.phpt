@@ -13,7 +13,7 @@ require __DIR__ . '/../bootstrap.php';
 
 $wf = (new WorkflowParser)->parseArray([
 	'name' => 'demo',
-	'description' => 'Ukázka.',
+	'description' => 'Demo.',
 	'inputs' => [
 		'env' => ['required' => true],
 		'tag' => ['required' => false, 'default' => 'latest'],
@@ -21,7 +21,7 @@ $wf = (new WorkflowParser)->parseArray([
 	'steps' => [
 		[
 			'type' => 'run',
-			'name' => 'stáhnout',
+			'name' => 'download',
 			'block' => 'curl-get',
 			'in' => ['url' => 'https://x/{%env%}'],
 			'out' => ['result' => 'body', 'exit_code' => 'rc'],
@@ -32,10 +32,10 @@ $wf = (new WorkflowParser)->parseArray([
 			'type' => 'if',
 			'condition' => ['left' => '{%rc%}', 'op' => 'eq', 'right' => '0'],
 			'then' => [
-				['type' => 'set', 'key' => 'ok', 'value' => 'ano'],
+				['type' => 'set', 'key' => 'ok', 'value' => 'yes'],
 			],
 			'else' => [
-				['type' => 'set', 'key' => 'ok', 'value' => 'ne'],
+				['type' => 'set', 'key' => 'ok', 'value' => 'no'],
 			],
 		],
 		[
@@ -50,14 +50,14 @@ $wf = (new WorkflowParser)->parseArray([
 ], 'demo.json');
 
 Assert::same('demo', $wf->name);
-Assert::same('Ukázka.', $wf->description);
+Assert::same('Demo.', $wf->description);
 Assert::same(['env', 'tag'], array_keys($wf->inputs));
 Assert::same('latest', $wf->inputs['tag']->default);
 Assert::count(3, $wf->steps);
 
 $run = $wf->steps[0];
 Assert::type(RunStep::class, $run);
-Assert::same('stáhnout', $run->name);
+Assert::same('download', $run->name);
 Assert::same('curl-get', $run->block);
 Assert::same(['url'], array_keys($run->in));
 Assert::same(['env'], $run->in['url']->getKeys());
@@ -81,7 +81,7 @@ Assert::same(['body'], $each->over->getKeys());
 Assert::same('line', $each->as);
 Assert::count(1, $each->steps);
 
-// minimální run krok: bez in, out, name
+// minimal run step: without in, out, name
 $wf = (new WorkflowParser)->parseArray([
 	'name' => 'min',
 	'steps' => [['type' => 'run', 'block' => 'x']],
@@ -93,7 +93,7 @@ Assert::same([], $wf->steps[0]->out);
 Assert::null($wf->steps[0]->name);
 Assert::null($wf->steps[0]->allowFailure);
 
-// empty / not_empty nemusí mít right
+// empty / not_empty doesn't need to have right
 $wf = (new WorkflowParser)->parseArray([
 	'name' => 'e',
 	'steps' => [[

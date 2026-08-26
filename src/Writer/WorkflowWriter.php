@@ -18,11 +18,11 @@ use Nette\Utils\JsonException;
 
 
 /**
- * Workflow na pole. Inverze WorkflowParseru.
+ * Workflow to an array. Inverse of WorkflowParser.
  *
- * Pořadí klíčů odpovídá tomu, jak jsou soubory psané dnes. Volitelná pole
- * se vynechávají, když nejsou vyplněná; `required` u vstupů se vypisuje
- * vždycky (viz InputWriter).
+ * The key order matches how the files are written today. Optional fields
+ * are omitted when unfilled; `required` on inputs is always written out
+ * (see InputWriter).
  */
 final class WorkflowWriter
 {
@@ -41,7 +41,7 @@ final class WorkflowWriter
 			$data['inputs'] = InputWriter::toArray($workflow->inputs);
 		}
 
-		// steps se vypisují i prázdné — parser je vyžaduje.
+		// steps are written even when empty — the parser requires them.
 		$data['steps'] = $this->stepsToArray($workflow->steps);
 
 		return $data;
@@ -49,10 +49,11 @@ final class WorkflowWriter
 
 
 	/**
-	 * Cesta se dostává zvenčí, neodvozuje se ze jména — viz BlockWriter.
+	 * The path comes from outside, not derived from the name — see BlockWriter.
 	 *
-	 * @throws WriteException když jméno workflow neodpovídá názvu souboru, data
-	 *                        nejde zakódovat do JSON, nebo soubor nejde zapsat
+	 * @throws WriteException when the workflow's name does not match the file
+	 *                        name, the data cannot be encoded to JSON, or the
+	 *                        file cannot be written
 	 */
 	public function writeFile(Workflow $workflow, string $path): void
 	{
@@ -60,7 +61,7 @@ final class WorkflowWriter
 
 		if ($workflow->name !== $expected) {
 			throw new WriteException(
-				"{$path}: name '{$workflow->name}' neodpovídá názvu souboru '{$expected}'."
+				"{$path}: name '{$workflow->name}' does not match the file name '{$expected}'."
 			);
 		}
 
@@ -68,23 +69,24 @@ final class WorkflowWriter
 			$content = Json::encode($this->toArray($workflow), Json::PRETTY) . "\n";
 
 		} catch (JsonException $e) {
-			throw new WriteException("{$path}: data se nepodařilo zakódovat do JSON: {$e->getMessage()}", 0, $e);
+			throw new WriteException("{$path}: data could not be encoded to JSON: {$e->getMessage()}", 0, $e);
 		}
 
 		try {
 			FileSystem::writeAtomic($path, $content);
 
 		} catch (IOException $e) {
-			throw new WriteException("{$path}: soubor nejde zapsat: {$e->getMessage()}", 0, $e);
+			throw new WriteException("{$path}: file could not be written: {$e->getMessage()}", 0, $e);
 		}
 	}
 
 
 	/**
-	 * array_map() zachovává klíče; steps je array<int, Step>, ne list, takže
-	 * mezera (např. po unset() v GUI) by se bez array_values() zakódovala
-	 * jako JSON objekt místo pole. Jedno místo pokrývá kořenové steps, then,
-	 * else i foreach.steps — všechny sem chodí přes tuhle metodu.
+	 * array_map() preserves keys; steps is array<int, Step>, not a list, so a
+	 * gap (e.g. after unset() in the GUI) would encode as a JSON object
+	 * instead of an array without array_values(). One place covers the
+	 * top-level steps, then, else, and foreach.steps — they all go through
+	 * this method.
 	 *
 	 * @param  array<int, Step> $steps
 	 * @return array<int, array<string, mixed>>
@@ -124,8 +126,8 @@ final class WorkflowWriter
 				$data['timeout'] = $step->timeout;
 			}
 
-			// U kroku je null „nenastaveno" a false vědomé vypnutí —
-			// na rozdíl od kamene, kde je false výchozí hodnota.
+			// For a step, null is "unset" and false a deliberate opt-out —
+			// unlike a block, where false is the default value.
 			if ($step->allowFailure !== null) {
 				$data['allow_failure'] = $step->allowFailure;
 			}
@@ -163,7 +165,7 @@ final class WorkflowWriter
 			}
 
 			$data['condition'] = $condition;
-			// then se vypisuje i prázdné — parser ho vyžaduje.
+			// then is written even when empty — the parser requires it.
 			$data['then'] = $this->stepsToArray($step->then);
 
 			if ($step->else !== []) {
@@ -187,8 +189,8 @@ final class WorkflowWriter
 			return $data;
 		}
 
-		// Nová implementace Step se nesmí tiše přeskočit — spadlo by to až
-		// tím, že by z uloženého souboru zmizel celý krok.
-		throw new \LogicException('neznámý typ kroku ' . $step::class);
+		// A new Step implementation must not be silently skipped — it would
+		// only surface as a whole step disappearing from the saved file.
+		throw new \LogicException('unknown step type ' . $step::class);
 	}
 }

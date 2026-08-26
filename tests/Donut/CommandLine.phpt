@@ -40,12 +40,12 @@ function tpl(array $in): array
 }
 
 
-// konstantní argumenty projdou beze změny
+// constant arguments pass through unchanged
 $c = CommandLine::build(block([['-sS', '--fail']]), [], [], 'at');
 Assert::same('curl', $c->command);
 Assert::same(['-sS', '--fail'], $c->args);
 
-// dosazení z mapy přes šablonu kroku
+// substitution from the map via the step's template
 $c = CommandLine::build(
 	block([['{%url%}']], ['url' => []]),
 	tpl(['url' => 'https://x/{%env%}']),
@@ -54,7 +54,7 @@ $c = CommandLine::build(
 );
 Assert::same(['https://x/prod'], $c->args);
 
-// skupiny se zplošťují
+// groups get flattened
 $c = CommandLine::build(
 	block([['-o', '{%file%}'], ['{%url%}']], ['file' => [], 'url' => []]),
 	tpl(['file' => 'out.html', 'url' => 'https://x']),
@@ -63,7 +63,7 @@ $c = CommandLine::build(
 );
 Assert::same(['-o', 'out.html', 'https://x'], $c->args);
 
-// nevyplněný volitelný vstup shodí celou skupinu
+// an unfilled optional input drops the whole group
 $c = CommandLine::build(
 	block([['-sS'], ['--config', '{%curlrc%}'], ['{%url%}']], ['curlrc' => ['required' => false], 'url' => []]),
 	tpl(['url' => 'https://x']),
@@ -72,7 +72,7 @@ $c = CommandLine::build(
 );
 Assert::same(['-sS', 'https://x'], $c->args);
 
-// prázdná hodnota shodí skupinu stejně jako nevyplnění
+// an empty value drops the group the same as being unfilled
 $c = CommandLine::build(
 	block([['-sS'], ['--config', '{%curlrc%}'], ['{%url%}']], ['curlrc' => ['required' => false], 'url' => []]),
 	tpl(['curlrc' => '{%rc%}', 'url' => 'https://x']),
@@ -81,7 +81,7 @@ $c = CommandLine::build(
 );
 Assert::same(['-sS', 'https://x'], $c->args);
 
-// default se použije, když krok hodnotu nepředá
+// the default is used when the step doesn't pass a value
 $c = CommandLine::build(
 	block([['{%flags%}'], ['{%filter%}']], ['flags' => ['required' => false, 'default' => '-r'], 'filter' => []]),
 	tpl(['filter' => '.id']),
@@ -90,7 +90,7 @@ $c = CommandLine::build(
 );
 Assert::same(['-r', '.id'], $c->args);
 
-// krok default přebije
+// the step overrides the default
 $c = CommandLine::build(
 	block([['{%flags%}'], ['{%filter%}']], ['flags' => ['required' => false, 'default' => '-r'], 'filter' => []]),
 	tpl(['flags' => '-Rs', 'filter' => '.id']),
@@ -99,7 +99,7 @@ $c = CommandLine::build(
 );
 Assert::same(['-Rs', '.id'], $c->args);
 
-// víc proměnných a okolní text v jednom prvku
+// multiple variables and surrounding text in one element
 $c = CommandLine::build(
 	block([['--url={%url%}&t={%tag%}']], ['url' => [], 'tag' => []]),
 	tpl(['url' => 'https://x', 'tag' => 'v1']),
@@ -108,11 +108,11 @@ $c = CommandLine::build(
 );
 Assert::same(['--url=https://x&t=v1'], $c->args);
 
-// konstantní prázdný argument zůstane — není v něm proměnná
+// a constant empty argument stays — it has no variable in it
 $c = CommandLine::build(block([['--prefix=']]), [], [], 'at');
 Assert::same(['--prefix='], $c->args);
 
-// povinný vstup s prázdnou hodnotou je tvrdá chyba
+// a required input with an empty value is a hard error
 Assert::exception(
 	fn() => CommandLine::build(
 		block([['{%url%}']], ['url' => []]),
@@ -121,10 +121,10 @@ Assert::exception(
 		'w.json:steps[3]'
 	),
 	RunFailedException::class,
-	'w.json:steps[3]: povinný vstup "url" kamene "b" má prázdnou hodnotu.'
+	'w.json:steps[3]: required input "url" of block "b" has an empty value.'
 );
 
-// prázdný default u povinného vstupu je taky chyba
+// an empty default on a required input is also an error
 Assert::exception(
 	fn() => CommandLine::build(
 		block([['{%url%}']], ['url' => ['default' => '']]),
@@ -133,14 +133,14 @@ Assert::exception(
 		'w.json:steps[3]'
 	),
 	RunFailedException::class,
-	'w.json:steps[3]: povinný vstup "url" kamene "b" má prázdnou hodnotu.'
+	'w.json:steps[3]: required input "url" of block "b" has an empty value.'
 );
 
-// šablona čtoucí neexistující klíč mapy propadne jako MissingKeyException
+// a template reading a nonexistent map key falls through as MissingKeyException
 Assert::exception(
 	fn() => CommandLine::build(
 		block([['{%url%}']], ['url' => []]),
-		tpl(['url' => '{%neni%}']),
+		tpl(['url' => '{%missing%}']),
 		[],
 		'at'
 	),

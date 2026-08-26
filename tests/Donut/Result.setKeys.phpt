@@ -7,9 +7,10 @@ use Tester\Assert;
 
 require __DIR__ . '/../bootstrap.php';
 
-// M1: setKeys() smí nastavit obě množiny jen jednou. Dnes to drží jen shodou
-// okolností — new Result je v repozitáři jediné volání a validate() nemá
-// časný return — druhé volání by tiše přepsalo obě množiny.
+// M1: setKeys() may set both sets only once. Today this holds only by
+// coincidence — new Result is the only call in the repository and
+// validate() has no early return — a second call would silently overwrite
+// both sets.
 
 $result = new Result;
 $result->setKeys(['a'], ['b']);
@@ -22,6 +23,6 @@ Assert::exception(
 	LogicException::class,
 );
 
-// Druhé volání skutečně nic nepřepsalo.
+// The second call really did not overwrite anything.
 Assert::same(['a'], $result->getReadKeys());
 Assert::same(['b'], $result->getWrittenKeys());

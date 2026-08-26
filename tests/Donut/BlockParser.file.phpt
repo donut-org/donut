@@ -14,7 +14,7 @@ Helpers::purge(TEMP_DIR);
 
 $parser = new BlockParser;
 
-// platný soubor se rozparsuje
+// a valid file gets parsed
 $path = TEMP_DIR . '/curl-get.json';
 file_put_contents($path, json_encode([
 	'name' => 'curl-get',
@@ -28,7 +28,7 @@ Assert::same('curl', $block->command);
 Assert::count(1, $block->args);
 Assert::same('{%url%}', $block->args[0][0]->getSource());
 
-// name neodpovídá názvu souboru
+// name does not match the file name
 $path = TEMP_DIR . '/wrong-name.json';
 file_put_contents($path, json_encode([
 	'name' => 'other',
@@ -39,36 +39,36 @@ file_put_contents($path, json_encode([
 Assert::exception(
 	fn() => $parser->parseFile($path),
 	ParseException::class,
-	"{$path}: name 'other' neodpovídá názvu souboru 'wrong-name'."
+	"{$path}: name 'other' does not match the file name 'wrong-name'."
 );
 
-// neexistující / nečitelný soubor
+// non-existent / unreadable file
 $path = TEMP_DIR . '/does-not-exist.json';
 
 Assert::exception(
 	fn() => $parser->parseFile($path),
 	ParseException::class,
-	"Soubor '{$path}' nejde přečíst."
+	"File '{$path}' cannot be read."
 );
 
-// neplatný JSON
+// invalid JSON
 $path = TEMP_DIR . '/broken.json';
 file_put_contents($path, '{not valid json');
 
 Assert::exception(
 	fn() => $parser->parseFile($path),
 	ParseException::class,
-	"Soubor '{$path}' není platný JSON: %a%"
+	"File '{$path}' is not valid JSON: %a%"
 );
 
-// kořen JSON není objekt
+// JSON root is not an object
 $path = TEMP_DIR . '/scalar-root.json';
-file_put_contents($path, '"jen text"');
+file_put_contents($path, '"just text"');
 
 Assert::exception(
 	fn() => $parser->parseFile($path),
 	ParseException::class,
-	"Soubor '{$path}' musí obsahovat objekt."
+	"File '{$path}' must contain an object."
 );
 
 Helpers::purge(TEMP_DIR);

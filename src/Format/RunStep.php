@@ -9,13 +9,13 @@ use Donut\Template;
 
 final class RunStep implements Step
 {
-	/** Kanály, které smí stát v out. */
+	/** Channels that may appear in out. */
 	public const Channels = ['result', 'stderr', 'exit_code'];
 
 	/**
-	 * @param array<string, Template> $in  vstup kamene => šablona; klíč stdin plní standardní vstup
-	 * @param array<string, string>   $out kanál => klíč v mapě enginu
-	 * @param bool|array<int, int>|null $allowFailure null = převzít z kamene
+	 * @param array<string, Template> $in  block input => template; the stdin key feeds standard input
+	 * @param array<string, string>   $out channel => key in the engine map
+	 * @param bool|array<int, int>|null $allowFailure null = inherit from the block
 	 */
 	public function __construct(
 		public readonly string $block,

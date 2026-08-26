@@ -6,7 +6,7 @@ namespace Donut\Format;
 
 
 /**
- * Společný typ pro položky pole steps.
+ * Common type for items of the steps array.
  */
 interface Step
 {

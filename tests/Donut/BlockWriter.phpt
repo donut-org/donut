@@ -13,61 +13,61 @@ require __DIR__ . '/../bootstrap.php';
 
 $writer = new BlockWriter;
 
-// Nejmenší platný kámen: jen povinná pole. Nic volitelného se nesmí objevit.
+// Smallest valid block: only required fields. Nothing optional may appear.
 Assert::same(
 	[
-		'name' => 'holy',
+		'name' => 'bare',
 		'command' => 'echo',
 		'args' => [],
 	],
-	$writer->toArray(new Block(name: 'holy', command: 'echo', args: [])),
+	$writer->toArray(new Block(name: 'bare', command: 'echo', args: [])),
 );
 
-// Kámen se vším. Pořadí klíčů je součástí tvrzení — Assert::same porovnává
-// pole včetně pořadí, takže tenhle test hlídá i to.
-$plny = new Block(
-	name: 'plny',
+// A block with everything. Key order is part of the assertion — Assert::same
+// compares arrays including order, so this test checks that too.
+$full = new Block(
+	name: 'full',
 	command: 'curl',
 	args: [
 		[Template::parse('-sS'), Template::parse('--fail')],
 		[Template::parse('--config'), Template::parse('{%curlrc%}')],
 	],
 	inputs: [
-		'url' => new Input(name: 'url', required: true, description: 'Adresa'),
-		// default se v referenční zátěži nevyskytuje ani jednou — kdyby ho
-		// zapisovač zahodil, round-trip nad ní by to nepoznal.
-		'curlrc' => new Input(name: 'curlrc', required: false, default: '/tmp/x', description: 'Soubor'),
-		'holy' => new Input(name: 'holy'),
+		'url' => new Input(name: 'url', required: true, description: 'Address'),
+		// default does not occur even once in the reference workload — if the
+		// writer dropped it, a round-trip over it wouldn't catch that.
+		'curlrc' => new Input(name: 'curlrc', required: false, default: '/tmp/x', description: 'File'),
+		'bare' => new Input(name: 'bare'),
 	],
-	stdin: new StdinSpec(required: false, description: 'Tělo'),
+	stdin: new StdinSpec(required: false, description: 'Body'),
 	timeout: 30,
 	allowFailure: [0, 1],
-	description: 'Popis kamene',
+	description: 'Block description',
 );
 
 Assert::same(
 	[
-		'name' => 'plny',
-		'description' => 'Popis kamene',
+		'name' => 'full',
+		'description' => 'Block description',
 		'command' => 'curl',
 		'args' => [
 			['-sS', '--fail'],
 			['--config', '{%curlrc%}'],
 		],
 		'inputs' => [
-			'url' => ['required' => true, 'description' => 'Adresa'],
-			'curlrc' => ['required' => false, 'default' => '/tmp/x', 'description' => 'Soubor'],
-			// required se vypisuje vždycky, i když je výchozí
-			'holy' => ['required' => true],
+			'url' => ['required' => true, 'description' => 'Address'],
+			'curlrc' => ['required' => false, 'default' => '/tmp/x', 'description' => 'File'],
+			// required is always written out, even when it's the default
+			'bare' => ['required' => true],
 		],
-		'stdin' => ['required' => false, 'description' => 'Tělo'],
+		'stdin' => ['required' => false, 'description' => 'Body'],
 		'timeout' => 30,
 		'allow_failure' => [0, 1],
 	],
-	$writer->toArray($plny),
+	$writer->toArray($full),
 );
 
-// stdin bez popisu má jen required
+// stdin without a description has only required
 Assert::same(
 	['required' => true],
 	$writer->toArray(new Block(
@@ -76,7 +76,7 @@ Assert::same(
 	))['stdin'],
 );
 
-// allow_failure: true se vypíše, false se vynechá
+// allow_failure: true is written out, false is omitted
 Assert::same(
 	true,
 	$writer->toArray(new Block(name: 'x', command: 'c', args: [], allowFailure: true))['allow_failure'],
@@ -88,20 +88,21 @@ Assert::false(
 	)),
 );
 
-// prázdné inputs se vynechají, prázdné args ne — args jsou povinné
-$holy = $writer->toArray(new Block(name: 'x', command: 'c', args: []));
-Assert::false(\array_key_exists('inputs', $holy));
-Assert::true(\array_key_exists('args', $holy));
+// empty inputs are omitted, empty args are not — args are required
+$bare = $writer->toArray(new Block(name: 'x', command: 'c', args: []));
+Assert::false(\array_key_exists('inputs', $bare));
+Assert::true(\array_key_exists('args', $bare));
 
-// array_map() zachovává klíče; args je array<int, array<int, Template>>, ne
-// list, na obou úrovních. Mezera po unset() (přirozený způsob, jak GUI smaže
-// skupinu nebo argument) by se bez array_values() zakódovala jako JSON
-// objekt místo pole — testuje se mezera na obou úrovních zanoření zároveň.
-$vnitrni = [Template::parse('a'), Template::parse('b'), Template::parse('c')];
-unset($vnitrni[1]);
+// array_map() preserves keys; args is array<int, array<int, Template>>, not
+// a list, at both levels. A gap after unset() (the natural way the GUI
+// deletes a group or argument) would encode as a JSON object instead of an
+// array without array_values() — a gap at both nesting levels is tested
+// at once.
+$inner = [Template::parse('a'), Template::parse('b'), Template::parse('c')];
+unset($inner[1]);
 
 $args = [
-	$vnitrni,
+	$inner,
 	[Template::parse('x')],
 	[Template::parse('y')],
 ];

@@ -6,10 +6,10 @@ namespace Donut\Cli;
 
 
 /**
- * Rozklad příkazové řádky.
+ * Command-line breakdown.
  *
- * Podporuje se jen tvar --klic=hodnota. Tvar se dvěma slovy specifikace
- * neuvádí a jednoznačnost je tu cennější než pohodlí.
+ * Only the --key=value form is supported. The two-word form is not
+ * specified, and unambiguity is worth more here than convenience.
  */
 final class Arguments
 {
@@ -24,7 +24,7 @@ final class Arguments
 
 
 	/**
-	 * @param  array<int, string> $argv první prvek je jméno programu
+	 * @param  array<int, string> $argv the first element is the program name
 	 * @throws UsageException
 	 */
 	public static function parse(array $argv): self
@@ -44,34 +44,34 @@ final class Arguments
 			} elseif (\str_starts_with($arg, '--')) {
 				$name = \substr($arg, 2);
 
-				// pokrývá holé "--" i "--=hodnota"; obojí je klíč bez jména
+				// covers both bare "--" and "--=value"; both are a key without a name
 				if ($name === '' || \str_starts_with($name, '=')) {
-					throw new UsageException("Argument \"{$arg}\" nemá jméno klíče.");
+					throw new UsageException("Argument \"{$arg}\" has no key name.");
 				}
 
 				$position = \strpos($name, '=');
 
 				if ($position === false) {
-					throw new UsageException("Argument --{$name} musí mít tvar --{$name}=hodnota.");
+					throw new UsageException("Argument --{$name} must have the form --{$name}=value.");
 				}
 
 				$key = \substr($name, 0, $position);
 
 				if ($key === 'help' || $key === 'list') {
-					throw new UsageException("Argument --{$key} je příznak, nemá hodnotu.");
+					throw new UsageException("Argument --{$key} is a flag, it takes no value.");
 				}
 
 				if (isset($values[$key])) {
-					throw new UsageException("Argument --{$key} je uvedený víckrát.");
+					throw new UsageException("Argument --{$key} is given more than once.");
 				}
 
 				$values[$key] = \substr($name, $position + 1);
 
 			} elseif (\str_starts_with($arg, '-')) {
-				throw new UsageException("Neznámý argument \"{$arg}\".");
+				throw new UsageException("Unknown argument \"{$arg}\".");
 
 			} elseif ($workflow !== null) {
-				throw new UsageException("Workflow je uvedené víckrát: \"{$workflow}\" a \"{$arg}\".");
+				throw new UsageException("Workflow is given more than once: \"{$workflow}\" and \"{$arg}\".");
 
 			} else {
 				$workflow = $arg;

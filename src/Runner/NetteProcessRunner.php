@@ -8,14 +8,15 @@ use Nette\Utils\Process;
 
 
 /**
- * Spouští příkazy přes Nette\Utils\Process::runExecutable().
+ * Runs commands via Nette\Utils\Process::runExecutable().
  *
- * Nikdy runCommand() — ten by řetězec interpretoval shellem.
+ * Never runCommand() — that would interpret the string through the shell.
  *
- * Prostředí i pracovní adresář dědí potomek od runneru ($env a $directory
- * zůstávají null). Pravidlo „nic z prostředí neprochází" ze specifikace se
- * týká mapy enginu, ne spouštěných programů: gh potřebuje $HOME a svůj
- * token, git $PATH a SSH_AUTH_SOCK.
+ * The child process inherits both the environment and the working directory
+ * from the runner ($env and $directory stay null). The specification's rule
+ * "nothing from the environment passes through" concerns the engine map, not
+ * the spawned programs: gh needs $HOME and its token, git needs $PATH and
+ * SSH_AUTH_SOCK.
  */
 final class NetteProcessRunner implements ProcessRunner
 {
@@ -48,10 +49,11 @@ final class NetteProcessRunner implements ProcessRunner
 
 
 	/**
-	 * Odřezává koncové odřádkování stejně jako $(...) v shellu.
+	 * Strips trailing newlines the same way $(...) does in the shell.
 	 *
-	 * Bez toho by `jq -r '.id'` vrátil "5f2abc\n" a ta hodnota by se pak
-	 * vlepila doprostřed URL. Vnitřní odřádkování zůstává nedotčené.
+	 * Without this, `jq -r '.id'` would return "5f2abc\n" and that value
+	 * would then get pasted into the middle of a URL. Internal newlines
+	 * stay untouched.
 	 */
 	private static function trimTrailingNewlines(string $output): string
 	{

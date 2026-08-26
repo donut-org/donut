@@ -8,7 +8,7 @@ use Donut\Exception;
 
 
 /**
- * Objekt nejde zapsat do zadané cesty.
+ * The object could not be written to the given path.
  */
 final class WriteException extends Exception
 {

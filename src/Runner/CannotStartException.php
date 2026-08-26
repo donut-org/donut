@@ -6,11 +6,11 @@ namespace Donut\Runner;
 
 
 /**
- * Běh se nespustil vůbec — workflow neprošlo validací, nebo mu chybí
- * povinný vstup. Neproběhl ani jeden krok.
+ * The run never started at all — the workflow failed validation, or is
+ * missing a required input. Not a single step ran.
  *
- * Podtřída, ne samostatný typ, aby volající, kterého ten rozdíl nezajímá,
- * dál chytal jen RunFailedException.
+ * A subclass, not a separate type, so a caller that doesn't care about the
+ * difference can keep catching just RunFailedException.
  */
 final class CannotStartException extends RunFailedException
 {

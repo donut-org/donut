@@ -13,7 +13,7 @@ require __DIR__ . '/../bootstrap.php';
 
 $root = __DIR__ . '/../../docs/workflows/donut';
 
-// kopie přepisu, do které se nastraží vady
+// a copy of the rewrite, into which defects get planted
 $work = TEMP_DIR . '/rewrite';
 FileSystem::copy($root, $work);
 
@@ -33,50 +33,50 @@ $errorsAfter = function (callable $break) use ($path, $parser, $validator): arra
 	return array_map(strval(...), $result->getErrors());
 };
 
-// neexistující kámen
+// a nonexistent block
 Assert::contains(
-	'card-dev.json:steps[0]: kámen "curl-gett" neexistuje',
+	'card-dev.json:steps[0]: block "curl-gett" does not exist',
 	$errorsAfter(function (array &$data): void {
 		$data['steps'][0]['block'] = 'curl-gett';
 	})
 );
 
-// překlep v názvu klíče
+// a typo in the key name
 Assert::contains(
-	'card-dev.json:steps[1]: šablona čte klíč "meJsn", který žádný krok nezapisuje',
+	'card-dev.json:steps[1]: template reads key "meJsn", which no step writes',
 	$errorsAfter(function (array &$data): void {
 		$data['steps'][1]['in']['stdin'] = '{%meJsn%}';
 	})
 );
 
-// nedeklarovaný vstup
+// an undeclared input
 Assert::contains(
-	'card-dev.json:steps[1]: kámen "jq" nedeklaruje vstup "neznamy"',
+	'card-dev.json:steps[1]: block "jq" does not declare input "nosuch"',
 	$errorsAfter(function (array &$data): void {
-		$data['steps'][1]['in']['neznamy'] = 'x';
+		$data['steps'][1]['in']['nosuch'] = 'x';
 	})
 );
 
-// chybějící povinný stdin
+// a missing required stdin
 Assert::contains(
-	'card-dev.json:steps[1]: kámen "jq" vyžaduje stdin, krok ho neplní',
+	'card-dev.json:steps[1]: block "jq" requires stdin, the step does not fill it',
 	$errorsAfter(function (array &$data): void {
 		unset($data['steps'][1]['in']['stdin']);
 	})
 );
 
-// neznámý operátor
+// an unknown operator
 Assert::contains(
-	'card-dev.json:steps[7]: neznámý operátor "matches"',
+	'card-dev.json:steps[7]: unknown operator "matches"',
 	$errorsAfter(function (array &$data): void {
 		$data['steps'][7]['condition']['op'] = 'matches';
 	})
 );
 
-// vadný allow_failure v kameni
+// a bad allow_failure in a block
 FileSystem::write(
 	$work . '/blocks/test-file.json',
-	Json::encode(['name' => 'test-file', 'command' => 'test', 'args' => [], 'allow_failure' => 'ano'])
+	Json::encode(['name' => 'test-file', 'command' => 'test', 'args' => [], 'allow_failure' => 'yes'])
 );
 
 Assert::exception(

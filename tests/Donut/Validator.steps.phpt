@@ -67,7 +67,7 @@ $messages = function (array $data) use ($parser, $validator): array {
 	return array_map(strval(...), $result->getErrors());
 };
 
-// všechno v pořádku
+// everything is fine
 Assert::same([], $messages([
 	'name' => 'w',
 	'inputs' => ['t' => ['required' => true]],
@@ -76,47 +76,47 @@ Assert::same([], $messages([
 	],
 ]));
 
-// kámen neexistuje
+// block does not exist
 Assert::same(
-	['w.json:steps[0]: kámen "chybi" neexistuje'],
+	['w.json:steps[0]: block "missing" does not exist'],
 	$messages([
 		'name' => 'w',
-		'steps' => [['type' => 'run', 'block' => 'chybi']],
+		'steps' => [['type' => 'run', 'block' => 'missing']],
 	])
 );
 
-// povinný vstup není naplněn
+// required input is not filled
 Assert::same(
-	['w.json:steps[0]: povinný vstup "text" kamene "greet" není naplněn'],
+	['w.json:steps[0]: required input "text" of block "greet" is not filled'],
 	$messages([
 		'name' => 'w',
 		'steps' => [['type' => 'run', 'block' => 'greet']],
 	])
 );
 
-// povinný vstup s defaultem naplněn být nemusí
+// a required input with a default need not be filled
 Assert::same([], $messages([
 	'name' => 'w',
 	'steps' => [['type' => 'run', 'block' => 'withDefault']],
 ]));
 
-// in obsahuje jméno, které kámen nedeklaruje
+// in contains a name the block does not declare
 Assert::same(
-	['w.json:steps[0]: kámen "greet" nedeklaruje vstup "neznamy"'],
+	['w.json:steps[0]: block "greet" does not declare input "nosuch"'],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'greet',
-			'in' => ['text' => '{%t%}', 'neznamy' => 'x'],
+			'in' => ['text' => '{%t%}', 'nosuch' => 'x'],
 		]],
 	])
 );
 
-// stdin u kamene, který stdin nemá
+// stdin for a block that has no stdin
 Assert::same(
-	['w.json:steps[0]: kámen "greet" nečte stdin, ale krok ho plní'],
+	['w.json:steps[0]: block "greet" does not read stdin, but the step fills it'],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -128,18 +128,18 @@ Assert::same(
 	])
 );
 
-// povinný stdin není naplněn
+// required stdin is not filled
 Assert::same(
-	['w.json:steps[0]: kámen "withStdin" vyžaduje stdin, krok ho neplní'],
+	['w.json:steps[0]: block "withStdin" requires stdin, the step does not fill it'],
 	$messages([
 		'name' => 'w',
 		'steps' => [['type' => 'run', 'block' => 'withStdin']],
 	])
 );
 
-// {%STDIN%} v args kamene
+// {%STDIN%} in a block's args
 Assert::same(
-	['w.json:steps[0]: {%STDIN%} použito v args kamene "badStdinArg"'],
+	['w.json:steps[0]: {%STDIN%} used in args of block "badStdinArg"'],
 	$messages([
 		'name' => 'w',
 		'steps' => [[
@@ -150,9 +150,9 @@ Assert::same(
 	])
 );
 
-// args kamene odkazuje proměnnou, kterou kámen nedeklaruje jako vstup
+// a block's args reference a variable the block does not declare as an input
 Assert::same(
-	['w.json:steps[0]: kámen "badArgsInput" používá v args proměnnou "tga", kterou nedeklaruje'],
+	['w.json:steps[0]: block "badArgsInput" uses variable "tga" in args without declaring it'],
 	$messages([
 		'name' => 'w',
 		'steps' => [[
@@ -163,9 +163,9 @@ Assert::same(
 	])
 );
 
-// neznámý kanál v out
+// unknown channel in out
 Assert::same(
-	['w.json:steps[0]: neznámý kanál "stdout"'],
+	['w.json:steps[0]: unknown channel "stdout"'],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -178,9 +178,9 @@ Assert::same(
 	])
 );
 
-// neznámý operátor
+// unknown operator
 Assert::same(
-	['w.json:steps[0]: neznámý operátor "matches"'],
+	['w.json:steps[0]: unknown operator "matches"'],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -192,9 +192,9 @@ Assert::same(
 	])
 );
 
-// binární operátor bez right
+// binary operator without right
 Assert::same(
-	['w.json:steps[0]: operátor "eq" vyžaduje \'right\''],
+	['w.json:steps[0]: operator "eq" requires \'right\''],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -206,9 +206,9 @@ Assert::same(
 	])
 );
 
-// klíč, na který by pak nešlo odkázat
+// a key that could then not be referenced
 Assert::same(
-	['w.json:steps[0]: klíč "A-B" není platné jméno'],
+	['w.json:steps[0]: key "A-B" is not a valid name'],
 	$messages([
 		'name' => 'w',
 		'steps' => [['type' => 'set', 'key' => 'A-B', 'value' => 'x']],
@@ -216,7 +216,7 @@ Assert::same(
 );
 
 Assert::same(
-	['w.json:steps[0]: klíč "A B" není platné jméno'],
+	['w.json:steps[0]: key "A B" is not a valid name'],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -229,10 +229,11 @@ Assert::same(
 	])
 );
 
-// kámen nesmí deklarovat vstup jménem stdin — je to jméno kanálu, ne klíč mapy,
-// a u kroku by nešlo poznat, jestli "in": { "stdin": … } plní vstup, nebo kanál
+// a block must not declare an input named stdin — that is a channel name, not
+// a map key, and a step could not tell whether "in": { "stdin": … } fills the
+// input or the channel
 Assert::contains(
-	'w.json:steps[0]: kámen "stdinInput" nesmí mít vstup jménem "stdin" — je to jméno kanálu',
+	'w.json:steps[0]: block "stdinInput" must not have an input named "stdin" — that is a channel name',
 	$messages([
 		'name' => 'w',
 		'steps' => [['type' => 'run', 'block' => 'stdinInput']],

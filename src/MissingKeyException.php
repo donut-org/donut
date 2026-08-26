@@ -6,14 +6,15 @@ namespace Donut;
 
 
 /**
- * Šablona četla klíč, který v mapě není. Podle specifikace je to tvrdá chyba.
+ * The template read a key that is not in the map. Per the spec this is
+ * a hard error.
  */
 final class MissingKeyException extends Exception
 {
 	public function __construct(
 		private readonly string $key,
 	) {
-		parent::__construct("Klíč '{$key}' v mapě neexistuje.");
+		parent::__construct("Key '{$key}' does not exist in the map.");
 	}
 
 

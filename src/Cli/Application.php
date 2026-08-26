@@ -20,10 +20,10 @@ use Donut\Runner\Runner;
 
 
 /**
- * Vstupní bod z příkazové řádky.
+ * Entry point from the command line.
  *
- * Profil a streamy bere v konstruktoru, aby šla testovat bez skutečného
- * terminálu — stejný důvod, proč má Reporter rozhraní.
+ * Takes the profile and streams in the constructor so it can be tested
+ * without a real terminal — the same reason Reporter is an interface.
  */
 final class Application
 {
@@ -41,8 +41,8 @@ final class Application
 	/**
 	 * @param resource|null      $stdout
 	 * @param resource|null      $stderr
-	 * @param string|null        $stdin     obsah standardního vstupu; null = přečíst si ho sám
-	 * @param ProcessRunner|null $processes null = NetteProcessRunner; jiná hodnota jen v testech
+	 * @param string|null        $stdin     standard input content; null = read it itself
+	 * @param ProcessRunner|null $processes null = NetteProcessRunner; any other value only in tests
 	 */
 	public function __construct(
 		private readonly Profile $profile,
@@ -57,9 +57,10 @@ final class Application
 
 
 	/**
-	 * Vstupní bod z bin/donut: složí profil z prostředí a chybu prostředí
-	 * přeloží na návratový kód. Je to tady, a ne v bin/donut, protože ve
-	 * skriptu, který se nedá spustit z testu, nesmí zůstat žádná větev.
+	 * Entry point from bin/donut: assembles the profile from the environment
+	 * and translates an environment error into a return code. It lives here,
+	 * not in bin/donut, because a script that can't be run from a test must
+	 * not contain any branch.
 	 *
 	 * @param array<int, string>    $argv
 	 * @param array<string, string> $env
@@ -72,7 +73,7 @@ final class Application
 			$profile = Profile::fromEnvironment($env);
 
 		} catch (DonutException $e) {
-			\fwrite($stderr ?? STDERR, "Chyba: {$e->getMessage()}\n");
+			\fwrite($stderr ?? STDERR, "Error: {$e->getMessage()}\n");
 
 			return self::NotStarted;
 		}
@@ -107,24 +108,24 @@ final class Application
 
 			return $this->runWorkflow($workflow, $arguments->values);
 
-		// CannotStartException musí být před RunFailedException — je to
-		// jeho podtřída a jinak by ji pohltil obecnější catch.
+		// CannotStartException must come before RunFailedException — it's
+		// its subclass and would otherwise be swallowed by the broader catch.
 		} catch (UsageException | ParseException | CannotStartException $e) {
-			\fwrite($this->stderr, "Chyba: {$e->getMessage()}\n");
+			\fwrite($this->stderr, "Error: {$e->getMessage()}\n");
 
 			return self::NotStarted;
 
 		} catch (RunFailedException $e) {
-			\fwrite($this->stderr, "Chyba: {$e->getMessage()}\n");
+			\fwrite($this->stderr, "Error: {$e->getMessage()}\n");
 
 			return self::Failed;
 
-		// Kód 2, i když neproběhl krok: z významu „nespustilo se" je tady
-		// podstatnější druhá polovina — neopakuj to. Opakovat neklasifikovanou
-		// vnitřní chybu je marné. Odlišená hláška říká, že selhal nástroj,
-		// ne workflow.
+		// Code 2 even though a step never ran: of the meaning "didn't start",
+		// the second half matters more here — don't repeat it. Retrying an
+		// unclassified internal error is pointless. A distinct message says
+		// the tool failed, not the workflow.
 		} catch (DonutException $e) {
-			\fwrite($this->stderr, "Vnitřní chyba nástroje: {$e->getMessage()}\n");
+			\fwrite($this->stderr, "Internal tool error: {$e->getMessage()}\n");
 
 			return self::NotStarted;
 		}
@@ -135,13 +136,14 @@ final class Application
 	{
 		$directory = $this->profile->workflowsDir();
 
-		// Prázdný výpis a chybějící adresář vypadají na terminálu stejně —
-		// jako ticho. Rozdíl musí říct hláška, jinak je čerstvý profil slepá
-		// ulička. Výjimka místo přímého zápisu na stderr, ať prefix i konec
-		// řádku přilepí catch v run() stejně jako u ostatních chyb.
+		// An empty listing and a missing directory look the same on the
+		// terminal — silence. The message has to say the difference, or a
+		// fresh profile is a dead end. An exception instead of writing to
+		// stderr directly, so the catch in run() attaches the prefix and
+		// line ending the same as for other errors.
 		if (!\is_dir($directory)) {
 			throw new UsageException(
-				"Adresář s workflow '{$directory}' neexistuje. " . MissingDir::hint($directory)
+				"Workflows directory '{$directory}' does not exist. " . MissingDir::hint($directory)
 			);
 		}
 
@@ -152,10 +154,10 @@ final class Application
 				$workflow = $this->loadWorkflow($name);
 
 			} catch (ParseException | UsageException $e) {
-				// --list je poznávací příkaz. Jeden vadný soubor nesmí schovat
-				// ostatní, ale nesmí ani protéct do stdout, aby se výpis dal
-				// dál zpracovat.
-				\fwrite($this->stderr, "Chyba: {$e->getMessage()}\n");
+				// --list is a discovery command. One bad file must not hide
+				// the rest, but it also must not leak into stdout, so the
+				// listing can still be piped further.
+				\fwrite($this->stderr, "Error: {$e->getMessage()}\n");
 				$code = self::NotStarted;
 
 				continue;
@@ -173,13 +175,13 @@ final class Application
 		\fwrite($this->stdout, "{$workflow->name} — " . ($workflow->description ?? '') . "\n");
 
 		if ($workflow->inputs !== []) {
-			\fwrite($this->stdout, "\nVstupy:\n");
+			\fwrite($this->stdout, "\nInputs:\n");
 
 			foreach ($workflow->inputs as $name => $input) {
 				\fwrite($this->stdout, \sprintf(
 					"  --%-16s %-10s %s\n",
 					$name . '=…',
-					$input->required ? 'povinný' : 'volitelný',
+					$input->required ? 'required' : 'optional',
 					$input->description ?? '',
 				));
 			}
@@ -197,19 +199,20 @@ final class Application
 		foreach (\array_keys($values) as $name) {
 			if (!isset($workflow->inputs[$name])) {
 				throw new UsageException(
-					"Workflow \"{$workflow->name}\" nezná vstup \"{$name}\"."
+					"Workflow \"{$workflow->name}\" has no input \"{$name}\"."
 				);
 			}
 		}
 
 		$blocksDir = $this->profile->blocksDir();
 
-		// Stejný guard jako v listWorkflows() pro workflows/: BlockRepository
-		// sama hlásí jen "adresář neexistuje", bez rady. Tady je to jediné
-		// místo, kudy runWorkflow() k chybějícímu blocks/ vůbec dojde.
+		// Same guard as in listWorkflows() for workflows/: BlockRepository
+		// itself only reports "directory does not exist", without advice.
+		// This is the only place runWorkflow() ever reaches a missing
+		// blocks/ at all.
 		if (!\is_dir($blocksDir)) {
 			throw new UsageException(
-				"Adresář s kameny '{$blocksDir}' neexistuje. " . MissingDir::hint($blocksDir)
+				"Blocks directory '{$blocksDir}' does not exist. " . MissingDir::hint($blocksDir)
 			);
 		}
 
@@ -232,12 +235,12 @@ final class Application
 		$path = $directory . $name . '.json';
 
 		if (!\is_file($path)) {
-			// Rada `mkdir -p` dává smysl jen u chybějícího adresáře, ne
-			// u překlepu ve jméně workflow.
+			// The `mkdir -p` advice only makes sense for a missing directory,
+			// not for a typo in the workflow name.
 			$hint = \is_dir($directory) ? '' : ' ' . MissingDir::hint($this->profile->workflowsDir());
 
 			throw new UsageException(
-				"Workflow \"{$name}\" neexistuje. Hledal jsem v: {$directory}{$hint}"
+				"Workflow \"{$name}\" does not exist. Searched in: {$directory}{$hint}"
 			);
 		}
 
@@ -246,7 +249,7 @@ final class Application
 
 
 	/**
-	 * @return array<int, string> abecedně
+	 * @return array<int, string> alphabetically
 	 */
 	private function workflowNames(): array
 	{
@@ -280,12 +283,12 @@ final class Application
 	private function printUsage(bool $isError): void
 	{
 		\fwrite($isError ? $this->stderr : $this->stdout, <<<TEXT
-			donut --list                          seznam workflow
-			donut <workflow> --help               nápověda k workflow
-			donut <workflow> [--klic=hodnota …]   spuštění
+			donut --list                          list workflows
+			donut <workflow> --help               help for a workflow
+			donut <workflow> [--key=value …]      run
 
-			Profil: {$this->profile->name()}  ({$this->profile->dir()})
-			Jiný profil: DONUT_PROFILE=jmeno, jiný kořen: DONUT_HOME=cesta
+			Profile: {$this->profile->name()}  ({$this->profile->dir()})
+			Other profile: DONUT_PROFILE=name, other root: DONUT_HOME=path
 
 			TEXT);
 	}

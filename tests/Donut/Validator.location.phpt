@@ -9,9 +9,10 @@ use Tester\Assert;
 
 require __DIR__ . '/../bootstrap.php';
 
-// Tvar location je smlouva s GUI: to si tutéž cestu skládá samo, aby vědělo,
-// ke kterému kroku problém patří. Kdyby se tvar změnil, GUI by tiše přestalo
-// problémy zobrazovat — proto se připíná tady, ne tam.
+// The shape of location is a contract with the GUI: it builds the same path
+// on its own to know which step a problem belongs to. If the shape changed,
+// the GUI would silently stop showing problems — hence it is pinned here,
+// not there.
 
 $dir = TEMP_DIR . '/blocks';
 Nette\Utils\FileSystem::createDir($dir);
@@ -26,8 +27,8 @@ $locations = function (array $data) use ($parser, $validator): array {
 	return array_map(fn($p) => $p->location, $result->getProblems());
 };
 
-// Krok s neplatným jménem klíče dá problém právě u toho kroku, ve kterém je —
-// proto se jím dá tvar cesty proměřit ve všech čtyřech pozicích naráz.
+// A step with an invalid key name gives a problem right at the step it is
+// in — so it can be used to measure the path shape at all four positions at once.
 $found = $locations([
 	'name' => 'w',
 	'inputs' => ['t' => []],
@@ -42,7 +43,7 @@ $found = $locations([
 		[
 			'type' => 'foreach',
 			'over' => '{%t%}',
-			'as' => 'radek',
+			'as' => 'row',
 			'steps' => [['type' => 'set', 'key' => 'G-H', 'value' => 'x']],
 		],
 	],
@@ -53,11 +54,11 @@ Assert::contains('w.json:steps[1].then[0]', $found);
 Assert::contains('w.json:steps[1].else[0]', $found);
 Assert::contains('w.json:steps[2].steps[0]', $found);
 
-// Problém, který nepatří žádnému kroku, má cestu bez dvojtečky — GUI podle
-// toho pozná, že ho má vypsat u workflow, ne u kroku.
+// A problem that does not belong to any step has a path with no colon — the
+// GUI uses that to tell it should list it under the workflow, not a step.
 $workflowLevel = $locations([
 	'name' => 'w',
-	'inputs' => ['nepouzity' => []],
+	'inputs' => ['unused' => []],
 	'steps' => [],
 ]);
 

@@ -8,8 +8,8 @@ use Donut\Exception;
 
 
 /**
- * Volání z příkazové řádky nedává smysl — chybný tvar argumentu, neznámé
- * workflow, chybějící jméno. Běh se nespustí.
+ * The command-line call doesn't make sense — a malformed argument, an
+ * unknown workflow, a missing name. The run doesn't start.
  */
 final class UsageException extends Exception
 {
