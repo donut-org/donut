@@ -6,6 +6,7 @@ namespace Donut;
 
 use Donut\Format\Block;
 use Donut\Parser\BlockParser;
+use Donut\Parser\NotFoundException;
 use Donut\Parser\ParseException;
 
 
@@ -62,7 +63,7 @@ final class BlockRepository
 	public function get(string $name): Block
 	{
 		if (!isset($this->files[$name])) {
-			throw new ParseException("Block '{$name}' does not exist.");
+			throw new NotFoundException("Block '{$name}' does not exist.");
 		}
 
 		return $this->loaded[$name] ??= $this->parser->parseFile($this->files[$name]);
