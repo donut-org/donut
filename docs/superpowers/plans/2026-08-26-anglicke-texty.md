@@ -10,6 +10,20 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-26-anglicke-texty-design.md`
 
+> **Oprava po provedení (2026-08-26).** Čtyři popisky formulářů se během
+> provádění přejmenovaly — znění v tabulkách tasků 7 a 10 níž je **obsoletní**.
+> Autoritativní je kód v `gui/src/Presentation/Workflow/WorkflowPresenter.php`:
+>
+> | v plánu | ve skutečnosti |
+> |---|---|
+> | `'What from the block'` | `'Block output'` |
+> | `'Under which key in the map'` | `'Map key'` |
+> | `'Over what'` | `'Iterate over'` |
+> | `'Under which name'` | `'Item name'` |
+>
+> Tabulky zůstávají, jak byly napsané — jsou záznam toho, co se plánovalo.
+> Kdo z plánu čerpá, bere popisky z presenteru.
+
 ## Global Constraints
 
 - **Komentáře anglicky, commit messages anglicky.** Tohle je obrácení dosavadní konvence projektu: plány do 2026-08-25 psaly „komentáře česky" a commity byly česky. **Bylo to špatně.** Nekopíruj tu větu ze starších plánů. Komentář dál vysvětluje *proč*, ne *co* — mění se jazyk, ne povaha.
@@ -1085,7 +1099,7 @@ Pozor na `steps.latte:63-64`: **druhé místo s českým trojným množným čí
 | `+ výstup` | `+ output` |
 | `<div class="card-header">Ostatní</div>` | `<div class="card-header">Other</div>` |
 
-Popisek sloupce musí být **shodný** s aria-labelem z tasku 7 (`'Under which key in the map'`) — je to táž věc dvakrát.
+Popisek sloupce musí být **shodný** s aria-labelem z tasku 7 — je to táž věc dvakrát. (Znění se po provedení změnilo na `'Map key'`, viz opravu v hlavičce plánu.)
 
 - [ ] **Step 5: Přepiš `Workflow/steps.latte` — včetně druhého množného čísla**
 
