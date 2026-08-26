@@ -8,22 +8,22 @@ use Tester\Assert;
 
 require __DIR__ . '/../bootstrap.php';
 
-// první prvek argv je jméno programu a ignoruje se
+// the first element of argv is the program name and is ignored
 $a = Arguments::parse(['donut', 'card-dev', '--shortId=abc', '--model=sonnet']);
 Assert::same('card-dev', $a->workflow);
 Assert::same(['shortId' => 'abc', 'model' => 'sonnet'], $a->values);
 Assert::false($a->help);
 Assert::false($a->list);
 
-// hodnota smí obsahovat rovnítko i mezery
-$a = Arguments::parse(['donut', 'w', '--url=https://x/?a=1&b=2', '--message=ahoj svete']);
-Assert::same(['url' => 'https://x/?a=1&b=2', 'message' => 'ahoj svete'], $a->values);
+// a value may contain an equals sign and spaces
+$a = Arguments::parse(['donut', 'w', '--url=https://x/?a=1&b=2', '--message=hello world']);
+Assert::same(['url' => 'https://x/?a=1&b=2', 'message' => 'hello world'], $a->values);
 
-// prázdná hodnota je platná
+// an empty value is valid
 $a = Arguments::parse(['donut', 'w', '--tag=']);
 Assert::same(['tag' => ''], $a->values);
 
-// příznaky
+// flags
 $a = Arguments::parse(['donut', '--list']);
 Assert::true($a->list);
 Assert::null($a->workflow);
@@ -36,63 +36,63 @@ $a = Arguments::parse(['donut', '--help']);
 Assert::true($a->help);
 Assert::null($a->workflow);
 
-// holé volání
+// a bare call
 $a = Arguments::parse(['donut']);
 Assert::null($a->workflow);
 Assert::false($a->help);
 Assert::false($a->list);
 Assert::same([], $a->values);
 
-// zopakovaný argument je chyba
+// a repeated argument is an error
 Assert::exception(
 	fn() => Arguments::parse(['donut', 'w', '--tag=a', '--tag=b']),
 	UsageException::class,
-	'Argument --tag je uvedený víckrát.'
+	'Argument --tag is given more than once.'
 );
 
-// tvar bez rovnítka se nepodporuje
+// the form without an equals sign is not supported
 Assert::exception(
 	fn() => Arguments::parse(['donut', 'w', '--tag', 'a']),
 	UsageException::class,
-	'Argument --tag musí mít tvar --tag=hodnota.'
+	'Argument --tag must have the form --tag=value.'
 );
 
-// dvě jména workflow
+// two workflow names
 Assert::exception(
 	fn() => Arguments::parse(['donut', 'w', 'x']),
 	UsageException::class,
-	'Workflow je uvedené víckrát: "w" a "x".'
+	'Workflow is given more than once: "w" and "x".'
 );
 
-// jednopomlčkový tvar se nepodporuje
+// the single-dash form is not supported
 Assert::exception(
 	fn() => Arguments::parse(['donut', 'w', '-t=a']),
 	UsageException::class,
-	'Neznámý argument "-t=a".'
+	'Unknown argument "-t=a".'
 );
 
-// --help a --list jsou příznaky, ne vstupy
+// --help and --list are flags, not inputs
 Assert::exception(
 	fn() => Arguments::parse(['donut', '--help=x']),
 	UsageException::class,
-	'Argument --help je příznak, nemá hodnotu.'
+	'Argument --help is a flag, it takes no value.'
 );
 
 Assert::exception(
 	fn() => Arguments::parse(['donut', '--list=x']),
 	UsageException::class,
-	'Argument --list je příznak, nemá hodnotu.'
+	'Argument --list is a flag, it takes no value.'
 );
 
-// prázdné jméno klíče není jméno
+// an empty key name is not a name
 Assert::exception(
 	fn() => Arguments::parse(['donut', '--=x']),
 	UsageException::class,
-	'Argument "--=x" nemá jméno klíče.'
+	'Argument "--=x" has no key name.'
 );
 
 Assert::exception(
 	fn() => Arguments::parse(['donut', '--']),
 	UsageException::class,
-	'Argument "--" nemá jméno klíče.'
+	'Argument "--" has no key name.'
 );
