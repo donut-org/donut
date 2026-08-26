@@ -6,16 +6,17 @@ namespace Donut\Runner;
 
 
 /**
- * Hlášení průběhu běhu.
+ * Reports the progress of a run.
  *
- * Rozhraní existuje proto, aby Runner nepsal na STDERR napřímo a šel
- * testovat. Produkční implementace je jedna, druhá je prázdná pro testy.
+ * The interface exists so the Runner doesn't write to STDERR directly and
+ * stays testable. One implementation is for production, the other is empty
+ * for tests.
  */
 interface Reporter
 {
 	/**
-	 * @param string $path  cesta ke kroku ve tvaru steps[5].then[0]
-	 * @param string $label jméno kroku, jméno kamene, nebo KLIC=hodnota u foreach
+	 * @param string $path  step path in the form steps[5].then[0]
+	 * @param string $label step name, block name, or KEY=value for foreach
 	 */
 	public function step(string $path, string $label): void;
 

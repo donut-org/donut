@@ -11,22 +11,22 @@ require __DIR__ . '/../bootstrap.php';
 $stream = fopen('php://memory', 'r+');
 $reporter = new ConsoleReporter($stream);
 
-$reporter->step('steps[0]', 'zjistit vlastní ID v Trellu');
+$reporter->step('steps[0]', 'find own ID in Trello');
 $reporter->step('steps[5].steps[2]', 'board=INDEV-OSS');
-$reporter->warning('w.json: klíč "x" se zapisuje a nikdy nečte');
+$reporter->warning('w.json: key "x" is written and never read');
 
 rewind($stream);
 $written = stream_get_contents($stream);
 fclose($stream);
 
 Assert::same(
-	"steps[0]  zjistit vlastní ID v Trellu\n"
+	"steps[0]  find own ID in Trello\n"
 	. "steps[5].steps[2]  board=INDEV-OSS\n"
-	. "varování: w.json: klíč \"x\" se zapisuje a nikdy nečte\n",
+	. "warning: w.json: key \"x\" is written and never read\n",
 	$written
 );
 
-// NullReporter nesmí nic dělat a nesmí spadnout
+// NullReporter must do nothing and must not crash
 $null = new NullReporter;
 Assert::noError(function () use ($null): void {
 	$null->step('steps[0]', 'x');

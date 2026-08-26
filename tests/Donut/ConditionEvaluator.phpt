@@ -21,16 +21,16 @@ function cond(string $left, string $op, ?string $right = null): Condition
 
 $eval = fn(Condition $c, array $map = []) => ConditionEvaluator::evaluate($c, $map, 'at');
 
-// řetězcové porovnání
+// string comparison
 Assert::true($eval(cond('{%a%}', 'eq', 'x'), ['a' => 'x']));
 Assert::false($eval(cond('{%a%}', 'eq', 'y'), ['a' => 'x']));
 Assert::true($eval(cond('{%a%}', 'neq', 'y'), ['a' => 'x']));
 Assert::false($eval(cond('{%a%}', 'neq', 'x'), ['a' => 'x']));
 
-// eq porovnává řetězce, ne čísla
+// eq compares strings, not numbers
 Assert::false($eval(cond('{%a%}', 'eq', '1'), ['a' => '01']));
 
-// číselné porovnání
+// numeric comparison
 Assert::true($eval(cond('{%a%}', 'gt', '5'), ['a' => '10']));
 Assert::false($eval(cond('{%a%}', 'gt', '10'), ['a' => '10']));
 Assert::true($eval(cond('{%a%}', 'gte', '10'), ['a' => '10']));
@@ -46,35 +46,35 @@ Assert::true($eval(cond('{%a%}', 'lt', '0'), ['a' => '-3']));
 Assert::true($eval(cond('{%a%}', 'contains', 'bc'), ['a' => 'abcd']));
 Assert::false($eval(cond('{%a%}', 'contains', 'xy'), ['a' => 'abcd']));
 
-// empty / not_empty ignorují right
+// empty / not_empty ignore right
 Assert::true($eval(cond('{%a%}', 'empty'), ['a' => '']));
 Assert::false($eval(cond('{%a%}', 'empty'), ['a' => 'x']));
 Assert::true($eval(cond('{%a%}', 'not_empty'), ['a' => 'x']));
 Assert::false($eval(cond('{%a%}', 'not_empty'), ['a' => '']));
 
-// nečíselná hodnota v číselném porovnání je chyba
+// a non-numeric value in a numeric comparison is an error
 Assert::exception(
 	fn() => ConditionEvaluator::evaluate(cond('{%a%}', 'gt', '5'), ['a' => 'abc'], 'w'),
 	RunFailedException::class,
-	'w: operátor "gt" potřebuje čísla, dostal "abc" a "5".'
+	'w: operator "gt" needs numbers, got "abc" and "5".'
 );
 
 Assert::exception(
 	fn() => ConditionEvaluator::evaluate(cond('{%a%}', 'lt', 'x'), ['a' => '1'], 'w'),
 	RunFailedException::class,
-	'w: operátor "lt" potřebuje čísla, dostal "1" a "x".'
+	'w: operator "lt" needs numbers, got "1" and "x".'
 );
 
-// binární operátor bez right — validátor to chytá dřív, runner se nesmí zhroutit
+// a binary operator without right — the validator catches it earlier, the runner must not crash
 Assert::exception(
 	fn() => ConditionEvaluator::evaluate(cond('{%a%}', 'eq'), ['a' => 'x'], 'w'),
 	RunFailedException::class,
-	'w: operátor "eq" vyžaduje \'right\'.'
+	'w: operator "eq" requires \'right\'.'
 );
 
-// neznámý operátor
+// unknown operator
 Assert::exception(
 	fn() => ConditionEvaluator::evaluate(cond('{%a%}', 'matches', 'x'), ['a' => 'x'], 'w'),
 	RunFailedException::class,
-	'w: neznámý operátor "matches".'
+	'w: unknown operator "matches".'
 );

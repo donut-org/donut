@@ -37,8 +37,8 @@ file_put_contents($dir . '/maybe.json', json_encode([
 ]));
 
 /**
- * Falešný ProcessRunner: nic nespouští, jen zaznamenává, co by spustil,
- * a vrací předem připravené výsledky.
+ * A fake ProcessRunner: runs nothing, just records what it would have run,
+ * and returns pre-supplied results.
  */
 final class FakeProcesses implements ProcessRunner
 {
@@ -72,7 +72,7 @@ $run = function (array $data, FakeProcesses $procs, array $initial = []) use ($r
 	return $runner->run($parser->parseArray($data, 'w.json'), $initial);
 };
 
-// set zapisuje do mapy a umí číst, co už v ní je
+// set writes into the map and can read what's already in it
 $procs = new FakeProcesses;
 $map = $run([
 	'name' => 'w',
@@ -85,7 +85,7 @@ $map = $run([
 Assert::same('v-x-y', $map['b']);
 Assert::same([], $procs->calls);
 
-// run: poskládaná příkazová řádka a zápis kanálů
+// run: assembled command line and channel writes
 $procs = new FakeProcesses([new ProcessResult('vysledek', null, 0)]);
 $map = $run([
 	'name' => 'w',
@@ -102,7 +102,7 @@ Assert::same('0', $map['rc']);
 Assert::count(1, $procs->calls);
 Assert::same(['echo', ['ahoj'], '', true, false, 60], $procs->calls[0]);
 
-// stdin se plní z in a stderr se zachytává, jen když ho krok mapuje
+// stdin is filled from in, and stderr is captured only when the step maps it
 $procs = new FakeProcesses([new ProcessResult('', 'chyba', 0)]);
 $map = $run([
 	'name' => 'w',
@@ -117,7 +117,7 @@ $map = $run([
 Assert::same('chyba', $map['e']);
 Assert::same(['cat', [], 'text', false, true, 60], $procs->calls[0]);
 
-// krok bez out mapu nemění — kromě STDIN a CWD, které run() sám doplní
+// a step without out doesn't change the map — except STDIN and CWD, which run() fills in itself
 $procs = new FakeProcesses([new ProcessResult('nic', null, 0)]);
 $map = $run([
 	'name' => 'w',
@@ -126,7 +126,7 @@ $map = $run([
 ], $procs, ['t' => 'x']);
 Assert::same(['t' => 'x', 'STDIN' => '', 'CWD' => getcwd()], $map);
 
-// krok bez result ve výstupu si stdout nezachytává
+// a step without result in out doesn't capture stdout
 $procs = new FakeProcesses([new ProcessResult(null, null, 0)]);
 $run([
 	'name' => 'w',
@@ -135,7 +135,7 @@ $run([
 ], $procs, ['t' => 'x']);
 Assert::false($procs->calls[0][3]);
 
-// krok s result ve výstupu si ho zachytává
+// a step with result in out captures it
 $procs = new FakeProcesses([new ProcessResult('v', null, 0)]);
 $run([
 	'name' => 'w',
@@ -148,7 +148,7 @@ $run([
 ], $procs, ['t' => 'x']);
 Assert::true($procs->calls[0][3]);
 
-// nenulový exit code zastaví běh
+// a non-zero exit code stops the run
 $procs = new FakeProcesses([new ProcessResult('', null, 3)]);
 Assert::exception(
 	fn() => $run([
@@ -157,22 +157,22 @@ Assert::exception(
 		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%t%}']]],
 	], $procs, ['t' => 'x']),
 	RunFailedException::class,
-	'w.json:steps[0]: kámen "echo" skončil s exit code 3.'
+	'w.json:steps[0]: block "echo" finished with exit code 3.'
 );
 
-// allow_failure kamene povolený kód pustí dál a kanály se zapíšou
+// a block's allow_failure lets an allowed code through and channels get written
 $procs = new FakeProcesses([new ProcessResult('', null, 1), new ProcessResult('po', null, 0)]);
 $map = $run([
 	'name' => 'w',
 	'steps' => [
 		['type' => 'run', 'block' => 'maybe', 'out' => ['exit_code' => 'rc']],
-		['type' => 'set', 'key' => 'dalsi', 'value' => 'probehlo-{%rc%}'],
+		['type' => 'set', 'key' => 'next', 'value' => 'ran-{%rc%}'],
 	],
 ], $procs);
 Assert::same('1', $map['rc']);
-Assert::same('probehlo-1', $map['dalsi']);
+Assert::same('ran-1', $map['next']);
 
-// kód mimo seznam zastaví i u allow_failure
+// a code outside the list stops the run even with allow_failure
 $procs = new FakeProcesses([new ProcessResult('', null, 5)]);
 Assert::exception(
 	fn() => $run([
@@ -180,10 +180,10 @@ Assert::exception(
 		'steps' => [['type' => 'run', 'block' => 'maybe']],
 	], $procs),
 	RunFailedException::class,
-	'w.json:steps[0]: kámen "maybe" skončil s exit code 5.'
+	'w.json:steps[0]: block "maybe" finished with exit code 5.'
 );
 
-// krok si přepíše allow_failure i timeout kamene
+// a step overrides both the block's allow_failure and its timeout
 $procs = new FakeProcesses([new ProcessResult('', null, 9)]);
 $map = $run([
 	'name' => 'w',
@@ -196,49 +196,49 @@ $map = $run([
 Assert::same('9', $map['rc']);
 Assert::same(5, $procs->calls[0][5]);
 
-// vypršení limitu není exit code, allow_failure ho nepohltí
-$procs = new FakeProcesses([new ProcessTimeoutException('vypršel čas')]);
+// a timeout is not an exit code, allow_failure doesn't absorb it
+$procs = new FakeProcesses([new ProcessTimeoutException('timed out')]);
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
 		'steps' => [['type' => 'run', 'block' => 'maybe', 'allow_failure' => true]],
 	], $procs),
 	RunFailedException::class,
-	'w.json:steps[0]: kámen "maybe" překročil limit 60 s.'
+	'w.json:steps[0]: block "maybe" exceeded the 60 s limit.'
 );
 
-// workflow s chybou validace se nespustí vůbec
+// a workflow with a validation error doesn't run at all
 $procs = new FakeProcesses;
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
-		'steps' => [['type' => 'run', 'block' => 'neexistuje']],
+		'steps' => [['type' => 'run', 'block' => 'missing']],
 	], $procs),
 	RunFailedException::class,
-	'%A%validace neprošla%A%'
+	'%A%validation failed%A%'
 );
 Assert::same([], $procs->calls);
 
-// víc nálezů validace je v hlášce každý na svém řádku
+// several validation findings appear in the message one per line
 $procs = new FakeProcesses;
 $e = Assert::exception(
 	fn() => $run([
 		'name' => 'w',
 		'steps' => [
-			['type' => 'run', 'block' => 'neexistuje1'],
-			['type' => 'run', 'block' => 'neexistuje2'],
+			['type' => 'run', 'block' => 'missing1'],
+			['type' => 'run', 'block' => 'missing2'],
 		],
 	], $procs),
 	RunFailedException::class,
-	'%A%validace neprošla%A%'
+	'%A%validation failed%A%'
 );
 $lines = explode("\n", $e->getMessage());
 Assert::count(3, $lines);
-Assert::same('w.json:steps[0]: block "neexistuje1" does not exist', $lines[1]);
-Assert::same('w.json:steps[1]: block "neexistuje2" does not exist', $lines[2]);
+Assert::same('w.json:steps[0]: block "missing1" does not exist', $lines[1]);
+Assert::same('w.json:steps[1]: block "missing2" does not exist', $lines[2]);
 
-// run() sám doplní počáteční mapu, kterou validátor předpokládá: default
-// vstupu, když ho volající nedodá
+// run() fills in on its own the initial map the validator assumes: an
+// input's default, when the caller doesn't supply it
 $procs = new FakeProcesses;
 $map = $run([
 	'name' => 'w',
@@ -247,7 +247,7 @@ $map = $run([
 ], $procs);
 Assert::same('latest', $map['out']);
 
-// hodnota od volajícího default přebije
+// a value from the caller overrides the default
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['tag' => ['required' => false, 'default' => 'latest']],
@@ -255,7 +255,7 @@ $map = $run([
 ], $procs, ['tag' => 'v2']);
 Assert::same('v2', $map['out']);
 
-// prázdný řetězec od volajícího je totéž jako nedodáno — default se uplatní
+// an empty string from the caller is the same as not supplying one — the default applies
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['tag' => ['required' => false, 'default' => 'latest']],
@@ -263,9 +263,9 @@ $map = $run([
 ], $procs, ['tag' => '']);
 Assert::same('latest', $map['out']);
 
-// volitelný vstup bez default, který volající nedodá, je v mapě jako
-// prázdný řetězec — ne chybějící klíč (spec sekce 1 a 4: „nevyplněno" a ''
-// jsou jedna a táž věc)
+// an optional input without a default, which the caller doesn't supply, is
+// in the map as an empty string — not a missing key (spec sections 1 and 4:
+// "unfilled" and '' are one and the same thing)
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['tag' => ['required' => false]],
@@ -273,7 +273,7 @@ $map = $run([
 ], $procs);
 Assert::same('', $map['out']);
 
-// chybějící povinný vstup bez hodnoty je chyba dřív, než se spustí první krok
+// a missing required input with no value is an error before the first step runs
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
@@ -281,39 +281,39 @@ Assert::exception(
 		'steps' => [],
 	], $procs),
 	RunFailedException::class,
-	'w.json: povinný vstup "tag" nemá hodnotu.'
+	'w.json: required input "tag" has no value.'
 );
 Assert::same([], $procs->calls);
 
-// CWD je v mapě a není prázdné, STDIN je v mapě prázdné, když nic nepřišlo
+// CWD is in the map and isn't empty, STDIN is in the map empty when nothing arrived
 $map = $run(['name' => 'w', 'steps' => []], $procs);
 Assert::same(getcwd(), $map['CWD']);
 Assert::same('', $map['STDIN']);
 
-// CWD dodané volajícím run() nepřepíše
-$map = $run(['name' => 'w', 'steps' => []], $procs, ['CWD' => '/od/volajiciho']);
-Assert::same('/od/volajiciho', $map['CWD']);
+// run() doesn't overwrite a CWD supplied by the caller
+$map = $run(['name' => 'w', 'steps' => []], $procs, ['CWD' => '/from/caller']);
+Assert::same('/from/caller', $map['CWD']);
 
-// neúspěšná validace: běh se nespustil vůbec
+// failed validation: the run never started at all
 $procs = new FakeProcesses;
 Assert::exception(
-	fn() => $run(['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'neexistuje']]], $procs),
+	fn() => $run(['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'missing']]], $procs),
 	Donut\Runner\CannotStartException::class
 );
 Assert::same([], $procs->calls);
 
-// chybějící povinný vstup workflow: taky se nespustil
+// a missing required workflow input: it also didn't start
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
-		'inputs' => ['nutny' => ['required' => true]],
-		'steps' => [['type' => 'set', 'key' => 'v', 'value' => '{%nutny%}']],
+		'inputs' => ['required' => ['required' => true]],
+		'steps' => [['type' => 'set', 'key' => 'v', 'value' => '{%required%}']],
 	], new FakeProcesses),
 	Donut\Runner\CannotStartException::class,
-	'w.json: povinný vstup "nutny" nemá hodnotu.'
+	'w.json: required input "required" has no value.'
 );
 
-// selhání kroku zůstává RunFailedException, ne CannotStartException
+// a step failure stays RunFailedException, not CannotStartException
 $procs = new FakeProcesses([new ProcessResult('', null, 3)]);
 $e = Assert::exception(
 	fn() => $run([

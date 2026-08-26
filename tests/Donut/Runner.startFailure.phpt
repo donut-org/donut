@@ -18,7 +18,7 @@ FileSystem::createDir($dir);
 
 file_put_contents($dir . '/typo.json', json_encode([
 	'name' => 'typo',
-	'command' => 'prikaz-ktery-neexistuje',
+	'command' => 'command-that-does-not-exist',
 	'args' => [],
 ]));
 
@@ -32,7 +32,7 @@ $workflow = (new WorkflowParser)->parseArray([
 Assert::exception(
 	fn() => $runner->run($workflow),
 	RunFailedException::class,
-	'%A?%w.json:steps[0]%A%typo%A%prikaz-ktery-neexistuje%A?%'
+	'%A?%w.json:steps[0]%A%typo%A%command-that-does-not-exist%A?%'
 );
 
 FileSystem::delete(TEMP_DIR);

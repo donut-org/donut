@@ -8,11 +8,11 @@ use Donut\Exception;
 
 
 /**
- * Běh workflow se zastavil — krok selhal, vypršel mu čas, nebo mu chybí
- * hodnota, bez které nejde spustit.
+ * The workflow run has stopped — a step failed, timed out, or is missing a
+ * value it cannot run without.
  *
- * Ne final: CannotStartException je její podtřída pro případ, že se
- * neproběhl ani jeden krok.
+ * Not final: CannotStartException is its subclass for the case where not a
+ * single step ran.
  */
 class RunFailedException extends Exception
 {

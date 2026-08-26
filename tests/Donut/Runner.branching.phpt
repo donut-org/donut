@@ -59,18 +59,18 @@ $run = function (array $data, ProcessRunner $procs, array $initial = []) use ($r
 	return (new Runner($repo, $procs, new NullReporter))->run($parser->parseArray($data, 'w.json'), $initial);
 };
 
-// if: projde se jen splněná větev
+// if: only the branch that matched runs
 $procs = new RecordingProcesses;
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['a' => []],
 	'steps' => [[
 		'type' => 'if',
-		'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'ano'],
+		'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'yes'],
 		'then' => [['type' => 'set', 'key' => 'v', 'value' => 'then']],
 		'else' => [['type' => 'set', 'key' => 'v', 'value' => 'else']],
 	]],
-], $procs, ['a' => 'ano']);
+], $procs, ['a' => 'yes']);
 Assert::same('then', $map['v']);
 
 $map = $run([
@@ -78,14 +78,14 @@ $map = $run([
 	'inputs' => ['a' => []],
 	'steps' => [[
 		'type' => 'if',
-		'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'ano'],
+		'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'yes'],
 		'then' => [['type' => 'set', 'key' => 'v', 'value' => 'then']],
 		'else' => [['type' => 'set', 'key' => 'v', 'value' => 'else']],
 	]],
-], $procs, ['a' => 'ne']);
+], $procs, ['a' => 'no']);
 Assert::same('else', $map['v']);
 
-// větev nemá vlastní scope — zápis je vidět i za ifem
+// a branch has no scope of its own — a write is visible even after the if
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['a' => []],
@@ -93,35 +93,35 @@ $map = $run([
 		[
 			'type' => 'if',
 			'condition' => ['left' => '{%a%}', 'op' => 'not_empty'],
-			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'uvnitr']],
-			'else' => [['type' => 'set', 'key' => 'v', 'value' => 'jinak']],
+			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'inside']],
+			'else' => [['type' => 'set', 'key' => 'v', 'value' => 'outside']],
 		],
-		['type' => 'set', 'key' => 'po', 'value' => 'videl-{%v%}'],
+		['type' => 'set', 'key' => 'po', 'value' => 'seen-{%v%}'],
 	],
 ], $procs, ['a' => 'x']);
-Assert::same('videl-uvnitr', $map['po']);
+Assert::same('seen-inside', $map['po']);
 
-// chybějící else prostě neudělá nic
+// a missing else simply does nothing
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['a' => []],
 	'steps' => [
-		['type' => 'set', 'key' => 'v', 'value' => 'puvodni'],
+		['type' => 'set', 'key' => 'v', 'value' => 'original'],
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'ne'],
-			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'zmeneno']],
+			'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'no'],
+			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'changed']],
 		],
 	],
-], $procs, ['a' => 'ano']);
-Assert::same('puvodni', $map['v']);
+], $procs, ['a' => 'yes']);
+Assert::same('original', $map['v']);
 
-// všechny čtyři if-případy výše používají jen set — žádný proces neměl start
+// all four if cases above use only set — no process ever started
 Assert::same([], $procs->args);
 
-// klíč zapsaný jen v then je za validace jen varování ("může, ale nemusí
-// existovat"); když se pak vezme else a klíč se čte, běh spadne jako
-// MissingKeyException — ale s cestou ke kroku, ne jen se jménem klíče
+// a key written only in then is just a warning at validation time ("may or
+// may not exist"); when else is then taken and the key is read, the run
+// fails as a MissingKeyException — but with the step's path, not just the key name
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
@@ -129,74 +129,75 @@ Assert::exception(
 		'steps' => [
 			[
 				'type' => 'if',
-				'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'ano'],
-				'then' => [['type' => 'set', 'key' => 'x', 'value' => 'jen-then']],
+				'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'yes'],
+				'then' => [['type' => 'set', 'key' => 'x', 'value' => 'only-then']],
 			],
 			['type' => 'set', 'key' => 'po', 'value' => '{%x%}'],
 		],
-	], $procs, ['a' => 'ne']),
+	], $procs, ['a' => 'no']),
 	RunFailedException::class,
 	"w.json:steps[1]: Klíč 'x' v mapě neexistuje."
 );
 
-// foreach: iterace přes řádky, prázdné se přeskočí, \r se odřízne
+// foreach: iterates over lines, empty ones are skipped, \r is stripped
 $procs = new RecordingProcesses;
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['seznam' => []],
+	'inputs' => ['list' => []],
 	'steps' => [[
-		'type' => 'foreach', 'over' => '{%seznam%}', 'as' => 'radek',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%radek%}']]],
+		'type' => 'foreach', 'over' => '{%list%}', 'as' => 'line',
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%line%}']]],
 	]],
-], $procs, ['seznam' => "a\r\n\nb\nc"]);
+], $procs, ['list' => "a\r\n\nb\nc"]);
 Assert::same([['a'], ['b'], ['c']], $procs->args);
 
-// po cyklu zůstává v klíči poslední hodnota
-Assert::same('c', $map['radek']);
+// after the loop, the key keeps the last value
+Assert::same('c', $map['line']);
 
-// prázdný vstup znamená nula iterací
+// an empty input means zero iterations
 $procs = new RecordingProcesses;
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['seznam' => ['required' => false]],
+	'inputs' => ['list' => ['required' => false]],
 	'steps' => [[
-		'type' => 'foreach', 'over' => '{%seznam%}', 'as' => 'radek',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%radek%}']]],
+		'type' => 'foreach', 'over' => '{%list%}', 'as' => 'line',
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%line%}']]],
 	]],
-], $procs, ['seznam' => '']);
+], $procs, ['list' => '']);
 Assert::same([], $procs->args);
-Assert::false(isset($map['radek']));
+Assert::false(isset($map['line']));
 
-// vnořený foreach uvnitř foreach
+// a foreach nested inside a foreach
 $procs = new RecordingProcesses;
 $run([
 	'name' => 'w',
-	'inputs' => ['vnejsi' => [], 'vnitrni' => []],
+	'inputs' => ['outer' => [], 'inner' => []],
 	'steps' => [[
-		'type' => 'foreach', 'over' => '{%vnejsi%}', 'as' => 'x',
+		'type' => 'foreach', 'over' => '{%outer%}', 'as' => 'x',
 		'steps' => [[
-			'type' => 'foreach', 'over' => '{%vnitrni%}', 'as' => 'y',
+			'type' => 'foreach', 'over' => '{%inner%}', 'as' => 'y',
 			'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%x%}{%y%}']]],
 		]],
 	]],
-], $procs, ['vnejsi' => "1\n2", 'vnitrni' => "a\nb"]);
+], $procs, ['outer' => "1\n2", 'inner' => "a\nb"]);
 Assert::same([['1a'], ['1b'], ['2a'], ['2b']], $procs->args);
 
-// hlášení: hodnota patří cestě foreache, tělo hlásí svoje vlastní cesty,
-// obojí se opakuje pod každou iterací — viz sekce Hlášení průběhu v návrhu
+// reporting: the value belongs to the foreach's own path, the body reports its
+// own paths, both repeat under each iteration — see the Progress reporting
+// section in the design
 $procs = new RecordingProcesses;
 $reporter = new RecordingReporter;
 (new Runner($repo, $procs, $reporter))->run($parser->parseArray([
 	'name' => 'w',
-	'inputs' => ['vnejsi' => [], 'vnitrni' => []],
+	'inputs' => ['outer' => [], 'inner' => []],
 	'steps' => [[
-		'type' => 'foreach', 'over' => '{%vnejsi%}', 'as' => 'x',
+		'type' => 'foreach', 'over' => '{%outer%}', 'as' => 'x',
 		'steps' => [[
-			'type' => 'foreach', 'over' => '{%vnitrni%}', 'as' => 'y',
+			'type' => 'foreach', 'over' => '{%inner%}', 'as' => 'y',
 			'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%x%}{%y%}']]],
 		]],
 	]],
-], 'w.json'), ['vnejsi' => "1\n2", 'vnitrni' => "a\nb"]);
+], 'w.json'), ['outer' => "1\n2", 'inner' => "a\nb"]);
 
 Assert::same([
 	['w.json:steps[0]', 'foreach'],
