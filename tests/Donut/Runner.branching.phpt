@@ -96,10 +96,10 @@ $map = $run([
 			'then' => [['type' => 'set', 'key' => 'v', 'value' => 'inside']],
 			'else' => [['type' => 'set', 'key' => 'v', 'value' => 'outside']],
 		],
-		['type' => 'set', 'key' => 'po', 'value' => 'seen-{%v%}'],
+		['type' => 'set', 'key' => 'after', 'value' => 'seen-{%v%}'],
 	],
 ], $procs, ['a' => 'x']);
-Assert::same('seen-inside', $map['po']);
+Assert::same('seen-inside', $map['after']);
 
 // a missing else simply does nothing
 $map = $run([
@@ -132,7 +132,7 @@ Assert::exception(
 				'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => 'yes'],
 				'then' => [['type' => 'set', 'key' => 'x', 'value' => 'only-then']],
 			],
-			['type' => 'set', 'key' => 'po', 'value' => '{%x%}'],
+			['type' => 'set', 'key' => 'after', 'value' => '{%x%}'],
 		],
 	], $procs, ['a' => 'no']),
 	RunFailedException::class,
