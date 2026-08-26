@@ -15,10 +15,10 @@ use Donut\Template;
 
 
 /**
- * JSON souboru z workflows/ na objekt Workflow.
+ * JSON file from workflows/ into a Workflow object.
  *
- * Kontroluje jen strukturu jednoho souboru — že kroky mají povinné klíče
- * správných typů. Existenci kamenů a tok klíčů řeší validátor.
+ * Checks only the structure of a single file — that steps have the required keys
+ * of the right types. Block existence and key flow are handled by the validator.
  */
 final class WorkflowParser
 {
@@ -32,7 +32,7 @@ final class WorkflowParser
 
 		if ($workflow->name !== $expected) {
 			throw new ParseException(
-				"{$path}: name '{$workflow->name}' neodpovídá názvu souboru '{$expected}'."
+				"{$path}: name '{$workflow->name}' does not match the file name '{$expected}'."
 			);
 		}
 
@@ -49,11 +49,11 @@ final class WorkflowParser
 		JsonSource::rejectUnknownKeys($data, ['name', 'description', 'inputs', 'steps'], $location, '');
 
 		if (!isset($data['name']) || !\is_string($data['name']) || $data['name'] === '') {
-			throw new ParseException("{$location}: klíč 'name' je povinný a musí být neprázdný řetězec.");
+			throw new ParseException("{$location}: key 'name' is required and must be a non-empty string.");
 		}
 
 		if (!isset($data['steps']) || !\is_array($data['steps'])) {
-			throw new ParseException("{$location}: klíč 'steps' je povinný a musí být pole.");
+			throw new ParseException("{$location}: key 'steps' is required and must be an array.");
 		}
 
 		return new Workflow(
@@ -76,7 +76,7 @@ final class WorkflowParser
 
 		foreach ($steps as $i => $step) {
 			if (!\is_array($step)) {
-				throw new ParseException("{$location}: {$path}[{$i}] musí být objekt.");
+				throw new ParseException("{$location}: {$path}[{$i}] must be an object.");
 			}
 
 			$result[] = $this->parseStep($step, $location, "{$path}[{$i}]");
@@ -95,7 +95,7 @@ final class WorkflowParser
 		$type = $step['type'] ?? null;
 
 		if (!\is_string($type)) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'type'.");
+			throw new ParseException("{$location}: {$path} has no 'type' key.");
 		}
 
 		$name = JsonSource::optionalString($step, 'name', $location, "{$path}.name");
@@ -105,7 +105,7 @@ final class WorkflowParser
 			'if' => $this->parseIf($step, $location, $path, $name),
 			'set' => $this->parseSet($step, $location, $path, $name),
 			'foreach' => $this->parseForeach($step, $location, $path, $name),
-			default => throw new ParseException("{$location}: {$path} má neznámý typ kroku '{$type}'."),
+			default => throw new ParseException("{$location}: {$path} has an unknown step type '{$type}'."),
 		};
 	}
 
@@ -124,14 +124,14 @@ final class WorkflowParser
 		);
 
 		if (!isset($step['block']) || !\is_string($step['block'])) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'block'.");
+			throw new ParseException("{$location}: {$path} has no 'block' key.");
 		}
 
 		$in = [];
 
 		foreach ($this->objectOrEmpty($step, 'in', $location, $path) as $key => $value) {
 			if (!\is_string($key) || !\is_string($value)) {
-				throw new ParseException("{$location}: {$path}.in musí být objekt řetězec => řetězec.");
+				throw new ParseException("{$location}: {$path}.in must be an object of string => string.");
 			}
 
 			$in[$key] = Template::parse($value);
@@ -141,7 +141,7 @@ final class WorkflowParser
 
 		foreach ($this->objectOrEmpty($step, 'out', $location, $path) as $channel => $key) {
 			if (!\is_string($channel) || !\is_string($key)) {
-				throw new ParseException("{$location}: {$path}.out musí být objekt řetězec => řetězec.");
+				throw new ParseException("{$location}: {$path}.out must be an object of string => string.");
 			}
 
 			$out[$channel] = $key;
@@ -155,7 +155,7 @@ final class WorkflowParser
 
 		if (isset($step['timeout'])) {
 			if (!\is_int($step['timeout']) || $step['timeout'] < 1) {
-				throw new ParseException("{$location}: {$path}.timeout musí být kladné celé číslo.");
+				throw new ParseException("{$location}: {$path}.timeout must be a positive integer.");
 			}
 
 			$timeout = $step['timeout'];
@@ -186,7 +186,7 @@ final class WorkflowParser
 		);
 
 		if (!isset($step['condition']) || !\is_array($step['condition'])) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'condition'.");
+			throw new ParseException("{$location}: {$path} has no 'condition' key.");
 		}
 
 		$condition = $step['condition'];
@@ -194,26 +194,26 @@ final class WorkflowParser
 		JsonSource::rejectUnknownKeys($condition, ['left', 'op', 'right'], $location, "{$path}.condition");
 
 		if (!isset($condition['left']) || !\is_string($condition['left'])) {
-			throw new ParseException("{$location}: {$path}.condition nemá 'left'.");
+			throw new ParseException("{$location}: {$path}.condition has no 'left'.");
 		}
 
 		if (!isset($condition['op']) || !\is_string($condition['op'])) {
-			throw new ParseException("{$location}: {$path}.condition nemá 'op'.");
+			throw new ParseException("{$location}: {$path}.condition has no 'op'.");
 		}
 
 		if (!isset($step['then']) || !\is_array($step['then'])) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'then'.");
+			throw new ParseException("{$location}: {$path} has no 'then' key.");
 		}
 
 		if (isset($step['else']) && !\is_array($step['else'])) {
-			throw new ParseException("{$location}: {$path}.else musí být pole.");
+			throw new ParseException("{$location}: {$path}.else must be an array.");
 		}
 
 		$right = null;
 
 		if (isset($condition['right'])) {
 			if (!\is_string($condition['right'])) {
-				throw new ParseException("{$location}: {$path}.condition.right musí být řetězec.");
+				throw new ParseException("{$location}: {$path}.condition.right must be a string.");
 			}
 
 			$right = Template::parse($condition['right']);
@@ -243,11 +243,11 @@ final class WorkflowParser
 		JsonSource::rejectUnknownKeys($step, ['type', 'key', 'value', 'name'], $location, $path);
 
 		if (!isset($step['key']) || !\is_string($step['key'])) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'key'.");
+			throw new ParseException("{$location}: {$path} has no 'key' key.");
 		}
 
 		if (!isset($step['value']) || !\is_string($step['value'])) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'value'.");
+			throw new ParseException("{$location}: {$path} has no 'value' key.");
 		}
 
 		return new SetStep(
@@ -272,15 +272,15 @@ final class WorkflowParser
 		);
 
 		if (!isset($step['over']) || !\is_string($step['over'])) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'over'.");
+			throw new ParseException("{$location}: {$path} has no 'over' key.");
 		}
 
 		if (!isset($step['as']) || !\is_string($step['as'])) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'as'.");
+			throw new ParseException("{$location}: {$path} has no 'as' key.");
 		}
 
 		if (!isset($step['steps']) || !\is_array($step['steps'])) {
-			throw new ParseException("{$location}: {$path} nemá klíč 'steps'.");
+			throw new ParseException("{$location}: {$path} has no 'steps' key.");
 		}
 
 		return new ForeachStep(
@@ -304,7 +304,7 @@ final class WorkflowParser
 		}
 
 		if (!\is_array($step[$key])) {
-			throw new ParseException("{$location}: {$path}.{$key} musí být objekt.");
+			throw new ParseException("{$location}: {$path}.{$key} must be an object.");
 		}
 
 		return $step[$key];

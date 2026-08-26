@@ -20,70 +20,70 @@ $assertFails = function (array $data, string $message) use ($parser): void {
 
 $assertFails(
 	['command' => 'x', 'args' => []],
-	"x.json: klíč 'name' je povinný a musí být neprázdný řetězec."
+	"x.json: key 'name' is required and must be a non-empty string."
 );
 
 $assertFails(
 	['name' => 'x', 'args' => []],
-	"x.json: klíč 'command' je povinný a musí být neprázdný řetězec."
+	"x.json: key 'command' is required and must be a non-empty string."
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x'],
-	"x.json: klíč 'args' je povinný a musí být pole."
+	"x.json: key 'args' is required and must be an array."
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => ['-v']],
-	'x.json: args[0] musí být pole řetězců.'
+	'x.json: args[0] must be an array of strings.'
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [[1]]],
-	'x.json: args[0][0] musí být řetězec.'
+	'x.json: args[0][0] must be a string.'
 );
 
 $assertFails(
-	['name' => 'x', 'command' => 'x', 'args' => [], 'allow_failure' => 'ano'],
-	'x.json: allow_failure musí být true, false, nebo pole celých čísel.'
+	['name' => 'x', 'command' => 'x', 'args' => [], 'allow_failure' => 'yes'],
+	'x.json: allow_failure must be true, false, or an array of integers.'
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'allow_failure' => ['a']],
-	'x.json: allow_failure jako pole musí obsahovat jen celá čísla.'
+	'x.json: allow_failure as an array must contain only integers.'
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'timeout' => -1],
-	"x.json: 'timeout' musí být kladné celé číslo."
+	"x.json: 'timeout' must be a positive integer."
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'timeout' => 0],
-	"x.json: 'timeout' musí být kladné celé číslo."
+	"x.json: 'timeout' must be a positive integer."
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'outputs' => []],
-	"x.json: neznámý klíč 'outputs'."
+	"x.json: unknown key 'outputs'."
 );
 
 $assertFails(
-	['name' => 'x', 'command' => 'x', 'args' => [], 'inputs' => ['a' => 'ne']],
-	"x.json: vstup 'a' musí být objekt."
+	['name' => 'x', 'command' => 'x', 'args' => [], 'inputs' => ['a' => 'no']],
+	"x.json: input 'a' must be an object."
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'description' => ['a', 'b']],
-	'x.json: description musí být řetězec.'
+	'x.json: description must be a string.'
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'inputs' => ['url' => ['default' => ['a', 'b']]]],
-	"x.json: default vstupu 'url' musí být řetězec."
+	"x.json: default of input 'url' must be a string."
 );
 
 $assertFails(
 	['name' => 'x', 'command' => 'x', 'args' => [], 'stdin' => ['required' => true, 'optional' => false]],
-	"x.json: stdin má neznámý klíč 'optional'."
+	"x.json: stdin has an unknown key 'optional'."
 );

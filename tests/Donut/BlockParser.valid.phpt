@@ -17,7 +17,7 @@ $block = (new BlockParser)->parseArray([
 		['{%url%}'],
 	],
 	'inputs' => [
-		'url' => ['required' => true, 'description' => 'Adresa'],
+		'url' => ['required' => true, 'description' => 'Address'],
 		'curlrc' => ['required' => false],
 	],
 ], 'curl-get.json');
@@ -31,7 +31,7 @@ Assert::same(['url'], $block->args[2][0]->getKeys());
 
 Assert::same(['url', 'curlrc'], array_keys($block->inputs));
 Assert::true($block->inputs['url']->required);
-Assert::same('Adresa', $block->inputs['url']->description);
+Assert::same('Address', $block->inputs['url']->description);
 Assert::false($block->inputs['curlrc']->required);
 Assert::null($block->inputs['curlrc']->default);
 
@@ -39,7 +39,7 @@ Assert::null($block->stdin);
 Assert::null($block->timeout);
 Assert::false($block->allowFailure);
 
-// defaulty: required je true, když se neuvede
+// defaults: required is true when not given
 $block = (new BlockParser)->parseArray([
 	'name' => 'jq',
 	'command' => 'jq',

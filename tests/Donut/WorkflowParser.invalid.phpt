@@ -20,37 +20,37 @@ $assertFails = function (array $data, string $message) use ($parser): void {
 
 $assertFails(
 	['steps' => []],
-	"w.json: klíč 'name' je povinný a musí být neprázdný řetězec."
+	"w.json: key 'name' is required and must be a non-empty string."
 );
 
 $assertFails(
 	['name' => 'w'],
-	"w.json: klíč 'steps' je povinný a musí být pole."
+	"w.json: key 'steps' is required and must be an array."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [[]]],
-	"w.json: steps[0] nemá klíč 'type'."
+	"w.json: steps[0] has no 'type' key."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'while']]],
-	"w.json: steps[0] má neznámý typ kroku 'while'."
+	"w.json: steps[0] has an unknown step type 'while'."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run']]],
-	"w.json: steps[0] nemá klíč 'block'."
+	"w.json: steps[0] has no 'block' key."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'set', 'key' => 'a']]],
-	"w.json: steps[0] nemá klíč 'value'."
+	"w.json: steps[0] has no 'value' key."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'foreach', 'over' => '{%a%}', 'as' => 'b']]],
-	"w.json: steps[0] nemá klíč 'steps'."
+	"w.json: steps[0] has no 'steps' key."
 );
 
 $assertFails(
@@ -58,10 +58,10 @@ $assertFails(
 		'name' => 'w',
 		'steps' => [['type' => 'if', 'condition' => ['op' => 'eq'], 'then' => []]],
 	],
-	"w.json: steps[0].condition nemá 'left'."
+	"w.json: steps[0].condition has no 'left'."
 );
 
-// chyba ve vnořeném kroku ukazuje na správné místo
+// an error in a nested step points to the right place
 $assertFails(
 	[
 		'name' => 'w',
@@ -71,7 +71,7 @@ $assertFails(
 			'then' => [['type' => 'run']],
 		]],
 	],
-	"w.json: steps[0].then[0] nemá klíč 'block'."
+	"w.json: steps[0].then[0] has no 'block' key."
 );
 
 $assertFails(
@@ -84,10 +84,10 @@ $assertFails(
 			'steps' => [['type' => 'set', 'key' => 'c']],
 		]],
 	],
-	"w.json: steps[0].steps[0] nemá klíč 'value'."
+	"w.json: steps[0].steps[0] has no 'value' key."
 );
 
-// chyba ve vnořeném kroku uvnitř 'else' ukazuje na správné místo
+// an error in a nested step inside 'else' points to the right place
 $assertFails(
 	[
 		'name' => 'w',
@@ -98,52 +98,52 @@ $assertFails(
 			'else' => [['type' => 'run']],
 		]],
 	],
-	"w.json: steps[0].else[0] nemá klíč 'block'."
+	"w.json: steps[0].else[0] has no 'block' key."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [], 'extra' => 1],
-	"w.json: neznámý klíč 'extra'."
+	"w.json: unknown key 'extra'."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => ['not-an-object']],
-	'w.json: steps[0] musí být objekt.'
+	'w.json: steps[0] must be an object.'
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'in' => 'nope']]],
-	'w.json: steps[0].in musí být objekt.'
+	'w.json: steps[0].in must be an object.'
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'out' => 'nope']]],
-	'w.json: steps[0].out musí být objekt.'
+	'w.json: steps[0].out must be an object.'
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'in' => ['url' => 5]]]],
-	'w.json: steps[0].in musí být objekt řetězec => řetězec.'
+	'w.json: steps[0].in must be an object of string => string.'
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'out' => ['result' => 5]]]],
-	'w.json: steps[0].out musí být objekt řetězec => řetězec.'
+	'w.json: steps[0].out must be an object of string => string.'
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'timeout' => -1]]],
-	'w.json: steps[0].timeout musí být kladné celé číslo.'
+	'w.json: steps[0].timeout must be a positive integer.'
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'timeout' => 0]]],
-	'w.json: steps[0].timeout musí být kladné celé číslo.'
+	'w.json: steps[0].timeout must be a positive integer.'
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'if']]],
-	"w.json: steps[0] nemá klíč 'condition'."
+	"w.json: steps[0] has no 'condition' key."
 );
 
 $assertFails(
@@ -151,7 +151,7 @@ $assertFails(
 		'name' => 'w',
 		'steps' => [['type' => 'if', 'condition' => ['left' => '{%a%}'], 'then' => []]],
 	],
-	"w.json: steps[0].condition nemá 'op'."
+	"w.json: steps[0].condition has no 'op'."
 );
 
 $assertFails(
@@ -159,7 +159,7 @@ $assertFails(
 		'name' => 'w',
 		'steps' => [['type' => 'if', 'condition' => ['left' => '{%a%}', 'op' => 'eq', 'right' => '1']]],
 	],
-	"w.json: steps[0] nemá klíč 'then'."
+	"w.json: steps[0] has no 'then' key."
 );
 
 $assertFails(
@@ -172,7 +172,7 @@ $assertFails(
 			'else' => 'nope',
 		]],
 	],
-	'w.json: steps[0].else musí být pole.'
+	'w.json: steps[0].else must be an array.'
 );
 
 $assertFails(
@@ -184,31 +184,31 @@ $assertFails(
 			'then' => [],
 		]],
 	],
-	'w.json: steps[0].condition.right musí být řetězec.'
+	'w.json: steps[0].condition.right must be a string.'
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'foreach', 'as' => 'b', 'steps' => []]]],
-	"w.json: steps[0] nemá klíč 'over'."
+	"w.json: steps[0] has no 'over' key."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'foreach', 'over' => '{%a%}', 'steps' => []]]],
-	"w.json: steps[0] nemá klíč 'as'."
+	"w.json: steps[0] has no 'as' key."
 );
 
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'set', 'value' => 'x']]],
-	"w.json: steps[0] nemá klíč 'key'."
+	"w.json: steps[0] has no 'key' key."
 );
 
-// neznámý klíč uvnitř kroku 'run'
+// unknown key inside a 'run' step
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'outs' => []]]],
-	"w.json: steps[0] má neznámý klíč 'outs'."
+	"w.json: steps[0] has an unknown key 'outs'."
 );
 
-// neznámý klíč uvnitř kroku 'if' — typický překlep 'esle'
+// unknown key inside an 'if' step — a typical typo 'esle'
 $assertFails(
 	[
 		'name' => 'w',
@@ -219,25 +219,25 @@ $assertFails(
 			'esle' => [],
 		]],
 	],
-	"w.json: steps[0] má neznámý klíč 'esle'."
+	"w.json: steps[0] has an unknown key 'esle'."
 );
 
-// neznámý klíč uvnitř kroku 'set'
+// unknown key inside a 'set' step
 $assertFails(
 	['name' => 'w', 'steps' => [['type' => 'set', 'key' => 'a', 'value' => 'x', 'default' => 'y']]],
-	"w.json: steps[0] má neznámý klíč 'default'."
+	"w.json: steps[0] has an unknown key 'default'."
 );
 
-// neznámý klíč uvnitř kroku 'foreach'
+// unknown key inside a 'foreach' step
 $assertFails(
 	[
 		'name' => 'w',
 		'steps' => [['type' => 'foreach', 'over' => '{%a%}', 'as' => 'b', 'steps' => [], 'in' => []]],
 	],
-	"w.json: steps[0] má neznámý klíč 'in'."
+	"w.json: steps[0] has an unknown key 'in'."
 );
 
-// neznámý klíč uvnitř 'condition'
+// unknown key inside 'condition'
 $assertFails(
 	[
 		'name' => 'w',
@@ -247,11 +247,11 @@ $assertFails(
 			'then' => [],
 		]],
 	],
-	"w.json: steps[0].condition má neznámý klíč 'nope'."
+	"w.json: steps[0].condition has an unknown key 'nope'."
 );
 
-// neznámý klíč uvnitř 'inputs.<name>'
+// unknown key inside 'inputs.<name>'
 $assertFails(
 	['name' => 'w', 'inputs' => ['t' => ['requried' => true]], 'steps' => []],
-	"w.json: vstup 't' má neznámý klíč 'requried'."
+	"w.json: input 't' has an unknown key 'requried'."
 );

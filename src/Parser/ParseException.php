@@ -8,7 +8,7 @@ use Donut\Exception;
 
 
 /**
- * Soubor nejde načíst nebo neodpovídá struktuře formátu.
+ * The file cannot be loaded or does not match the format structure.
  */
 final class ParseException extends Exception
 {
