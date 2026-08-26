@@ -4,6 +4,6 @@ composer.lock
 /tests/tmp
 /tests/**/output
 
-# referenční bashová workflow, mají vlastní .git
+# reference bash workflows, they have their own .git
 /docs/workflows/jpw/
 /docs/workflows/olw/
