@@ -51,9 +51,9 @@ Assert::contains(
 
 // an undeclared input
 Assert::contains(
-	'card-dev.json:steps[1]: block "jq" does not declare input "unknown"',
+	'card-dev.json:steps[1]: block "jq" does not declare input "nosuch"',
 	$errorsAfter(function (array &$data): void {
-		$data['steps'][1]['in']['unknown'] = 'x';
+		$data['steps'][1]['in']['nosuch'] = 'x';
 	})
 );
 

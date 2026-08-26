@@ -102,14 +102,14 @@ Assert::same([], $messages([
 
 // in contains a name the block does not declare
 Assert::same(
-	['w.json:steps[0]: block "greet" does not declare input "unknown"'],
+	['w.json:steps[0]: block "greet" does not declare input "nosuch"'],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['t' => []],
 		'steps' => [[
 			'type' => 'run',
 			'block' => 'greet',
-			'in' => ['text' => '{%t%}', 'unknown' => 'x'],
+			'in' => ['text' => '{%t%}', 'nosuch' => 'x'],
 		]],
 	])
 );

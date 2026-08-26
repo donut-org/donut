@@ -288,7 +288,7 @@ final class Application
 			donut <workflow> [--key=value …]      run
 
 			Profile: {$this->profile->name()}  ({$this->profile->dir()})
-			Another profile: DONUT_PROFILE=name, another root: DONUT_HOME=path
+			Other profile: DONUT_PROFILE=name, other root: DONUT_HOME=path
 
 			TEXT);
 	}

@@ -1,7 +1,7 @@
 {
 	"name": "donut-org/donut",
 	"type": "library",
-	"description": "Runner workflow souborů nad unixovými příkazy",
+	"description": "Runs workflow files over unix commands",
 	"license": "BSD-3-Clause",
 	"authors": [
 		{
