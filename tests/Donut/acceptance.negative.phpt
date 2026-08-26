@@ -35,7 +35,7 @@ $errorsAfter = function (callable $break) use ($path, $parser, $validator): arra
 
 // neexistující kámen
 Assert::contains(
-	'card-dev.json:steps[0]: kámen "curl-gett" neexistuje',
+	'card-dev.json:steps[0]: block "curl-gett" does not exist',
 	$errorsAfter(function (array &$data): void {
 		$data['steps'][0]['block'] = 'curl-gett';
 	})
@@ -43,7 +43,7 @@ Assert::contains(
 
 // překlep v názvu klíče
 Assert::contains(
-	'card-dev.json:steps[1]: šablona čte klíč "meJsn", který žádný krok nezapisuje',
+	'card-dev.json:steps[1]: template reads key "meJsn", which no step writes',
 	$errorsAfter(function (array &$data): void {
 		$data['steps'][1]['in']['stdin'] = '{%meJsn%}';
 	})
@@ -51,7 +51,7 @@ Assert::contains(
 
 // nedeklarovaný vstup
 Assert::contains(
-	'card-dev.json:steps[1]: kámen "jq" nedeklaruje vstup "neznamy"',
+	'card-dev.json:steps[1]: block "jq" does not declare input "neznamy"',
 	$errorsAfter(function (array &$data): void {
 		$data['steps'][1]['in']['neznamy'] = 'x';
 	})
@@ -59,7 +59,7 @@ Assert::contains(
 
 // chybějící povinný stdin
 Assert::contains(
-	'card-dev.json:steps[1]: kámen "jq" vyžaduje stdin, krok ho neplní',
+	'card-dev.json:steps[1]: block "jq" requires stdin, the step does not fill it',
 	$errorsAfter(function (array &$data): void {
 		unset($data['steps'][1]['in']['stdin']);
 	})
@@ -67,7 +67,7 @@ Assert::contains(
 
 // neznámý operátor
 Assert::contains(
-	'card-dev.json:steps[7]: neznámý operátor "matches"',
+	'card-dev.json:steps[7]: unknown operator "matches"',
 	$errorsAfter(function (array &$data): void {
 		$data['steps'][7]['condition']['op'] = 'matches';
 	})

@@ -16,10 +16,10 @@ use Donut\Template;
 
 
 /**
- * Statická validace workflow podle sekce 5 specifikace.
+ * Static validation of a workflow per section 5 of the specification.
  *
- * Běží před spuštěním prvního kroku. Kontroluje zapojení kroků na kameny
- * a v Tasku 7 i tok klíčů mapou.
+ * Runs before the first step executes. Checks how steps connect to blocks
+ * and, per Task 7, also the flow of keys through the map.
  */
 final class Validator
 {
@@ -53,7 +53,7 @@ final class Validator
 			if (!\in_array($key, $read, true)) {
 				$result->add(Problem::warning(
 					$location,
-					"klíč \"{$key}\" se zapisuje a nikdy nečte"
+					"key \"{$key}\" is written and never read"
 				));
 			}
 		}
@@ -62,7 +62,7 @@ final class Validator
 			if (!\in_array($key, $read, true)) {
 				$result->add(Problem::warning(
 					$location,
-					"vstup \"{$key}\" se nikde nepoužívá"
+					"input \"{$key}\" is never used"
 				));
 			}
 		}
@@ -86,10 +86,10 @@ final class Validator
 
 			} elseif ($step instanceof IfStep) {
 				$this->checkCondition($step->condition, $at, $result);
-				$this->readStrict($step->condition->left, $at, 'podmínka', $result, $flow);
+				$this->readStrict($step->condition->left, $at, 'condition', $result, $flow);
 
 				if ($step->condition->right !== null) {
-					$this->readStrict($step->condition->right, $at, 'podmínka', $result, $flow);
+					$this->readStrict($step->condition->right, $at, 'condition', $result, $flow);
 				}
 
 				$then = $flow->branch();
@@ -122,11 +122,11 @@ final class Validator
 	private function checkRun(RunStep $step, string $at, Result $result, KeyFlow $flow): void
 	{
 		foreach ($step->in as $template) {
-			$this->readTolerant($template, $at, 'šablona', $result, $flow);
+			$this->readTolerant($template, $at, 'template', $result, $flow);
 		}
 
 		if (!$this->blocks->has($step->block)) {
-			$result->add(Problem::error($at, "kámen \"{$step->block}\" neexistuje"));
+			$result->add(Problem::error($at, "block \"{$step->block}\" does not exist"));
 			return;
 		}
 
@@ -135,7 +135,7 @@ final class Validator
 		if (isset($block->inputs['stdin'])) {
 			$result->add(Problem::error(
 				$at,
-				"kámen \"{$block->name}\" nesmí mít vstup jménem \"stdin\" — je to jméno kanálu"
+				"block \"{$block->name}\" must not have an input named \"stdin\" — that is a channel name"
 			));
 		}
 
@@ -144,14 +144,14 @@ final class Validator
 				if ($block->stdin === null) {
 					$result->add(Problem::error(
 						$at,
-						"kámen \"{$block->name}\" nečte stdin, ale krok ho plní"
+						"block \"{$block->name}\" does not read stdin, but the step fills it"
 					));
 				}
 
 			} elseif (!isset($block->inputs[$name])) {
 				$result->add(Problem::error(
 					$at,
-					"kámen \"{$block->name}\" nedeklaruje vstup \"{$name}\""
+					"block \"{$block->name}\" does not declare input \"{$name}\""
 				));
 			}
 		}
@@ -160,7 +160,7 @@ final class Validator
 			if ($input->required && !isset($step->in[$name]) && $input->default === null) {
 				$result->add(Problem::error(
 					$at,
-					"povinný vstup \"{$name}\" kamene \"{$block->name}\" není naplněn"
+					"required input \"{$name}\" of block \"{$block->name}\" is not filled"
 				));
 			}
 		}
@@ -168,7 +168,7 @@ final class Validator
 		if ($block->stdin !== null && $block->stdin->required && !isset($step->in['stdin'])) {
 			$result->add(Problem::error(
 				$at,
-				"kámen \"{$block->name}\" vyžaduje stdin, krok ho neplní"
+				"block \"{$block->name}\" requires stdin, the step does not fill it"
 			));
 		}
 
@@ -178,7 +178,7 @@ final class Validator
 
 		foreach ($step->out as $channel => $key) {
 			if (!\in_array($channel, RunStep::Channels, true)) {
-				$result->add(Problem::error($at, "neznámý kanál \"{$channel}\""));
+				$result->add(Problem::error($at, "unknown channel \"{$channel}\""));
 			}
 
 			$this->checkKeyName($key, $at, $result);
@@ -190,7 +190,7 @@ final class Validator
 	private function checkCondition(Condition $condition, string $at, Result $result): void
 	{
 		if (!\in_array($condition->op, Condition::Operators, true)) {
-			$result->add(Problem::error($at, "neznámý operátor \"{$condition->op}\""));
+			$result->add(Problem::error($at, "unknown operator \"{$condition->op}\""));
 		}
 
 		if (
@@ -198,7 +198,7 @@ final class Validator
 			&& !\in_array($condition->op, Condition::UnaryOperators, true)
 			&& $condition->right === null
 		) {
-			$result->add(Problem::error($at, "operátor \"{$condition->op}\" vyžaduje 'right'"));
+			$result->add(Problem::error($at, "operator \"{$condition->op}\" requires 'right'"));
 		}
 	}
 
@@ -208,14 +208,14 @@ final class Validator
 		if (!Template::isKeyName($key)) {
 			$result->add(Problem::error(
 				$at,
-				"klíč \"{$key}\" není platné jméno"
+				"key \"{$key}\" is not a valid name"
 			));
 		}
 	}
 
 
 	/**
-	 * Čtení, které snese klíč zapsaný jen v jedné větvi — jen varuje.
+	 * A read that tolerates a key written in only one branch — just warns.
 	 */
 	private function readTolerant(
 		Template $template,
@@ -235,7 +235,7 @@ final class Validator
 			if ($flow->isMaybe($key)) {
 				$result->add(Problem::warning(
 					$at,
-					"{$what} čte klíč \"{$key}\", který nemusí existovat"
+					"{$what} reads key \"{$key}\", which may not exist"
 				));
 
 			} else {
@@ -246,8 +246,8 @@ final class Validator
 
 
 	/**
-	 * Čtení v podmínce a ve foreach.over. Z těch se nedá vycouvat, takže
-	 * „možná" nestačí.
+	 * A read in a condition and in foreach.over. There is no backing out of
+	 * those, so "maybe" is not enough.
 	 */
 	private function readStrict(
 		Template $template,
@@ -265,7 +265,7 @@ final class Validator
 			}
 
 			$message = $flow->isMaybe($key)
-				? "{$what} čte klíč \"{$key}\", který vzniká jen v některých průchodech — nesmí se od něj odvíjet, které kroky poběží"
+				? "{$what} reads key \"{$key}\", which is created only on some paths — it must not decide which steps run"
 				: $this->missingKeyMessage($what, $key);
 
 			$result->add(Problem::error($at, $message));
@@ -274,20 +274,20 @@ final class Validator
 
 
 	/**
-	 * Klíč, který nikdo nikdy nezapisuje, je překlep; klíč zapsaný později
-	 * je chyba pořadí. Hlášky se liší, aby se to dalo rozlišit.
+	 * A key that no step ever writes is a typo; a key written later is an
+	 * ordering error. The messages differ so the two can be told apart.
 	 */
 	private function missingKeyMessage(string $what, string $key): string
 	{
 		return \in_array($key, $this->writtenAnywhere, true)
-			? "{$what} čte klíč \"{$key}\", který v tomto místě nemohl vzniknout"
-			: "{$what} čte klíč \"{$key}\", který žádný krok nezapisuje";
+			? "{$what} reads key \"{$key}\", which cannot have been created at this point"
+			: "{$what} reads key \"{$key}\", which no step writes";
 	}
 
 
 	/**
-	 * Všechny klíče, které kterýkoliv krok kdekoliv zapisuje — bez ohledu
-	 * na pořadí a větvení. Slouží k rozlišení překlepu od špatného pořadí.
+	 * All keys that any step anywhere writes — regardless of order and
+	 * branching. Used to tell a typo apart from a wrong order.
 	 *
 	 * @param  array<int, Step> $steps
 	 * @return array<int, string>

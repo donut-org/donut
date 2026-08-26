@@ -8,17 +8,17 @@ use Donut\Format\Block;
 
 
 /**
- * Kontroly, které se dívají jen na kámen samotný.
+ * Checks that look only at the block itself.
  *
- * Bydlí zvlášť, protože Validator drží BlockRepository kvůli dohledávání
- * kamenů podle jména — kontrola samotného kamene nepotřebuje nic než ten
- * kámen. Validator ji volá u kroku run, GUI při ukládání.
+ * Lives separately because Validator holds a BlockRepository for looking up
+ * blocks by name — checking the block itself needs nothing but the block.
+ * Validator calls it for a run step, GUI calls it on save.
  */
 final class BlockValidator
 {
 	/**
-	 * @param  string|null $location kde se problém hlásí; výchozí je soubor
-	 *                               kamene, Validator předává cestu ke kroku
+	 * @param  string|null $location where to report the problem; default is
+	 *                               the block's file, Validator passes the step's path
 	 */
 	public function validate(Block $block, ?string $location = null): Result
 	{
@@ -39,7 +39,7 @@ final class BlockValidator
 				if (\in_array('STDIN', $template->getKeys(), true)) {
 					$result->add(Problem::error(
 						$at,
-						"{%STDIN%} použito v args kamene \"{$block->name}\""
+						"{%STDIN%} used in args of block \"{$block->name}\""
 					));
 
 					return;
@@ -50,10 +50,11 @@ final class BlockValidator
 
 
 	/**
-	 * Klíč v args, který kámen nedeklaruje jako vstup, není chybějící hodnota
-	 * — je to překlep, který CommandLine nemůže odlišit od legitimně
-	 * nevyplněného vstupu a tiše by mu vypadla celá skupina argumentů.
-	 * {%STDIN%} v args řeší checkStdinNotInArgs() vlastní hláškou.
+	 * A key in args that the block does not declare as an input is not a
+	 * missing value — it is a typo, which CommandLine cannot tell apart from
+	 * a legitimately unfilled input, and it would silently drop the whole
+	 * group of arguments. {%STDIN%} in args is handled by
+	 * checkStdinNotInArgs() with its own message.
 	 */
 	private function checkArgsInputsDeclared(Block $block, string $at, Result $result): void
 	{
@@ -69,7 +70,7 @@ final class BlockValidator
 					$reported[$key] = true;
 					$result->add(Problem::error(
 						$at,
-						"kámen \"{$block->name}\" používá v args proměnnou \"{$key}\", kterou nedeklaruje"
+						"block \"{$block->name}\" uses variable \"{$key}\" in args without declaring it"
 					));
 				}
 			}

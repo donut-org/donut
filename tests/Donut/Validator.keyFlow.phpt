@@ -31,7 +31,7 @@ $warnings = function (array $data) use ($parser, $validator): array {
 	return array_map(strval(...), $validator->validate($parser->parseArray($data, 'w.json'))->getWarnings());
 };
 
-// klíč zapsaný dřív, čtený později
+// key written earlier, read later
 Assert::same([], $errors([
 	'name' => 'w',
 	'steps' => [
@@ -40,24 +40,24 @@ Assert::same([], $errors([
 	],
 ]));
 
-// STDIN a CWD jsou známé od začátku
+// STDIN and CWD are known from the start
 Assert::same([], $errors([
 	'name' => 'w',
 	'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%CWD%}/{%STDIN%}']]],
 ]));
 
-// klíč, který nikdo nikdy nezapisuje = překlep
+// a key that no one ever writes = typo
 Assert::same(
-	['w.json:steps[0]: šablona čte klíč "neni", který žádný krok nezapisuje'],
+	['w.json:steps[0]: template reads key "missing", which no step writes'],
 	$errors([
 		'name' => 'w',
-		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%neni%}']]],
+		'steps' => [['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%missing%}']]],
 	])
 );
 
-// klíč zapsaný až později
+// key written only later
 Assert::same(
-	['w.json:steps[0]: šablona čte klíč "a", který v tomto místě nemohl vzniknout'],
+	['w.json:steps[0]: template reads key "a", which cannot have been created at this point'],
 	$errors([
 		'name' => 'w',
 		'steps' => [
@@ -67,7 +67,7 @@ Assert::same(
 	])
 );
 
-// zápis ve větvi if je za ifem jen "možná" -> varování
+// a write in an if branch is only "maybe" after the if -> warning
 Assert::same([], $errors([
 	'name' => 'w',
 	'inputs' => ['t' => []],
@@ -82,7 +82,7 @@ Assert::same([], $errors([
 ]));
 
 Assert::contains(
-	'w.json:steps[1]: šablona čte klíč "a", který nemusí existovat',
+	'w.json:steps[1]: template reads key "a", which may not exist',
 	$warnings([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -97,7 +97,7 @@ Assert::contains(
 	])
 );
 
-// uvnitř větve je zápis z téže větve jistý
+// inside a branch, a write from that same branch is known
 Assert::same([], $errors([
 	'name' => 'w',
 	'inputs' => ['t' => []],
@@ -111,7 +111,7 @@ Assert::same([], $errors([
 	]],
 ]));
 
-// foreach: as je uvnitř těla jistý, za cyklem jen možný
+// foreach: as is known inside the body, only maybe after the loop
 Assert::same([], $errors([
 	'name' => 'w',
 	'inputs' => ['t' => []],
@@ -123,9 +123,9 @@ Assert::same([], $errors([
 	]],
 ]));
 
-// podmínka čte přísně: "možná" nestačí
+// a condition reads strictly: "maybe" is not enough
 Assert::same(
-	['w.json:steps[1]: podmínka čte klíč "a", který vzniká jen v některých průchodech — nesmí se od něj odvíjet, které kroky poběží'],
+	['w.json:steps[1]: condition reads key "a", which is created only on some paths — it must not decide which steps run'],
 	$errors([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -144,21 +144,21 @@ Assert::same(
 	])
 );
 
-// foreach.over čte přísně
+// foreach.over reads strictly
 Assert::same(
-	['w.json:steps[0]: foreach čte klíč "neni", který žádný krok nezapisuje'],
+	['w.json:steps[0]: foreach reads key "missing", which no step writes'],
 	$errors([
 		'name' => 'w',
 		'steps' => [[
 			'type' => 'foreach',
-			'over' => '{%neni%}',
+			'over' => '{%missing%}',
 			'as' => 'l',
 			'steps' => [],
 		]],
 	])
 );
 
-// set smí číst vlastní klíč, když už existuje
+// set may read its own key when it already exists
 Assert::same([], $errors([
 	'name' => 'w',
 	'steps' => [
@@ -167,34 +167,34 @@ Assert::same([], $errors([
 	],
 ]));
 
-// varování: klíč se zapisuje a nikdy nečte
+// warning: key is written and never read
 Assert::contains(
-	'w.json: klíč "nepouzity" se zapisuje a nikdy nečte',
+	'w.json: key "unused" is written and never read',
 	$warnings([
 		'name' => 'w',
-		'steps' => [['type' => 'set', 'key' => 'nepouzity', 'value' => 'x']],
+		'steps' => [['type' => 'set', 'key' => 'unused', 'value' => 'x']],
 	])
 );
 
-// varování: vstup workflow se nikde nepoužívá
+// warning: workflow input is never used
 Assert::contains(
-	'w.json: vstup "nepouzity" se nikde nepoužívá',
+	'w.json: input "unused" is never used',
 	$warnings([
 		'name' => 'w',
-		'inputs' => ['nepouzity' => []],
+		'inputs' => ['unused' => []],
 		'steps' => [],
 	])
 );
 
-// STDIN a CWD nepoužité nevarují
+// unused STDIN and CWD do not warn
 Assert::same([], $warnings([
 	'name' => 'w',
 	'steps' => [],
 ]));
 
-// then a else jsou alternativy: klíč zapsaný jen v then nemůže existovat v else
+// then and else are alternatives: a key written only in then cannot exist in else
 Assert::same(
-	['w.json:steps[0].else[0]: šablona čte klíč "a", který v tomto místě nemohl vzniknout'],
+	['w.json:steps[0].else[0]: template reads key "a", which cannot have been created at this point'],
 	$errors([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -207,9 +207,9 @@ Assert::same(
 	])
 );
 
-// a symetricky: klíč zapsaný jen v else nemůže existovat v then
+// and symmetrically: a key written only in else cannot exist in then
 Assert::same(
-	['w.json:steps[0].then[0]: šablona čte klíč "b", který v tomto místě nemohl vzniknout'],
+	['w.json:steps[0].then[0]: template reads key "b", which cannot have been created at this point'],
 	$errors([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -222,18 +222,18 @@ Assert::same(
 	])
 );
 
-// set čte klíč, který nikdo nikdy nezapisuje
+// set reads a key that no one ever writes
 Assert::same(
-	['w.json:steps[0]: set čte klíč "neni", který žádný krok nezapisuje'],
+	['w.json:steps[0]: set reads key "missing", which no step writes'],
 	$errors([
 		'name' => 'w',
-		'steps' => [['type' => 'set', 'key' => 'a', 'value' => '{%neni%}']],
+		'steps' => [['type' => 'set', 'key' => 'a', 'value' => '{%missing%}']],
 	])
 );
 
-// set čte klíč zapsaný jen ve větvi if -> varování
+// set reads a key written only in an if branch -> warning
 Assert::contains(
-	'w.json:steps[1]: set čte klíč "a", který nemusí existovat',
+	'w.json:steps[1]: set reads key "a", which may not exist',
 	$warnings([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -248,7 +248,7 @@ Assert::contains(
 	])
 );
 
-// klíč zapsaný v obou větvích if je za ním jistý, ne jen "možná"
+// a key written in both branches of an if is known after it, not just "maybe"
 Assert::same([], $warnings([
 	'name' => 'w',
 	'inputs' => ['t' => []],
@@ -263,7 +263,7 @@ Assert::same([], $warnings([
 	],
 ]));
 
-// a totéž čtené přísně (podmínkou) nesmí být chyba
+// and the same key, read strictly (by a condition), must not be an error
 Assert::same([], $errors([
 	'name' => 'w',
 	'inputs' => ['t' => []],
