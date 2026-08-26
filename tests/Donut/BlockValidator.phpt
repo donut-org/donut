@@ -13,9 +13,9 @@ require __DIR__ . '/../bootstrap.php';
 
 $validator = new BlockValidator;
 
-// Čistý kámen nemá co hlásit.
+// A clean block has nothing to report.
 $clean = new Block(
-	name: 'cisty',
+	name: 'clean',
 	command: 'curl',
 	args: [[Template::parse('-sS')], [Template::parse('{%url%}')]],
 	inputs: ['url' => new Input(name: 'url')],
@@ -23,9 +23,9 @@ $clean = new Block(
 
 Assert::same([], $validator->validate($clean)->getProblems());
 
-// {%STDIN%} v args je chyba — stdin se plní kanálem, ne šablonou.
+// {%STDIN%} in args is an error — stdin is filled by a channel, not a template.
 $withStdin = new Block(
-	name: 'sStdin',
+	name: 'withStdin',
 	command: 'cat',
 	args: [[Template::parse('{%STDIN%}')]],
 	stdin: new StdinSpec,
@@ -36,31 +36,31 @@ Assert::count(1, $problems);
 Assert::same(Donut\Validator\Problem::Error, $problems[0]->severity);
 Assert::contains('{%STDIN%}', $problems[0]->message);
 
-// Nedeklarovaná proměnná v args je překlep, ne nevyplněná hodnota.
+// An undeclared variable in args is a typo, not an unfilled value.
 $unknown = new Block(
-	name: 'neznamy',
+	name: 'unknown',
 	command: 'curl',
-	args: [[Template::parse('{%chybi%}')]],
+	args: [[Template::parse('{%missing%}')]],
 );
 
 $problems = $validator->validate($unknown)->getProblems();
 Assert::count(1, $problems);
-Assert::contains('chybi', $problems[0]->message);
+Assert::contains('missing', $problems[0]->message);
 
-// Výchozí location je soubor kamene.
-Assert::same('neznamy.json', $problems[0]->location);
+// The default location is the block's file.
+Assert::same('unknown.json', $problems[0]->location);
 
-// Předaná location přebije výchozí — takhle ji použije Validator u kroku.
+// A passed-in location overrides the default — this is how Validator uses it for a step.
 Assert::same(
 	'card-dev.json:steps[3]',
 	$validator->validate($unknown, 'card-dev.json:steps[3]')->getProblems()[0]->location,
 );
 
-// Každá nedeklarovaná proměnná se hlásí jednou, i když je v args víckrát.
+// Each undeclared variable is reported once, even if it appears in args more than once.
 $twice = new Block(
-	name: 'dvakrat',
+	name: 'twice',
 	command: 'echo',
-	args: [[Template::parse('{%chybi%}')], [Template::parse('{%chybi%}')]],
+	args: [[Template::parse('{%missing%}')], [Template::parse('{%missing%}')]],
 );
 
 Assert::count(1, $validator->validate($twice)->getProblems());

@@ -6,10 +6,10 @@ namespace Donut\Validator;
 
 
 /**
- * Které klíče v daném místě workflow existují.
+ * Which keys exist at a given point in the workflow.
  *
- * „Jistě" = zapsal je krok, který se určitě provedl. „Možná" = zapsal je krok
- * uvnitř větve if nebo těla foreach, které nemusí proběhnout.
+ * "Known" = written by a step that definitely ran. "Maybe" = written by a
+ * step inside an if branch or a foreach body, which may not run.
  */
 final class KeyFlow
 {
@@ -68,9 +68,9 @@ final class KeyFlow
 
 
 	/**
-	 * Kopie pro větev if nebo tělo foreach. Sdílí evidenci zapsaných
-	 * a přečtených klíčů skrz merge, ale zápisy uvnitř neovlivní volajícího
-	 * dřív, než se větev vyhodnotí.
+	 * A copy for an if branch or a foreach body. Shares the record of
+	 * written and read keys through merge, but writes inside do not affect
+	 * the caller until the branch is merged in.
 	 */
 	public function branch(): self
 	{
@@ -85,7 +85,8 @@ final class KeyFlow
 
 
 	/**
-	 * Převezme z větve zápisy jako „možná" a evidenci čtení a zápisů.
+	 * Takes over the branch's writes as "maybe", plus its record of reads
+	 * and writes.
 	 */
 	public function mergeAsMaybe(self $branch): void
 	{
@@ -105,9 +106,10 @@ final class KeyFlow
 
 
 	/**
-	 * Sloučí obě větve if. Klíč jistý v obou větvích je jistý i tady —
-	 * na rozdíl od mergeAsMaybe(), který by ho degradoval na „možná",
-	 * i když z ifu není úniku. Klíč jistý jen v jedné větvi zůstává „možná".
+	 * Merges both branches of an if. A key known in both branches is known
+	 * here too — unlike mergeAsMaybe(), which would degrade it to "maybe"
+	 * even though there is no escape from the if. A key known in only one
+	 * branch stays "maybe".
 	 */
 	public function mergeBranches(self $a, self $b): void
 	{
@@ -136,9 +138,9 @@ final class KeyFlow
 
 
 	/**
-	 * array_keys() konvertuje klíč pole složený jen z číslic na int — jméno
-	 * klíče "456" je platné (Template::isKeyName()), strval() ho vrátí zpátky
-	 * na string, jak deklaruje návratový typ.
+	 * array_keys() converts an array key made up of only digits to int — the
+	 * key name "456" is valid (Template::isKeyName()), strval() converts it
+	 * back to string, as the return type declares.
 	 *
 	 * @return array<int, string>
 	 */

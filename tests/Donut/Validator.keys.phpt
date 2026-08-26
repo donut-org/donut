@@ -9,9 +9,10 @@ use Tester\Assert;
 
 require __DIR__ . '/../bootstrap.php';
 
-// Množiny klíčů vydává Result kvůli GUI: to si tutéž mapu odvozuje vlastním
-// průchodem stromem a spojovací test v gui/ porovnává obojí. Bez toho by se
-// ty dva průchody mohly rozejít a obě strany by zůstaly zelené.
+// Result exposes the key sets for the GUI: it derives the same map with its
+// own tree traversal, and a joining test in gui/ compares the two. Without
+// this, the two traversals could drift apart and both sides would stay
+// green.
 
 $dir = TEMP_DIR . '/blocks';
 Nette\Utils\FileSystem::createDir($dir);
@@ -29,23 +30,23 @@ $validator = new Validator($repo);
 
 $workflow = $parser->parseArray([
 	'name' => 'w',
-	'inputs' => ['vstup' => []],
+	'inputs' => ['input' => []],
 	'steps' => [
-		// zápis přes set, čtení vstupu
-		['type' => 'set', 'key' => 'zeSetu', 'value' => '{%vstup%}'],
-		// zápis přes out, čtení klíče ze setu
+		// write via set, read of the input
+		['type' => 'set', 'key' => 'fromSet', 'value' => '{%input%}'],
+		// write via out, read of the key from set
 		[
 			'type' => 'run', 'block' => 'echo',
-			'in' => ['text' => '{%zeSetu%}'],
-			'out' => ['result' => 'zVystupu'],
+			'in' => ['text' => '{%fromSet%}'],
+			'out' => ['result' => 'fromOutput'],
 		],
-		// zápis přes foreach.as, čtení v over
+		// write via foreach.as, read in over
 		[
 			'type' => 'foreach',
-			'over' => '{%zVystupu%}',
-			'as' => 'radek',
+			'over' => '{%fromOutput%}',
+			'as' => 'row',
 			'steps' => [
-				['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%radek%}']],
+				['type' => 'run', 'block' => 'echo', 'in' => ['text' => '{%row%}']],
 			],
 		],
 	],
@@ -53,27 +54,28 @@ $workflow = $parser->parseArray([
 
 $result = $validator->validate($workflow);
 
-// Zapisuje se ze všech tří míst, odkud zápis vzniká.
-Assert::same(['radek', 'zVystupu', 'zeSetu'], $result->getWrittenKeys());
+// Writes come from all three places a write can arise.
+Assert::same(['fromOutput', 'fromSet', 'row'], $result->getWrittenKeys());
 
-// Čte se ze šablon v set.value, run.in a foreach.over.
-Assert::same(['radek', 'vstup', 'zVystupu', 'zeSetu'], $result->getReadKeys());
+// Reads come from templates in set.value, run.in and foreach.over.
+Assert::same(['fromOutput', 'fromSet', 'input', 'row'], $result->getReadKeys());
 
-// Workflow bez jediného kroku má obě množiny prázdné, ne null.
-$prazdne = $validator->validate($parser->parseArray(
+// A workflow without a single step has both sets empty, not null.
+$empty = $validator->validate($parser->parseArray(
 	['name' => 'w', 'steps' => []],
 	'w.json',
 ));
 
-Assert::same([], $prazdne->getWrittenKeys());
-Assert::same([], $prazdne->getReadKeys());
+Assert::same([], $empty->getWrittenKeys());
+Assert::same([], $empty->getReadKeys());
 
-// Klíč složený jen z číslic (I2): array_keys() by "456" tiše zkonvertovalo
-// na int, GUI ho pak porovnává jako string z URL a nikdy by nesedělo.
-$cislo = $validator->validate($parser->parseArray([
+// A key made up of only digits (I2): array_keys() would silently convert
+// "456" to int, and the GUI then compares it as a string from the URL,
+// which would never match.
+$number = $validator->validate($parser->parseArray([
 	'name' => 'w',
 	'inputs' => [],
 	'steps' => [['type' => 'set', 'key' => '456', 'value' => 'x']],
 ], 'w.json'));
 
-Assert::same(['456'], $cislo->getWrittenKeys());
+Assert::same(['456'], $number->getWrittenKeys());

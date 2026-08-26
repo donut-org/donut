@@ -234,8 +234,8 @@ $e = Assert::exception(
 );
 $lines = explode("\n", $e->getMessage());
 Assert::count(3, $lines);
-Assert::same('w.json:steps[0]: kámen "neexistuje1" neexistuje', $lines[1]);
-Assert::same('w.json:steps[1]: kámen "neexistuje2" neexistuje', $lines[2]);
+Assert::same('w.json:steps[0]: block "neexistuje1" does not exist', $lines[1]);
+Assert::same('w.json:steps[1]: block "neexistuje2" does not exist', $lines[2]);
 
 // run() sám doplní počáteční mapu, kterou validátor předpokládá: default
 // vstupu, když ho volající nedodá

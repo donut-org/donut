@@ -53,13 +53,15 @@ final class Result
 
 
 	/**
-	 * Volá Validator na konci validate(). Jinam nepatří — Result je jinak
-	 * jen sběrač problémů a tyhle množiny existují kvůli GUI, které si
-	 * tutéž mapu odvozuje vlastním průchodem a testem se s tímhle porovnává.
+	 * Called by Validator at the end of validate(). It belongs nowhere else
+	 * — Result is otherwise just a problem collector, and these sets exist
+	 * for the GUI, which derives the same map with its own traversal and
+	 * compares the two in a test.
 	 *
-	 * Dnes to drží jen shodou okolností — `new Result` je v repozitáři
-	 * jediné a validate() nemá časný return. Druhé volání (cizí i vlastní)
-	 * by tiše přepsalo obě množiny, proto se to hlídá explicitně.
+	 * Today this holds only by coincidence — `new Result` is the only one
+	 * in the repository and validate() has no early return. A second call
+	 * (foreign or its own) would silently overwrite both sets, hence the
+	 * explicit guard.
 	 *
 	 * @param array<int, string> $read
 	 * @param array<int, string> $written
@@ -67,7 +69,7 @@ final class Result
 	public function setKeys(array $read, array $written): void
 	{
 		if ($this->keysSet) {
-			throw new \LogicException('setKeys() už bylo jednou zavoláno.');
+			throw new \LogicException('setKeys() has already been called.');
 		}
 
 		$this->keysSet = true;
@@ -80,14 +82,14 @@ final class Result
 	}
 
 
-	/** @return list<string> abecedně */
+	/** @return list<string> alphabetically */
 	public function getReadKeys(): array
 	{
 		return $this->readKeys;
 	}
 
 
-	/** @return list<string> abecedně */
+	/** @return list<string> alphabetically */
 	public function getWrittenKeys(): array
 	{
 		return $this->writtenKeys;
