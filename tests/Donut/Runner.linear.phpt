@@ -86,7 +86,7 @@ Assert::same('v-x-y', $map['b']);
 Assert::same([], $procs->calls);
 
 // run: assembled command line and channel writes
-$procs = new FakeProcesses([new ProcessResult('vysledek', null, 0)]);
+$procs = new FakeProcesses([new ProcessResult('result', null, 0)]);
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['t' => []],
@@ -95,15 +95,15 @@ $map = $run([
 		'in' => ['text' => '{%t%}'],
 		'out' => ['result' => 'r', 'exit_code' => 'rc'],
 	]],
-], $procs, ['t' => 'ahoj']);
+], $procs, ['t' => 'hi']);
 
-Assert::same('vysledek', $map['r']);
+Assert::same('result', $map['r']);
 Assert::same('0', $map['rc']);
 Assert::count(1, $procs->calls);
-Assert::same(['echo', ['ahoj'], '', true, false, 60], $procs->calls[0]);
+Assert::same(['echo', ['hi'], '', true, false, 60], $procs->calls[0]);
 
 // stdin is filled from in, and stderr is captured only when the step maps it
-$procs = new FakeProcesses([new ProcessResult('', 'chyba', 0)]);
+$procs = new FakeProcesses([new ProcessResult('', 'error', 0)]);
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['in' => []],
@@ -114,11 +114,11 @@ $map = $run([
 	]],
 ], $procs, ['in' => 'text']);
 
-Assert::same('chyba', $map['e']);
+Assert::same('error', $map['e']);
 Assert::same(['cat', [], 'text', false, true, 60], $procs->calls[0]);
 
 // a step without out doesn't change the map — except STDIN and CWD, which run() fills in itself
-$procs = new FakeProcesses([new ProcessResult('nic', null, 0)]);
+$procs = new FakeProcesses([new ProcessResult('none', null, 0)]);
 $map = $run([
 	'name' => 'w',
 	'inputs' => ['t' => []],
@@ -161,7 +161,7 @@ Assert::exception(
 );
 
 // a block's allow_failure lets an allowed code through and channels get written
-$procs = new FakeProcesses([new ProcessResult('', null, 1), new ProcessResult('po', null, 0)]);
+$procs = new FakeProcesses([new ProcessResult('', null, 1), new ProcessResult('ok', null, 0)]);
 $map = $run([
 	'name' => 'w',
 	'steps' => [
