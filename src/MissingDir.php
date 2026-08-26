@@ -6,16 +6,17 @@ namespace Donut;
 
 
 /**
- * Co s chybějícím adresářem `workflows/` nebo `blocks/`.
+ * What to do about a missing `workflows/` or `blocks/` directory.
  *
- * Donut adresáře **nezakládá**: mlčky sypat adresáře na disk je horší než
- * hláška. Hláška tedy musí říct, co udělat — jinak je čerstvý profil slepá
- * ulička. Celá cesta a `-p` proto, že chybět může i profil nad adresářem.
+ * Donut does **not** create directories: silently sprinkling directories
+ * onto disk is worse than an error. The message therefore has to say what
+ * to do — otherwise a fresh profile is a dead end. The full path and `-p`
+ * because a profile above the directory can be missing too.
  */
 final class MissingDir
 {
 	public static function hint(string $directory): string
 	{
-		return 'Donut ho sám nezaloží — vytvoř ho příkazem `mkdir -p ' . $directory . '`.';
+		return 'Donut will not create it — run `mkdir -p ' . $directory . '`.';
 	}
 }

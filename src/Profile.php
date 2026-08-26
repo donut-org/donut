@@ -6,10 +6,11 @@ namespace Donut;
 
 
 /**
- * Kde leží kameny a workflow: `$DONUT_HOME/$DONUT_PROFILE/{blocks,workflows}`.
+ * Where blocks and workflows live: `$DONUT_HOME/$DONUT_PROFILE/{blocks,workflows}`.
  *
- * Je to hodnota, ne přístup na disk — existenci adresářů neověřuje. Chybějící
- * adresář hlásí až repozitáře při čtení, aby hláška uměla říct, co se hledalo.
+ * It is a value, not disk access — it does not verify that the directories
+ * exist. A missing directory is reported only by the repositories on read,
+ * so the message can say what it was looking for.
  */
 final class Profile
 {
@@ -21,22 +22,24 @@ final class Profile
 
 
 	/**
-	 * Prostředí bere jako pole, ne přes getenv() uvnitř — jinak by se celá
-	 * tabulka okrajových případů nedala otestovat bez putenv().
+	 * Takes the environment as an array, not via getenv() internally —
+	 * otherwise the whole table of edge cases couldn't be tested without
+	 * putenv().
 	 *
 	 * @param  array<string, string> $env
-	 * @throws Exception prostředí, ze kterého se cesta nedá složit
+	 * @throws Exception the environment from which the path cannot be built
 	 */
 	public static function fromEnvironment(array $env): self
 	{
 		$name = self::value($env, 'DONUT_PROFILE') ?? 'default';
 
-		// Jméno profilu je jméno adresáře. Cesta v něm by znamenala druhý
-		// způsob, jak říct „hledej jinde" — od toho je symlink a DONUT_HOME.
+		// The profile name is a directory name. A path in it would be
+		// a second way to say "look elsewhere" — that's what the symlink
+		// and DONUT_HOME are for.
 		if (\str_contains($name, '/') || \str_contains($name, '\\') || $name === '.' || $name === '..') {
 			throw new Exception(
-				"DONUT_PROFILE=\"{$name}\": jméno profilu je jméno adresáře, ne cesta."
-				. ' Na sadu jinde v souborovém systému udělej symlink.'
+				"DONUT_PROFILE=\"{$name}\": the profile name is a directory name, not a path."
+				. ' Symlink a set that lives elsewhere in the file system.'
 			);
 		}
 
@@ -86,8 +89,8 @@ final class Profile
 
 		if ($home === null) {
 			throw new Exception(
-				'Nevím, kde hledat profily: prostředí nemá HOME ani XDG_CONFIG_HOME.'
-				. ' Nastav DONUT_HOME na kořen profilů.'
+				"Don't know where to look for profiles: the environment has neither HOME nor XDG_CONFIG_HOME."
+				. ' Set DONUT_HOME to the profiles root.'
 			);
 		}
 
@@ -96,8 +99,8 @@ final class Profile
 
 
 	/**
-	 * Prázdná hodnota je totéž co nenastavená — stejné pravidlo, jaké má
-	 * formát u nevyplněných vstupů.
+	 * An empty value is the same as unset — the same rule the format has
+	 * for unfilled inputs.
 	 *
 	 * @param array<string, string> $env
 	 */

@@ -13,11 +13,11 @@ use Nette\Utils\JsonException;
 
 
 /**
- * Block na pole. Inverze BlockParseru.
+ * Block to an array. Inverse of BlockParser.
  *
- * Pořadí klíčů odpovídá tomu, jak jsou soubory psané dnes, aby se uložením
- * změnily co nejmíň. Volitelná pole se vynechávají, když nejsou vyplněná —
- * s jedinou výjimkou `required`, které se vypisuje vždycky.
+ * The key order matches how the files are written today, so saving changes
+ * as little as possible. Optional fields are omitted when unfilled — with
+ * the single exception of `required`, which is always written out.
  */
 final class BlockWriter
 {
@@ -34,9 +34,10 @@ final class BlockWriter
 
 		$data['command'] = $block->command;
 
-		// array_map() zachovává klíče; args je array<int, array<int, Template>>,
-		// ne list, takže mezera v jednom z polí (např. po unset() v GUI) by se
-		// bez array_values() zakódovala jako JSON objekt místo pole.
+		// array_map() preserves keys; args is array<int, array<int, Template>>,
+		// not a list, so a gap in one of the arrays (e.g. after unset() in the
+		// GUI) would encode as a JSON object instead of an array without
+		// array_values().
 		$data['args'] = \array_values(\array_map(
 			fn(array $group): array => \array_values(\array_map(
 				fn(Template $template): string => $template->getSource(),
@@ -63,8 +64,8 @@ final class BlockWriter
 			$data['timeout'] = $block->timeout;
 		}
 
-		// U kamene je false výchozí hodnota, ne „nenastaveno" — na rozdíl
-		// od kroku, kde je výchozí null a false znamená vědomé vypnutí.
+		// For a block, false is the default value, not "unset" — unlike a
+		// step, where the default is null and false means a deliberate opt-out.
 		if ($block->allowFailure !== false) {
 			$data['allow_failure'] = $block->allowFailure;
 		}
@@ -74,13 +75,14 @@ final class BlockWriter
 
 
 	/**
-	 * Cesta se dostává zvenčí, neodvozuje se ze jména: repository už ji pro
-	 * každé známé jméno drží a druhý výklad téhož pravidla by se s ním mohl
-	 * rozejít. Kontroluje se ale, že spolu sedí — parser to při čtení
-	 * vynucuje taky.
+	 * The path comes from outside, not derived from the name: the repository
+	 * already holds it for every known name, and a second reading of the same
+	 * rule could diverge from it. It is checked that they agree, though — the
+	 * parser enforces it too when reading.
 	 *
-	 * @throws WriteException když jméno kamene neodpovídá názvu souboru, data
-	 *                        nejde zakódovat do JSON, nebo soubor nejde zapsat
+	 * @throws WriteException when the block's name does not match the file
+	 *                        name, the data cannot be encoded to JSON, or the
+	 *                        file cannot be written
 	 */
 	public function writeFile(Block $block, string $path): void
 	{
@@ -88,7 +90,7 @@ final class BlockWriter
 
 		if ($block->name !== $expected) {
 			throw new WriteException(
-				"{$path}: name '{$block->name}' neodpovídá názvu souboru '{$expected}'."
+				"{$path}: name '{$block->name}' does not match the file name '{$expected}'."
 			);
 		}
 
@@ -96,14 +98,14 @@ final class BlockWriter
 			$content = Json::encode($this->toArray($block), Json::PRETTY) . "\n";
 
 		} catch (JsonException $e) {
-			throw new WriteException("{$path}: data se nepodařilo zakódovat do JSON: {$e->getMessage()}", 0, $e);
+			throw new WriteException("{$path}: data could not be encoded to JSON: {$e->getMessage()}", 0, $e);
 		}
 
 		try {
 			FileSystem::writeAtomic($path, $content);
 
 		} catch (IOException $e) {
-			throw new WriteException("{$path}: soubor nejde zapsat: {$e->getMessage()}", 0, $e);
+			throw new WriteException("{$path}: file could not be written: {$e->getMessage()}", 0, $e);
 		}
 	}
 }

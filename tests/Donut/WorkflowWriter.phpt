@@ -17,46 +17,46 @@ require __DIR__ . '/../bootstrap.php';
 
 $writer = new WorkflowWriter;
 
-// Nejmenší platné workflow: jen povinná pole. steps se vypisují i prázdné.
+// Smallest valid workflow: only required fields. steps are written even when empty.
 Assert::same(
-	['name' => 'holy', 'steps' => []],
-	$writer->toArray(new Workflow(name: 'holy')),
+	['name' => 'bare', 'steps' => []],
+	$writer->toArray(new Workflow(name: 'bare')),
 );
 
-// Krok run se vším. timeout a allow_failure se v referenční zátěži
-// u kroku nevyskytují ani jednou — kdyby je zapisovač zahodil,
-// round-trip nad ní by to nepoznal.
+// A run step with everything. timeout and allow_failure do not occur even
+// once on a step in the reference workload — if the writer dropped them,
+// a round-trip over it wouldn't catch that.
 Assert::same(
 	[
 		'type' => 'run',
-		'name' => 'pojmenovaný',
+		'name' => 'named',
 		'block' => 'jq',
-		'in' => ['stdin' => '{%vstup%}', 'filter' => '.id'],
-		'out' => ['result' => 'vysledek', 'exit_code' => 'kod'],
+		'in' => ['stdin' => '{%input%}', 'filter' => '.id'],
+		'out' => ['result' => 'result', 'exit_code' => 'code'],
 		'timeout' => 90,
 		'allow_failure' => [0, 1],
 	],
 	$writer->toArray(new Workflow(name: 'w', steps: [
 		new RunStep(
 			block: 'jq',
-			in: ['stdin' => Template::parse('{%vstup%}'), 'filter' => Template::parse('.id')],
-			out: ['result' => 'vysledek', 'exit_code' => 'kod'],
+			in: ['stdin' => Template::parse('{%input%}'), 'filter' => Template::parse('.id')],
+			out: ['result' => 'result', 'exit_code' => 'code'],
 			timeout: 90,
 			allowFailure: [0, 1],
-			name: 'pojmenovaný',
+			name: 'named',
 		),
 	]))['steps'][0],
 );
 
-// Krok run bez ničeho volitelného. allow_failure: null znamená
-// „nenastaveno" a nesmí se objevit; u kroku je to jiné než u kamene.
+// A run step without anything optional. allow_failure: null means "unset"
+// and must not appear; that is different for a step than for a block.
 Assert::same(
 	['type' => 'run', 'block' => 'echo'],
 	$writer->toArray(new Workflow(name: 'w', steps: [new RunStep(block: 'echo')]))['steps'][0],
 );
 
-// allow_failure: false u kroku je vědomé vypnutí, ne výchozí stav —
-// musí se vypsat.
+// allow_failure: false on a step is a deliberate opt-out, not the default
+// state — it must be written out.
 Assert::same(
 	['type' => 'run', 'block' => 'echo', 'allow_failure' => false],
 	$writer->toArray(new Workflow(name: 'w', steps: [
@@ -64,15 +64,15 @@ Assert::same(
 	]))['steps'][0],
 );
 
-// Krok set. name u setu se v referenční zátěži nevyskytuje ani jednou.
+// A set step. name on a set does not occur even once in the reference workload.
 Assert::same(
-	['type' => 'set', 'name' => 'pojmenovaný set', 'key' => 'klic', 'value' => 'a {%b%}'],
+	['type' => 'set', 'name' => 'named set', 'key' => 'key', 'value' => 'a {%b%}'],
 	$writer->toArray(new Workflow(name: 'w', steps: [
-		new SetStep(key: 'klic', value: Template::parse('a {%b%}'), name: 'pojmenovaný set'),
+		new SetStep(key: 'key', value: Template::parse('a {%b%}'), name: 'named set'),
 	]))['steps'][0],
 );
 
-// Krok if s oběma větvemi a s right
+// An if step with both branches and with right
 Assert::same(
 	[
 		'type' => 'if',
@@ -93,8 +93,8 @@ Assert::same(
 	]))['steps'][0],
 );
 
-// Krok if bez right a s prázdnou větví else. then se vypisuje i prázdné,
-// protože ho parser vyžaduje; else se vynechá.
+// An if step without right and with an empty else branch. then is written
+// even when empty, because the parser requires it; else is omitted.
 Assert::same(
 	[
 		'type' => 'if',
@@ -106,25 +106,26 @@ Assert::same(
 	]))['steps'][0],
 );
 
-// Krok foreach včetně vnořeného kroku
+// A foreach step, including a nested step
 Assert::same(
 	[
 		'type' => 'foreach',
-		'over' => '{%seznam%}',
-		'as' => 'radek',
-		'steps' => [['type' => 'set', 'key' => 'x', 'value' => '{%radek%}']],
+		'over' => '{%list%}',
+		'as' => 'row',
+		'steps' => [['type' => 'set', 'key' => 'x', 'value' => '{%row%}']],
 	],
 	$writer->toArray(new Workflow(name: 'w', steps: [
 		new ForeachStep(
-			over: Template::parse('{%seznam%}'),
-			as: 'radek',
-			steps: [new SetStep(key: 'x', value: Template::parse('{%radek%}'))],
+			over: Template::parse('{%list%}'),
+			as: 'row',
+			steps: [new SetStep(key: 'x', value: Template::parse('{%row%}'))],
 		),
 	]))['steps'][0],
 );
 
-// Vnořený foreach uvnitř if — tvar, který spec výslovně žádá pokrýt
-// a který se jinak (referenční zátěž ani zbytek téhle fixture) nevyskytuje.
+// A nested foreach inside an if — a shape the spec explicitly asks to cover
+// and which otherwise does not occur (neither the reference workload nor
+// the rest of this fixture).
 Assert::same(
 	[
 		'type' => 'if',
@@ -132,9 +133,9 @@ Assert::same(
 		'then' => [
 			[
 				'type' => 'foreach',
-				'over' => '{%seznam%}',
-				'as' => 'radek',
-				'steps' => [['type' => 'set', 'key' => 'x', 'value' => '{%radek%}']],
+				'over' => '{%list%}',
+				'as' => 'row',
+				'steps' => [['type' => 'set', 'key' => 'x', 'value' => '{%row%}']],
 			],
 		],
 	],
@@ -143,18 +144,18 @@ Assert::same(
 			condition: new Condition(left: Template::parse('{%a%}'), op: 'not_empty'),
 			then: [
 				new ForeachStep(
-					over: Template::parse('{%seznam%}'),
-					as: 'radek',
-					steps: [new SetStep(key: 'x', value: Template::parse('{%radek%}'))],
+					over: Template::parse('{%list%}'),
+					as: 'row',
+					steps: [new SetStep(key: 'x', value: Template::parse('{%row%}'))],
 				),
 			],
 		),
 	]))['steps'][0],
 );
 
-// array_map() zachovává klíče; steps je array<int, Step>, ne list. Mezera po
-// unset() (přirozený způsob, jak GUI smaže krok) by se bez array_values()
-// v stepsToArray() zakódovala jako JSON objekt místo pole.
+// array_map() preserves keys; steps is array<int, Step>, not a list. A gap
+// after unset() (the natural way the GUI deletes a step) would encode as
+// a JSON object instead of an array without array_values() in stepsToArray().
 $steps = [
 	new SetStep(key: 'a', value: Template::parse('1')),
 	new SetStep(key: 'b', value: Template::parse('2')),
@@ -170,23 +171,23 @@ Assert::same(
 	$writer->toArray(new Workflow(name: 'w', steps: $steps))['steps'],
 );
 
-// Hlavička workflow: pořadí klíčů a vynechání prázdných inputs
+// Workflow header: key order and omission of empty inputs
 Assert::same(
 	[
-		'name' => 'plne',
-		'description' => 'Popis',
+		'name' => 'full',
+		'description' => 'Description',
 		'inputs' => [
-			'a' => ['required' => true, 'description' => 'Áčko'],
+			'a' => ['required' => true, 'description' => 'A-item'],
 			'b' => ['required' => false, 'default' => 'x'],
 		],
 		'steps' => [],
 	],
 	$writer->toArray(new Workflow(
-		name: 'plne',
+		name: 'full',
 		inputs: [
-			'a' => new Input(name: 'a', description: 'Áčko'),
+			'a' => new Input(name: 'a', description: 'A-item'),
 			'b' => new Input(name: 'b', required: false, default: 'x'),
 		],
-		description: 'Popis',
+		description: 'Description',
 	)),
 );

@@ -7,40 +7,40 @@ use Tester\Assert;
 
 require __DIR__ . '/../bootstrap.php';
 
-// prostý klíč
+// plain key
 Assert::same(['url'], Template::parse('{%url%}')->getKeys());
 
-// klíč v textu, víc klíčů, unikátnost a pořadí
+// a key inside text, multiple keys, uniqueness and order
 Assert::same(
 	['branch', 'title'],
 	Template::parse('{%branch%}: {%title%} ({%branch%})')->getKeys()
 );
 
-// text bez klíčů
+// text without keys
 Assert::same([], Template::parse('curl -sS')->getKeys());
 
-// samotné procento nic neznamená -> žádný escape není potřeba
+// a lone percent sign means nothing -> no escape is needed
 Assert::same([], Template::parse('?q=%20%')->getKeys());
 Assert::same([], Template::parse('date +%Y')->getKeys());
 Assert::same([], Template::parse("printf '%d\\n'")->getKeys());
-Assert::same([], Template::parse('100% hotovo')->getKeys());
+Assert::same([], Template::parse('100% done')->getKeys());
 Assert::same([], Template::parse('?path=%2Ffoo')->getKeys());
 Assert::same([], Template::parse('%2F%3A')->getKeys());
 
-// jq filtr s objektem není šablona
+// a jq filter with an object is not a template
 Assert::same([], Template::parse('{text: .}')->getKeys());
 
-// malá písmena i samé číslice jsou platné jméno (klíče jsou case-sensitive)
+// lowercase letters and digits alone are a valid name (keys are case-sensitive)
 Assert::same(['url'], Template::parse('{%url%}')->getKeys());
 Assert::same(['20'], Template::parse('{%20%}')->getKeys());
 
-// sousedící šablony
+// adjacent templates
 Assert::same(['a', 'b'], Template::parse('{%a%}{%b%}')->getKeys());
 
-// složená závorka kolem šablony je jen text
+// a curly brace around a template is just text
 Assert::same(['a'], Template::parse('{{%a%}}')->getKeys());
 
-// getSource vrací původní text
+// getSource returns the original text
 Assert::same('{%a%} b', Template::parse('{%a%} b')->getSource());
 
 // isKeyName

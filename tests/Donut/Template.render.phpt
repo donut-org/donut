@@ -11,25 +11,25 @@ require __DIR__ . '/../bootstrap.php';
 Assert::same('abc', Template::parse('{%a%}')->render(['a' => 'abc']));
 
 Assert::same(
-	'task-1: Oprava (task-1)',
+	'task-1: Fix (task-1)',
 	Template::parse('{%branch%}: {%title%} ({%branch%})')
-		->render(['branch' => 'task-1', 'title' => 'Oprava'])
+		->render(['branch' => 'task-1', 'title' => 'Fix'])
 );
 
-// prázdná hodnota je platná hodnota, dosadí se
+// an empty value is a valid value, it gets substituted
 Assert::same('x=', Template::parse('x={%a%}')->render(['a' => '']));
 
-// jeden průchod: {%b%} v datech se nevyhodnotí
-Assert::same('{%b%}', Template::parse('{%a%}')->render(['a' => '{%b%}', 'b' => 'ne']));
+// a single pass: {%b%} in the data is not evaluated
+Assert::same('{%b%}', Template::parse('{%a%}')->render(['a' => '{%b%}', 'b' => 'no']));
 
-// co není šablona, projde beze změny — bez jakéhokoliv escapování
-Assert::same('100% hotovo', Template::parse('100% hotovo')->render([]));
+// what isn't a template passes through unchanged — without any escaping
+Assert::same('100% done', Template::parse('100% done')->render([]));
 Assert::same('%2F%3A', Template::parse('%2F%3A')->render([]));
 Assert::same('?q=%20%', Template::parse('?q=%20%')->render([]));
 Assert::same('date +%Y', Template::parse('date +%Y')->render([]));
 Assert::same("printf '%d\\n'", Template::parse("printf '%d\\n'")->render([]));
 
-// reálné případy z přepisu
+// real cases from the rewrite
 Assert::same(
 	'https://api.trello.com/1/cards/abc?list=true',
 	Template::parse('https://api.trello.com/1/cards/{%shortId%}?list=true')
@@ -40,15 +40,15 @@ Assert::same(
 	Template::parse('{"idList": "{%targetListId%}"}')->render(['targetListId' => '5f2'])
 );
 
-// chybějící klíč je tvrdá chyba
+// a missing key is a hard error
 Assert::exception(
 	fn() => Template::parse('{%a%}')->render([]),
 	MissingKeyException::class,
-	"Klíč 'a' v mapě neexistuje."
+	"Key 'a' does not exist in the map."
 );
 
 $e = Assert::exception(
-	fn() => Template::parse('{%neco%}')->render([]),
+	fn() => Template::parse('{%something%}')->render([]),
 	MissingKeyException::class
 );
-Assert::same('neco', $e->getKey());
+Assert::same('something', $e->getKey());

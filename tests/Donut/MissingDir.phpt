@@ -7,9 +7,9 @@ use Tester\Assert;
 
 require __DIR__ . '/../bootstrap.php';
 
-// Rada musí být spustitelná tak, jak je: celá cesta a -p, protože chybět
-// může i profil nad adresářem, ne jen adresář sám.
+// The hint must be runnable as-is: the full path and -p, because a profile
+// above the directory can be missing too, not just the directory itself.
 Assert::same(
-	'Donut ho sám nezaloží — vytvoř ho příkazem `mkdir -p /home/x/.config/donut/default/blocks`.',
+	'Donut will not create it — run `mkdir -p /home/x/.config/donut/default/blocks`.',
 	MissingDir::hint('/home/x/.config/donut/default/blocks'),
 );

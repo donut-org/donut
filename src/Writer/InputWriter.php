@@ -8,8 +8,8 @@ use Donut\Format\Input;
 
 
 /**
- * Vstupy do pole. Používají ho oba zapisovače — kámen i workflow mají
- * `inputs` ve stejném tvaru, takže to pravidlo má jedno místo.
+ * Inputs to an array. Both writers use it — a block and a workflow have
+ * `inputs` in the same shape, so that rule lives in one place.
  */
 final class InputWriter
 {
@@ -22,9 +22,9 @@ final class InputWriter
 		$data = [];
 
 		foreach ($inputs as $name => $input) {
-			// required se vypisuje vždycky, i když je výchozí — je tak
-			// u všech vstupů referenční zátěže a uložením se soubor
-			// nemá měnit víc, než je nutné.
+			// required is always written out, even when it's the default —
+			// it is that way for every input in the reference workload, and
+			// saving must not change the file more than necessary.
 			$spec = ['required' => $input->required];
 
 			if ($input->default !== null) {
