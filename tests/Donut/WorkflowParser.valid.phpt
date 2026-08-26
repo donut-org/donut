@@ -93,7 +93,7 @@ Assert::same([], $wf->steps[0]->out);
 Assert::null($wf->steps[0]->name);
 Assert::null($wf->steps[0]->allowFailure);
 
-// empty / not_empty may not have right
+// empty / not_empty doesn't need to have right
 $wf = (new WorkflowParser)->parseArray([
 	'name' => 'e',
 	'steps' => [[
