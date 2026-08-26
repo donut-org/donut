@@ -8,7 +8,8 @@ Tester\Environment::setup();
 
 define('TEMP_DIR', __DIR__ . '/tmp/' . getmypid());
 
-// PIDy se recyklují; bez tohohle by běh na recyklovaném PID zdědil
-// blocks/*.json z jiného testu, kdyby ten předchozí skončil na chybějícím
-// Assert a nedoběhl ke svému FileSystem::delete(TEMP_DIR) na konci.
+// PIDs get recycled; without this, a run on a recycled PID would inherit
+// blocks/*.json from a different test, if the previous one stopped on a
+// missing Assert and never reached its FileSystem::delete(TEMP_DIR) at the
+// end.
 Tester\Helpers::purge(TEMP_DIR);
