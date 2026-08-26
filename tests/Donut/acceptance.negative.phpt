@@ -13,7 +13,7 @@ require __DIR__ . '/../bootstrap.php';
 
 $root = __DIR__ . '/../../docs/workflows/donut';
 
-// kopie přepisu, do které se nastraží vady
+// a copy of the rewrite, into which defects get planted
 $work = TEMP_DIR . '/rewrite';
 FileSystem::copy($root, $work);
 
@@ -33,7 +33,7 @@ $errorsAfter = function (callable $break) use ($path, $parser, $validator): arra
 	return array_map(strval(...), $result->getErrors());
 };
 
-// neexistující kámen
+// a nonexistent block
 Assert::contains(
 	'card-dev.json:steps[0]: block "curl-gett" does not exist',
 	$errorsAfter(function (array &$data): void {
@@ -41,7 +41,7 @@ Assert::contains(
 	})
 );
 
-// překlep v názvu klíče
+// a typo in the key name
 Assert::contains(
 	'card-dev.json:steps[1]: template reads key "meJsn", which no step writes',
 	$errorsAfter(function (array &$data): void {
@@ -49,15 +49,15 @@ Assert::contains(
 	})
 );
 
-// nedeklarovaný vstup
+// an undeclared input
 Assert::contains(
-	'card-dev.json:steps[1]: block "jq" does not declare input "neznamy"',
+	'card-dev.json:steps[1]: block "jq" does not declare input "unknown"',
 	$errorsAfter(function (array &$data): void {
-		$data['steps'][1]['in']['neznamy'] = 'x';
+		$data['steps'][1]['in']['unknown'] = 'x';
 	})
 );
 
-// chybějící povinný stdin
+// a missing required stdin
 Assert::contains(
 	'card-dev.json:steps[1]: block "jq" requires stdin, the step does not fill it',
 	$errorsAfter(function (array &$data): void {
@@ -65,7 +65,7 @@ Assert::contains(
 	})
 );
 
-// neznámý operátor
+// an unknown operator
 Assert::contains(
 	'card-dev.json:steps[7]: unknown operator "matches"',
 	$errorsAfter(function (array &$data): void {
@@ -73,10 +73,10 @@ Assert::contains(
 	})
 );
 
-// vadný allow_failure v kameni
+// a bad allow_failure in a block
 FileSystem::write(
 	$work . '/blocks/test-file.json',
-	Json::encode(['name' => 'test-file', 'command' => 'test', 'args' => [], 'allow_failure' => 'ano'])
+	Json::encode(['name' => 'test-file', 'command' => 'test', 'args' => [], 'allow_failure' => 'yes'])
 );
 
 Assert::exception(

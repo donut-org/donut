@@ -10,36 +10,36 @@ require __DIR__ . '/../bootstrap.php';
 
 $runner = new NetteProcessRunner;
 
-// stdout se zachytává a koncové odřádkování se odřezává
-$r = $runner->run('echo', ['ahoj'], '', true, false, 10);
-Assert::same('ahoj', $r->stdout);
+// stdout is captured and trailing newlines are stripped
+$r = $runner->run('echo', ['hi'], '', true, false, 10);
+Assert::same('hi', $r->stdout);
 Assert::same(0, $r->exitCode);
 Assert::null($r->stderr);
 
-// vnitřní odřádkování zůstává, odřezává se jen konec
+// internal newlines stay, only the end is stripped
 $r = $runner->run('printf', ['a\nb\n\n'], '', true, false, 10);
 Assert::same("a\nb", $r->stdout);
 
-// stdin doteče do procesu
-$r = $runner->run('cat', [], "vstup", true, false, 10);
-Assert::same('vstup', $r->stdout);
+// stdin reaches the process
+$r = $runner->run('cat', [], "input", true, false, 10);
+Assert::same('input', $r->stdout);
 
-// nenulový exit code se vrátí, ne vyhodí
+// a non-zero exit code is returned, not thrown
 $r = $runner->run('/usr/bin/false', [], '', true, false, 10);
 Assert::same(1, $r->exitCode);
 Assert::same('', $r->stdout);
 
-// argumenty se nepředávají přes shell — tohle je jeden argument, ne dva příkazy
+// arguments aren't passed through the shell — this is one argument, not two commands
 $r = $runner->run('echo', ['a; echo b'], '', true, false, 10);
 Assert::same('a; echo b', $r->stdout);
 
-// zachycený stderr
-$r = $runner->run('sh', ['-c', 'echo chyba >&2'], '', true, true, 10);
-Assert::same('chyba', $r->stderr);
+// captured stderr
+$r = $runner->run('sh', ['-c', 'echo error >&2'], '', true, true, 10);
+Assert::same('error', $r->stderr);
 Assert::same('', $r->stdout);
 
-// stdout se streamuje, když ho volající nechce do paměti
-$r = $runner->run('echo', ['ven'], '', false, false, 10);
+// stdout is streamed when the caller doesn't want it in memory
+$r = $runner->run('echo', ['out'], '', false, false, 10);
 Assert::null($r->stdout);
 Assert::same(0, $r->exitCode);
 

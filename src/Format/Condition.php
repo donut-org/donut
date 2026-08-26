@@ -9,12 +9,12 @@ use Donut\Template;
 
 final class Condition
 {
-	/** Operátory podle sekce 2 specifikace. */
+	/** Operators per specification section 2. */
 	public const Operators = [
 		'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'empty', 'not_empty',
 	];
 
-	/** Operátory, které klíč 'right' ignorují. */
+	/** Operators that ignore the 'right' key. */
 	public const UnaryOperators = ['empty', 'not_empty'];
 
 	public function __construct(

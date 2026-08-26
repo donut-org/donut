@@ -6,7 +6,7 @@ namespace Donut\Format;
 
 
 /**
- * Přítomnost tohoto objektu znamená, že kámen čte standardní vstup.
+ * The presence of this object means the block reads standard input.
  */
 final class StdinSpec
 {

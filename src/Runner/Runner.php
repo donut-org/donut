@@ -17,11 +17,11 @@ use Nette\Utils\ProcessTimeoutException;
 
 
 /**
- * Spouští workflow: prochází kroky, drží mapu, ukládá výstupy procesů.
+ * Runs a workflow: walks the steps, holds the map, stores process outputs.
  *
- * Validace běží uvnitř run(). Specifikace ji má jako záruku formátu, ne jako
- * službu volajícího — kdyby si ji měl volat sám, může na ni zapomenout CLI
- * i pozdější GUI.
+ * Validation runs inside run(). The specification treats it as a format
+ * guarantee, not a service for the caller — if the caller had to invoke it
+ * themselves, both the CLI and the later GUI could forget to.
  */
 final class Runner
 {
@@ -41,10 +41,10 @@ final class Runner
 
 	/**
 	 * @param  array<string, string> $initialMap
-	 * @return array<string, string> výsledná mapa
-	 * @throws CannotStartException neúspěšná validace nebo chybějící povinný vstup — neproběhl ani jeden krok
+	 * @return array<string, string> the resulting map
+	 * @throws CannotStartException validation failed or a required input is missing — not a single step ran
 	 * @throws RunFailedException
-	 * @throws \Donut\Parser\ParseException kámen v blocks/ se nedá naparsovat
+	 * @throws \Donut\Parser\ParseException a block in blocks/ cannot be parsed
 	 */
 	public function run(Workflow $workflow, array $initialMap = []): array
 	{
@@ -57,7 +57,7 @@ final class Runner
 		if ($result->hasErrors()) {
 			$messages = \implode("\n", \array_map(strval(...), $result->getErrors()));
 
-			throw new CannotStartException("Statická validace neprošla:\n{$messages}");
+			throw new CannotStartException("Static validation failed:\n{$messages}");
 		}
 
 		$map = $this->composeInitialMap($workflow, $initialMap);
@@ -68,10 +68,10 @@ final class Runner
 
 
 	/**
-	 * Doplní do mapy volajícím dodané, co validátor předpokládá jako
-	 * počáteční obsah: default vstupů workflow, STDIN a CWD. Bez tohohle by
-	 * validní workflow se vstupem s default hodnotou umřelo uprostřed běhu
-	 * na MissingKeyException bez cesty ke kroku.
+	 * Fills into the caller-supplied map what the validator assumes as
+	 * initial content: workflow input defaults, STDIN and CWD. Without this,
+	 * a valid workflow with a default-valued input would die mid-run on a
+	 * MissingKeyException with no step path.
 	 *
 	 * @param  array<string, string> $initialMap
 	 * @return array<string, string>
@@ -82,14 +82,14 @@ final class Runner
 		$map = $initialMap;
 
 		foreach ($workflow->inputs as $name => $input) {
-			// Prázdný řetězec je totéž co nevyplněno — specifikace sekce 1 a 4.
-			// Stejné pravidlo má o vrstvu níž CommandLine::resolveValues().
+			// An empty string is the same as unfilled — specification sections 1 and 4.
+			// CommandLine::resolveValues() applies the same rule one layer down.
 			if (($map[$name] ?? '') === '' && $input->default !== null) {
 				$map[$name] = $input->default;
 			}
 
 			if (($map[$name] ?? '') === '' && $input->required) {
-				throw new CannotStartException("{$workflow->name}.json: povinný vstup \"{$name}\" nemá hodnotu.");
+				throw new CannotStartException("{$workflow->name}.json: required input \"{$name}\" has no value.");
 			}
 
 			if (($map[$name] ?? '') === '' && !$input->required) {
@@ -100,7 +100,7 @@ final class Runner
 		$cwd = \getcwd();
 
 		if ($cwd === false) {
-			throw new CannotStartException("{$workflow->name}.json: nejde zjistit aktuální pracovní adresář.");
+			throw new CannotStartException("{$workflow->name}.json: cannot determine the current working directory.");
 		}
 
 		return $map + ['STDIN' => '', 'CWD' => $cwd];
@@ -143,13 +143,13 @@ final class Runner
 					}
 
 				} else {
-					throw new RunFailedException("{$at}: krok typu " . \get_debug_type($step) . " runner neumí.");
+					throw new RunFailedException("{$at}: the runner does not handle a step of type " . \get_debug_type($step) . ".");
 				}
 
 			} catch (\Donut\MissingKeyException $e) {
-				// Vnořené volání runSteps() už MissingKeyException zabalilo do
-				// RunFailedException, takže sem se dostane jen ta z tohoto kroku
-				// samotného — cesta se nikdy nepřepíše podruhé.
+				// A nested runSteps() call has already wrapped MissingKeyException
+				// in RunFailedException, so only the one from this step itself
+				// reaches here — the path never gets rewritten a second time.
 				throw new RunFailedException("{$at}: {$e->getMessage()}", 0, $e);
 			}
 		}
@@ -157,8 +157,8 @@ final class Runner
 
 
 	/**
-	 * Rozdělí hodnotu na řádky. \r na konci řádku se odřízne, prázdné řádky
-	 * se přeskočí, nula řádků znamená nula iterací.
+	 * Splits the value into lines. A trailing \r on a line is stripped, empty
+	 * lines are skipped, zero lines means zero iterations.
 	 *
 	 * @return array<int, string>
 	 */
@@ -205,27 +205,27 @@ final class Runner
 
 		} catch (ProcessTimeoutException $e) {
 			throw new RunFailedException(
-				"{$at}: kámen \"{$block->name}\" překročil limit {$timeout} s.",
+				"{$at}: block \"{$block->name}\" exceeded the {$timeout} s limit.",
 				0,
 				$e,
 			);
 
 		} catch (ProcessFailedException $e) {
 			throw new RunFailedException(
-				"{$at}: kámen \"{$block->name}\" nešel spustit — příkaz \"{$commandLine->command}\": {$e->getMessage()}",
+				"{$at}: block \"{$block->name}\" could not be started — command \"{$commandLine->command}\": {$e->getMessage()}",
 				0,
 				$e,
 			);
 		}
 
-		// Kanály se zapisují i u povoleného selhání — právě podle exit_code
-		// se pak workflow rozhoduje v `if`.
+		// Channels are written even on an allowed failure — the workflow then
+		// decides based on exit_code in `if`.
 		foreach ($step->out as $channel => $key) {
 			$map[$key] = match ($channel) {
 				'result' => $result->stdout ?? '',
 				'stderr' => $result->stderr ?? '',
 				'exit_code' => (string) $result->exitCode,
-				default => throw new RunFailedException("{$at}: neznámý kanál \"{$channel}\"."),
+				default => throw new RunFailedException("{$at}: unknown channel \"{$channel}\"."),
 			};
 		}
 
@@ -233,7 +233,7 @@ final class Runner
 
 		if (!self::isAllowed($result->exitCode, $allowFailure)) {
 			throw new RunFailedException(
-				"{$at}: kámen \"{$block->name}\" skončil s exit code {$result->exitCode}."
+				"{$at}: block \"{$block->name}\" finished with exit code {$result->exitCode}."
 			);
 		}
 	}

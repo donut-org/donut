@@ -6,10 +6,10 @@ namespace Donut\Runner;
 
 
 /**
- * Výsledek jednoho spuštěného procesu.
+ * Result of one process run.
  *
- * $stdout i $stderr jsou null, když se daný výstup streamoval na terminál
- * místo zachytávání do paměti.
+ * $stdout and $stderr are both null when the given output was streamed to
+ * the terminal instead of being captured into memory.
  */
 final class ProcessResult
 {

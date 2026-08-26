@@ -6,7 +6,7 @@ namespace Donut\Runner;
 
 
 /**
- * Píše průběh na STDERR, aby se nemíchal s výstupem workflow.
+ * Writes progress to STDERR so it doesn't mix with the workflow's output.
  */
 final class ConsoleReporter implements Reporter
 {
@@ -29,6 +29,6 @@ final class ConsoleReporter implements Reporter
 
 	public function warning(string $message): void
 	{
-		\fwrite($this->stream, "varování: {$message}\n");
+		\fwrite($this->stream, "warning: {$message}\n");
 	}
 }

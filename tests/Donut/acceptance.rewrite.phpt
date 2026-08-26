@@ -15,14 +15,14 @@ $repo = new BlockRepository($root . '/blocks');
 $validator = new Validator($repo);
 $parser = new WorkflowParser;
 
-// všechny kameny se načtou
+// all blocks get loaded
 Assert::count(15, $repo->getNames());
 
 foreach ($repo->getNames() as $name) {
 	Assert::same($name, $repo->get($name)->name);
 }
 
-// každé workflow projde bez chyb a bez varování
+// every workflow passes without errors and without warnings
 $files = glob($root . '/workflows/*.json');
 Assert::count(4, $files);
 
@@ -32,11 +32,11 @@ foreach ($files as $file) {
 
 	$report = implode("\n", array_map(strval(...), $result->getProblems()));
 
-	Assert::same([], $result->getErrors(), "chyby v {$workflow->name}:\n{$report}");
-	Assert::same([], $result->getWarnings(), "varování v {$workflow->name}:\n{$report}");
+	Assert::same([], $result->getErrors(), "errors in {$workflow->name}:\n{$report}");
+	Assert::same([], $result->getWarnings(), "warnings in {$workflow->name}:\n{$report}");
 }
 
-// konkrétní očekávání, ať test nezhasne, kdyby se soubory vyprázdnily
+// concrete expectations, so the test doesn't go blind if the files ever emptied out
 $cardDev = $parser->parseFile($root . '/workflows/card-dev.json');
 Assert::same('card-dev', $cardDev->name);
 Assert::count(27, $cardDev->steps);
@@ -47,10 +47,10 @@ $sync = $parser->parseFile($root . '/workflows/sync.json');
 Assert::same('sync', $sync->name);
 Assert::count(7, $sync->steps);
 
-// jptq-task skládá `donut <workflow> --flag=…` do textového literálu, mimo
-// dosah statické validace (ta zná jen {%…%} uvnitř args). Jméno přepínače
-// musí být jméno vstupu, které card-dev i card-spec doopravdy deklarují —
-// jinak fronta naplní úlohy, které při konzumaci spadnou na kódu 2.
+// jptq-task assembles `donut <workflow> --flag=…` into a text literal, out of
+// reach of static validation (which only knows {%…%} inside args). The flag's
+// name must be an input name that card-dev and card-spec actually declare —
+// otherwise the queue fills with tasks that fail with code 2 when consumed.
 $cardSpec = $parser->parseFile($root . '/workflows/card-spec.json');
 $jptqTask = $repo->get('jptq-task');
 $flagsChecked = 0;
@@ -60,8 +60,8 @@ foreach ($jptqTask->args as $group) {
 	foreach ($group as $template) {
 		if (\preg_match('~^--([A-Za-z0-9_]+)=~', $template->getSource(), $m) === 1) {
 			$flag = $m[1];
-			Assert::true(isset($cardDev->inputs[$flag]), "card-dev deklaruje vstup \"{$flag}\"");
-			Assert::true(isset($cardSpec->inputs[$flag]), "card-spec deklaruje vstup \"{$flag}\"");
+			Assert::true(isset($cardDev->inputs[$flag]), "card-dev declares input \"{$flag}\"");
+			Assert::true(isset($cardSpec->inputs[$flag]), "card-spec declares input \"{$flag}\"");
 			$flagNames[] = $flag;
 			$flagsChecked++;
 		}
@@ -70,23 +70,23 @@ foreach ($jptqTask->args as $group) {
 
 Assert::same(8, $flagsChecked);
 
-// opačný směr: každý povinný vstup card-dev i card-spec musí jptq-task
-// doopravdy dodat jako přepínač — jinak fronta naplní úlohy, které při
-// konzumaci spadnou na kódu 2, protože workflow nedostane, co potřebuje
+// the opposite direction: every required input of card-dev and card-spec must
+// actually be supplied by jptq-task as a flag — otherwise the queue fills with
+// tasks that fail with code 2 when consumed, because the workflow doesn't get what it needs
 foreach (['card-dev' => $cardDev, 'card-spec' => $cardSpec] as $workflowName => $workflowToCheck) {
 	foreach ($workflowToCheck->inputs as $inputName => $input) {
 		if ($input->required) {
 			Assert::true(
 				\in_array($inputName, $flagNames, true),
-				"{$workflowName}: povinný vstup \"{$inputName}\" chybí mezi přepínači, které skládá jptq-task"
+				"{$workflowName}: required input \"{$inputName}\" is missing among the flags jptq-task assembles"
 			);
 		}
 	}
 }
 
-// literál "workflow" v každém kroku jptq-task uvnitř sync musí mířit na
-// soubor, který doopravdy existuje — jinak fronta zařadí úlohu na workflow,
-// které konzument nenajde
+// the "workflow" literal in every jptq-task step inside sync must point to a
+// file that actually exists — otherwise the queue enqueues a task for a workflow
+// the consumer won't find
 $collectJptqWorkflowNames = function (array $steps) use (&$collectJptqWorkflowNames): array {
 	$names = [];
 
@@ -107,19 +107,19 @@ $collectJptqWorkflowNames = function (array $steps) use (&$collectJptqWorkflowNa
 
 $jptqWorkflowNames = $collectJptqWorkflowNames($sync->steps);
 
-Assert::notSame([], $jptqWorkflowNames, 'sync doopravdy zařazuje úlohy přes jptq-task');
+Assert::notSame([], $jptqWorkflowNames, 'sync actually enqueues tasks via jptq-task');
 
 foreach (\array_unique($jptqWorkflowNames) as $workflowName) {
 	Assert::true(
 		\is_file($root . '/workflows/' . $workflowName . '.json'),
-		"workflows/{$workflowName}.json existuje"
+		"workflows/{$workflowName}.json exists"
 	);
 }
 
-// repo-check je v přepisu kvůli větvi else: message vzniká v then i v else
-// a čte se za ifem. Bez obou větví by to byl klíč zapsaný jen v jedné větvi,
-// tedy varování — a tvrzení o nule varování výše by spadlo. Kdyby někdo tu
-// druhou větev odstranil, musí spadnout tohle, ne až něco vzdáleného.
+// repo-check is in the rewrite because of the else branch: message is set in both then and else
+// and is read after the if. Without both branches it would be a key written in only one branch,
+// i.e. a warning — and the zero-warnings assertion above would fail. If someone
+// removed that other branch, this should fail, not something distant.
 $repoCheck = $parser->parseFile($root . '/workflows/repo-check.json');
 $branching = $repoCheck->steps[1];
 Assert::type(Donut\Format\IfStep::class, $branching);

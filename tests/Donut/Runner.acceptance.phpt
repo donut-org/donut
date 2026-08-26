@@ -39,54 +39,54 @@ $runner = new Runner($repo, new NetteProcessRunner, new NullReporter);
 
 $run = fn(array $data, array $initial = []) => $runner->run($parser->parseArray($data, 'w.json'), $initial);
 
-// celé workflow: proces -> mapa -> stdin dalšího procesu -> if -> foreach
+// a whole workflow: process -> map -> stdin of the next process -> if -> foreach
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['jmeno' => []],
+	'inputs' => ['name' => []],
 	'steps' => [
 		[
 			'type' => 'run', 'block' => 'echo',
-			'in' => ['text' => 'ahoj {%jmeno%}'],
-			'out' => ['result' => 'pozdrav'],
+			'in' => ['text' => 'hi {%name%}'],
+			'out' => ['result' => 'greeting'],
 		],
 		[
 			'type' => 'run', 'block' => 'upper',
-			'in' => ['stdin' => '{%pozdrav%}'],
-			'out' => ['result' => 'hlasite'],
+			'in' => ['stdin' => '{%greeting%}'],
+			'out' => ['result' => 'loud'],
 		],
 		[
 			'type' => 'if',
-			'condition' => ['left' => '{%hlasite%}', 'op' => 'contains', 'right' => 'SVETE'],
-			'then' => [['type' => 'set', 'key' => 'kdo', 'value' => 'svet']],
-			'else' => [['type' => 'set', 'key' => 'kdo', 'value' => 'nekdo jiny']],
+			'condition' => ['left' => '{%loud%}', 'op' => 'contains', 'right' => 'WORLD'],
+			'then' => [['type' => 'set', 'key' => 'who', 'value' => 'world']],
+			'else' => [['type' => 'set', 'key' => 'who', 'value' => 'someone else']],
 		],
 	],
-], ['jmeno' => 'svete']);
+], ['name' => 'world']);
 
-Assert::same('ahoj svete', $map['pozdrav']);
-Assert::same('AHOJ SVETE', $map['hlasite']);
-Assert::same('svet', $map['kdo']);
+Assert::same('hi world', $map['greeting']);
+Assert::same('HI WORLD', $map['loud']);
+Assert::same('world', $map['who']);
 
-// foreach nad skutečným víceřádkovým výstupem procesu
+// foreach over a real multi-line process output
 $map = $run([
 	'name' => 'w',
-	'inputs' => ['radky' => []],
+	'inputs' => ['lines' => []],
 	'steps' => [
 		[
 			'type' => 'run', 'block' => 'echo',
-			'in' => ['text' => '{%radky%}'],
-			'out' => ['result' => 'seznam'],
+			'in' => ['text' => '{%lines%}'],
+			'out' => ['result' => 'list'],
 		],
 		[
-			'type' => 'foreach', 'over' => '{%seznam%}', 'as' => 'r',
-			'steps' => [['type' => 'set', 'key' => 'posledni', 'value' => 'radek-{%r%}']],
+			'type' => 'foreach', 'over' => '{%list%}', 'as' => 'r',
+			'steps' => [['type' => 'set', 'key' => 'last', 'value' => 'line-{%r%}']],
 		],
 	],
-], ['radky' => "prvni\ndruhy\ntreti"]);
+], ['lines' => "first\nsecond\nthird"]);
 
-Assert::same('radek-treti', $map['posledni']);
+Assert::same('line-third', $map['last']);
 
-// koncové odřádkování se odřezává, takže hodnota jde rovnou do argumentu
+// trailing newlines are stripped, so the value goes straight into the argument
 $map = $run([
 	'name' => 'w',
 	'steps' => [
@@ -96,28 +96,28 @@ $map = $run([
 ]);
 Assert::same('https://api/x/end', $map['url']);
 
-// selhání skutečného procesu zastaví běh
+// a real process failure stops the run
 Assert::exception(
 	fn() => $run([
 		'name' => 'w',
 		'steps' => [
 			['type' => 'run', 'block' => 'fail'],
-			['type' => 'set', 'key' => 'nemeloBy', 'value' => 'x'],
+			['type' => 'set', 'key' => 'shouldNotHappen', 'value' => 'x'],
 		],
 	]),
 	RunFailedException::class,
-	'w.json:steps[0]: kámen "fail" skončil s exit code 1.'
+	'w.json:steps[0]: block "fail" finished with exit code 1.'
 );
 
-// argumenty neprochází shellem
+// arguments don't pass through the shell
 $map = $run([
 	'name' => 'w',
 	'steps' => [[
 		'type' => 'run', 'block' => 'echo',
-		'in' => ['text' => 'a; rm -rf /tmp/neexistuje'],
+		'in' => ['text' => 'a; rm -rf /tmp/missing'],
 		'out' => ['result' => 'v'],
 	]],
 ]);
-Assert::same('a; rm -rf /tmp/neexistuje', $map['v']);
+Assert::same('a; rm -rf /tmp/missing', $map['v']);
 
 FileSystem::delete(TEMP_DIR);

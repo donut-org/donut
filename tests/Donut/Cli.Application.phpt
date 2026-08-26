@@ -131,12 +131,12 @@ Assert::contains('exit code 1', $err);
 // chybějící povinný vstup je kód 2
 [$code, , $err] = spust($dir, ['donut', 'pozdrav']);
 Assert::same(2, $code);
-Assert::contains('povinný vstup "kdo" nemá hodnotu', $err);
+Assert::contains('required input "kdo" has no value', $err);
 
 // prázdný povinný vstup je totéž co nevyplněný — kód 2, ne rozjetý běh
 [$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=']);
 Assert::same(2, $code);
-Assert::contains('povinný vstup "kdo" nemá hodnotu', $err);
+Assert::contains('required input "kdo" has no value', $err);
 
 // neexistující workflow je kód 2 a hláška řekne, kde se hledalo — profil je
 // nejostřejší hrana nástroje a nejčastější příčina téhle chyby

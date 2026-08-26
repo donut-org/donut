@@ -6,7 +6,7 @@ namespace Donut\Format;
 
 
 /**
- * Deklarace jedné proměnné dosazované do args kamene.
+ * Declaration of one variable substituted into a block's args.
  */
 final class Input
 {

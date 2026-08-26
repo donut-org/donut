@@ -8,7 +8,7 @@ use Donut\Format\Condition;
 
 
 /**
- * Vyhodnocení podmínky kroku `if`. Žádný výraz, jen {left, op, right}.
+ * Evaluation of an `if` step's condition. No expressions, just {left, op, right}.
  */
 final class ConditionEvaluator
 {
@@ -30,11 +30,11 @@ final class ConditionEvaluator
 		}
 
 		if (!\in_array($op, Condition::Operators, true)) {
-			throw new RunFailedException("{$location}: neznámý operátor \"{$op}\".");
+			throw new RunFailedException("{$location}: unknown operator \"{$op}\".");
 		}
 
 		if ($condition->right === null) {
-			throw new RunFailedException("{$location}: operátor \"{$op}\" vyžaduje 'right'.");
+			throw new RunFailedException("{$location}: operator \"{$op}\" requires 'right'.");
 		}
 
 		$right = $condition->right->render($map);
@@ -55,7 +55,7 @@ final class ConditionEvaluator
 	{
 		if (!\is_numeric($left) || !\is_numeric($right)) {
 			throw new RunFailedException(
-				"{$location}: operátor \"{$op}\" potřebuje čísla, dostal \"{$left}\" a \"{$right}\"."
+				"{$location}: operator \"{$op}\" needs numbers, got \"{$left}\" and \"{$right}\"."
 			);
 		}
 
@@ -67,7 +67,7 @@ final class ConditionEvaluator
 			'gte' => $a >= $b,
 			'lt' => $a < $b,
 			'lte' => $a <= $b,
-			default => throw new RunFailedException("{$location}: neznámý operátor \"{$op}\"."),
+			default => throw new RunFailedException("{$location}: unknown operator \"{$op}\"."),
 		};
 	}
 }
