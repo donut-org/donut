@@ -25,51 +25,51 @@ file_put_contents($dir . '/blocks/fail.json', json_encode([
 	'name' => 'fail', 'command' => '/usr/bin/false', 'args' => [],
 ]));
 
-file_put_contents($dir . '/workflows/pozdrav.json', json_encode([
-	'name' => 'pozdrav',
-	'description' => 'Pozdraví.',
+file_put_contents($dir . '/workflows/greet.json', json_encode([
+	'name' => 'greet',
+	'description' => 'Greets.',
 	'inputs' => [
-		'kdo' => ['required' => true, 'description' => 'Koho pozdravit'],
-		'tag' => ['required' => false, 'default' => 'ahoj', 'description' => 'Pozdrav'],
+		'who' => ['required' => true, 'description' => 'Whom to greet'],
+		'tag' => ['required' => false, 'default' => 'hi', 'description' => 'Greeting'],
 	],
 	'steps' => [[
 		'type' => 'run', 'block' => 'echo',
-		'in' => ['text' => '{%tag%} {%kdo%}'],
+		'in' => ['text' => '{%tag%} {%who%}'],
 	]],
 ]));
 
-file_put_contents($dir . '/workflows/spadne.json', json_encode([
-	'name' => 'spadne',
-	'description' => 'Vždycky selže.',
+file_put_contents($dir . '/workflows/stumbles.json', json_encode([
+	'name' => 'stumbles',
+	'description' => 'Always fails.',
 	'steps' => [['type' => 'run', 'block' => 'fail']],
 ]));
 
-file_put_contents($dir . '/workflows/bez-defaultu.json', json_encode([
-	'name' => 'bez-defaultu',
-	'description' => 'Volitelný vstup bez default.',
+file_put_contents($dir . '/workflows/no-default.json', json_encode([
+	'name' => 'no-default',
+	'description' => 'Optional input without a default.',
 	'inputs' => [
 		'tag' => ['required' => false],
 	],
 	'steps' => [
-		['type' => 'set', 'key' => 'precteno', 'value' => '{%tag%}'],
+		['type' => 'set', 'key' => 'read', 'value' => '{%tag%}'],
 	],
 ]));
 
 /**
- * Pozn.: zachytí se jen to, co píše Application — tedy --list, --help
- * a chybové hlášky. Standardní výstup spuštěných kroků jde na skutečný
- * STDOUT procesu, ne do podstrčeného streamu, takže se tady ověřit nedá.
- * Od toho je přijímací test v Cli.acceptance.phpt, který pouští donut jako
- * samostatný proces přes proc_open.
+ * Note: only what Application writes is captured — that is --list, --help
+ * and error messages. The standard output of executed steps goes to the
+ * real process STDOUT, not to the substituted stream, so it can't be
+ * verified here. That's what the acceptance test in Cli.acceptance.phpt is
+ * for — it runs donut as a separate process via proc_open.
  *
  * @param  array<int, string> $argv
- * @return array{int, string, string} kód, stdout, stderr
+ * @return array{int, string, string} code, stdout, stderr
  */
-function spust(string $dir, array $argv, ?ProcessRunner $processes = null): array
+function run(string $dir, array $argv, ?ProcessRunner $processes = null): array
 {
 	$out = fopen('php://memory', 'r+');
 	$err = fopen('php://memory', 'r+');
-	$code = (new Application(new Profile('testovaci', $dir), $out, $err, '', $processes))->run($argv);
+	$code = (new Application(new Profile('testprofile', $dir), $out, $err, '', $processes))->run($argv);
 	rewind($out);
 	rewind($err);
 	$result = [$code, stream_get_contents($out), stream_get_contents($err)];
@@ -80,108 +80,113 @@ function spust(string $dir, array $argv, ?ProcessRunner $processes = null): arra
 }
 
 
-// --list vypíše workflow s popisem, abecedně
-[$code, $out] = spust($dir, ['donut', '--list']);
+// --list prints workflows with description, alphabetically
+[$code, $out] = run($dir, ['donut', '--list']);
 Assert::same(0, $code);
-Assert::contains('pozdrav', $out);
-Assert::contains('Pozdraví.', $out);
-Assert::contains('spadne', $out);
-Assert::true(strpos($out, 'pozdrav') < strpos($out, 'spadne'));
+Assert::contains('greet', $out);
+Assert::contains('Greets.', $out);
+Assert::contains('stumbles', $out);
+Assert::true(strpos($out, 'greet') < strpos($out, 'stumbles'));
 
-// nápověda k workflow vypíše vstupy, povinnost i popis — u toho, ke kterému
-// patří, ne jen někde ve výstupu; jinak by prohozený ternář v Application
-// (povinný <-> volitelný) test neshodil
-[$code, $out] = spust($dir, ['donut', 'pozdrav', '--help']);
+// help for a workflow prints inputs, required-ness and description — for
+// the one they belong to, not just somewhere in the output; otherwise a
+// swapped ternary in Application (required <-> optional) wouldn't fail
+// the test
+[$code, $out] = run($dir, ['donut', 'greet', '--help']);
 Assert::same(0, $code);
 
-$radky = \explode("\n", $out);
-$kdo = null;
+$lines = \explode("\n", $out);
+$who = null;
 $tag = null;
 
-foreach ($radky as $radek) {
-	if (\str_contains($radek, '--kdo=')) {
-		$kdo = $radek;
-	} elseif (\str_contains($radek, '--tag=')) {
-		$tag = $radek;
+foreach ($lines as $line) {
+	if (\str_contains($line, '--who=')) {
+		$who = $line;
+	} elseif (\str_contains($line, '--tag=')) {
+		$tag = $line;
 	}
 }
 
-Assert::notNull($kdo, 'řádek s --kdo= existuje');
-Assert::contains('povinný', $kdo);
-Assert::notContains('volitelný', $kdo);
-Assert::contains('Koho pozdravit', $kdo);
+Assert::notNull($who, 'line with --who= exists');
+Assert::contains('required', $who);
+Assert::notContains('optional', $who);
+Assert::contains('Whom to greet', $who);
 
-Assert::notNull($tag, 'řádek s --tag= existuje');
-Assert::contains('volitelný', $tag);
-Assert::notContains('povinný', $tag);
+Assert::notNull($tag, 'line with --tag= exists');
+Assert::contains('optional', $tag);
+Assert::notContains('required', $tag);
 
-// běh doběhne, kód 0
-[$code] = spust($dir, ['donut', 'pozdrav', '--kdo=svete']);
+// the run completes, code 0
+[$code] = run($dir, ['donut', 'greet', '--who=world']);
 Assert::same(0, $code);
 
-// nepředaný volitelný vstup bez default se čte jako '' — ne kód 1
-[$code] = spust($dir, ['donut', 'bez-defaultu']);
+// an unpassed optional input without a default reads as '' — not code 1
+[$code] = run($dir, ['donut', 'no-default']);
 Assert::same(0, $code);
 
-// selhání kroku je kód 1
-[$code, , $err] = spust($dir, ['donut', 'spadne']);
+// a step failure is code 1
+[$code, , $err] = run($dir, ['donut', 'stumbles']);
 Assert::same(1, $code);
 Assert::contains('exit code 1', $err);
 
-// chybějící povinný vstup je kód 2
-[$code, , $err] = spust($dir, ['donut', 'pozdrav']);
+// a missing required input is code 2
+[$code, , $err] = run($dir, ['donut', 'greet']);
 Assert::same(2, $code);
-Assert::contains('required input "kdo" has no value', $err);
+Assert::contains('required input "who" has no value', $err);
 
-// prázdný povinný vstup je totéž co nevyplněný — kód 2, ne rozjetý běh
-[$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=']);
+// an empty required input is the same as unfilled — code 2, not a started run
+[$code, , $err] = run($dir, ['donut', 'greet', '--who=']);
 Assert::same(2, $code);
-Assert::contains('required input "kdo" has no value', $err);
+Assert::contains('required input "who" has no value', $err);
 
-// neexistující workflow je kód 2 a hláška řekne, kde se hledalo — profil je
-// nejostřejší hrana nástroje a nejčastější příčina téhle chyby
-[$code, , $err] = spust($dir, ['donut', 'neexistuje']);
+// a nonexistent workflow is code 2 and the message says where it looked —
+// the profile is the sharpest edge of the tool and the most common cause
+// of this error
+[$code, , $err] = run($dir, ['donut', 'missing']);
 Assert::same(2, $code);
-Assert::contains('Workflow "neexistuje" neexistuje.', $err);
+Assert::contains('Workflow "missing" does not exist.', $err);
 Assert::contains($dir . '/workflows/', $err);
-// adresář workflows/ existuje — jen soubor v něm chybí, takže rada
-// `mkdir -p` by tu byla zavádějící (viz $prazdny níž, kde naopak je)
+// the workflows/ directory exists — only the file in it is missing, so the
+// `mkdir -p` advice would be misleading here (see $empty below, where it
+// applies)
 Assert::notContains('mkdir', $err);
 
-// neznámý argument je kód 2
-[$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=x', '--neznamy=y']);
+// an unknown argument is code 2
+[$code, , $err] = run($dir, ['donut', 'greet', '--who=x', '--unknown=y']);
 Assert::same(2, $code);
-Assert::same("Chyba: Workflow \"pozdrav\" nezná vstup \"neznamy\".\n", $err);
+Assert::same("Error: Workflow \"greet\" has no input \"unknown\".\n", $err);
 
-// holé volání je chyba — použití jde na stderr a stdout zůstává prázdný
-[$code, $out, $err] = spust($dir, ['donut']);
+// a bare call is an error — usage goes to stderr and stdout stays empty
+[$code, $out, $err] = run($dir, ['donut']);
 Assert::same(2, $code);
 Assert::same('', $out);
 Assert::contains('donut --list', $err);
 
-// --help bez workflow vypíše použití a skončí nulou — na stdout, není to chyba
-[$code, $out, $err] = spust($dir, ['donut', '--help']);
+// --help without a workflow prints usage and exits with zero — to stdout, it's not an error
+[$code, $out, $err] = run($dir, ['donut', '--help']);
 Assert::same(0, $code);
 Assert::contains('--list', $out);
 Assert::same('', $err);
 
-// --list přežije vadný soubor: dobrá workflow jdou na stdout, vadné se hlásí
-// na stderr a kód je 2. Jeden rozbitý soubor nesmí schovat ostatní — zvlášť
-// ne ve chvíli, kdy je adresář rozdělaný a člověk potřebuje vidět, co má.
-file_put_contents($dir . '/workflows/rozbite.json', '{ tohle není JSON');
+// --list survives a bad file: good workflows go to stdout, bad ones are
+// reported to stderr and the code is 2. One broken file must not hide the
+// rest — especially not while the directory is a work in progress and
+// someone needs to see what they have.
+file_put_contents($dir . '/workflows/broken.json', '{ this is not JSON');
 
-[$code, $out, $err] = spust($dir, ['donut', '--list']);
+[$code, $out, $err] = run($dir, ['donut', '--list']);
 Assert::same(2, $code);
-Assert::contains('pozdrav', $out);
-Assert::contains('spadne', $out);
-Assert::notContains('rozbite', $out);
-Assert::contains('rozbite.json', $err);
+Assert::contains('greet', $out);
+Assert::contains('stumbles', $out);
+Assert::notContains('broken', $out);
+Assert::contains('broken.json', $err);
 
-unlink($dir . '/workflows/rozbite.json');
+unlink($dir . '/workflows/broken.json');
 
-// neočekávaná Donut\Exception se zachytí a skončí dvojkou. Dnes ji nic nehází,
-// takže se musí podstrčit — jinak by ta větev nešla spustit vůbec.
-$vybuchne = new class implements ProcessRunner {
+// an unexpected Donut\Exception is caught and ends with a two. Nothing
+// throws it today, so it has to be substituted in — otherwise that branch
+// couldn't be run at all.
+$explodes = new class implements ProcessRunner {
 	/**
 	 * @param list<string> $args
 	 */
@@ -194,71 +199,75 @@ $vybuchne = new class implements ProcessRunner {
 		?int $timeout,
 	): ProcessResult
 	{
-		throw new Donut\Exception('rozbité vnitřnosti');
+		throw new Donut\Exception('broken internals');
 	}
 };
 
-[$code, , $err] = spust($dir, ['donut', 'pozdrav', '--kdo=svete'], $vybuchne);
+[$code, , $err] = run($dir, ['donut', 'greet', '--who=world'], $explodes);
 Assert::same(2, $code);
-Assert::contains('Vnitřní chyba nástroje: rozbité vnitřnosti', $err);
+Assert::contains('Internal tool error: broken internals', $err);
 
-// --- nápověda říká, ze kterého profilu se čte ---
-// Bez toho se „donut --list nic nevypisuje" nedá odladit: uživatel nevidí,
-// kam se nástroj díval, a pracovní adresář mu to už neprozradí.
-[$code, $out] = spust($dir, ['donut', '--help']);
+// --- the usage says which profile is being read from ---
+// Without this, "donut --list prints nothing" can't be debugged: the user
+// doesn't see where the tool looked, and the working directory no longer
+// tells them.
+[$code, $out] = run($dir, ['donut', '--help']);
 Assert::same(0, $code);
-Assert::contains('Profil: testovaci', $out);
+Assert::contains('Profile: testprofile', $out);
 Assert::contains($dir, $out);
 Assert::contains('DONUT_PROFILE=', $out);
 Assert::contains('DONUT_HOME=', $out);
 
-// --- chybějící adresář workflows: --list není ticho, ale návod ---
-// Prázdný výpis a chybějící profil vypadají na terminálu stejně. Čerstvá
-// instalace je přesně ten případ, kdy rozdíl potřebuješ vidět.
-$prazdny = TEMP_DIR . '/bez-profilu';
-FileSystem::createDir($prazdny);
+// --- missing workflows directory: --list isn't silence, it's a hint ---
+// An empty listing and a missing profile look the same on the terminal. A
+// fresh installation is exactly the case where you need to see the
+// difference.
+$empty = TEMP_DIR . '/empty-profile';
+FileSystem::createDir($empty);
 
-[$code, $out, $err] = spust($prazdny, ['donut', '--list']);
+[$code, $out, $err] = run($empty, ['donut', '--list']);
 Assert::same(2, $code);
 Assert::same('', $out);
-Assert::contains('neexistuje', $err);
-Assert::contains('mkdir -p ' . $prazdny . '/workflows', $err);
+Assert::contains('does not exist', $err);
+Assert::contains('mkdir -p ' . $empty . '/workflows', $err);
 
-// --- a totéž při pokusu o spuštění workflow ---
-[$code, , $err] = spust($prazdny, ['donut', 'cokoliv']);
+// --- and the same when trying to run a workflow ---
+[$code, , $err] = run($empty, ['donut', 'anything']);
 Assert::same(2, $code);
-Assert::contains('mkdir -p ' . $prazdny . '/workflows', $err);
+Assert::contains('mkdir -p ' . $empty . '/workflows', $err);
 
-// --- chybí jen blocks/: workflow existuje, spuštění na něj teprve narazí ---
-// workflows/ je v pořádku, takže loadWorkflow() radu nedá — runWorkflow()
-// musí mít vlastní guard, jinak dostane uživatel jen "adresář neexistuje"
-// bez návodu, co s tím.
-$jenWorkflows = TEMP_DIR . '/jen-workflows';
-FileSystem::createDir($jenWorkflows . '/workflows');
-file_put_contents($jenWorkflows . '/workflows/prazdne.json', json_encode([
-	'name' => 'prazdne',
+// --- only blocks/ is missing: the workflow exists, the run only hits it
+// later ---
+// workflows/ is fine, so loadWorkflow() won't give advice — runWorkflow()
+// must have its own guard, otherwise the user only gets "directory does
+// not exist" with no advice what to do about it.
+$workflowsOnly = TEMP_DIR . '/workflows-only';
+FileSystem::createDir($workflowsOnly . '/workflows');
+file_put_contents($workflowsOnly . '/workflows/empty.json', json_encode([
+	'name' => 'empty',
 	'steps' => [],
 ]));
 
-[$code, , $err] = spust($jenWorkflows, ['donut', 'prazdne']);
+[$code, , $err] = run($workflowsOnly, ['donut', 'empty']);
 Assert::same(2, $code);
-Assert::contains('mkdir -p ' . $jenWorkflows . '/blocks', $err);
+Assert::contains('mkdir -p ' . $workflowsOnly . '/blocks', $err);
 
-// --- main() přeloží nemožné prostředí na kód 2, ne na fatal ---
-// Jediný důvod, proč main() existuje: v bin/donut nesmí zůstat větev, která
-// se nedá otestovat.
+// --- main() translates an impossible environment into code 2, not a fatal
+// error ---
+// The only reason main() exists: bin/donut must not contain a branch that
+// can't be tested.
 $out = fopen('php://memory', 'r+');
 $err = fopen('php://memory', 'r+');
 $code = Application::main(['donut', '--list'], [], $out, $err);
 rewind($err);
-$hlaska = stream_get_contents($err);
+$message = stream_get_contents($err);
 fclose($out);
 fclose($err);
 
 Assert::same(2, $code);
-Assert::contains('DONUT_HOME', $hlaska);
+Assert::contains('DONUT_HOME', $message);
 
-// --- main() s použitelným prostředím doběhne do Application ---
+// --- main() with a usable environment reaches Application ---
 $out = fopen('php://memory', 'r+');
 $err = fopen('php://memory', 'r+');
 $code = Application::main(
@@ -268,11 +277,11 @@ $code = Application::main(
 	$err,
 );
 rewind($out);
-$vypis = stream_get_contents($out);
+$listing = stream_get_contents($out);
 fclose($out);
 fclose($err);
 
 Assert::same(0, $code);
-Assert::contains('pozdrav', $vypis);
+Assert::contains('greet', $listing);
 
 FileSystem::delete(TEMP_DIR);

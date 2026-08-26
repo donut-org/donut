@@ -23,19 +23,19 @@ file_put_contents($dir . '/blocks/upper.json', json_encode([
 	'stdin' => ['required' => true],
 ]));
 
-file_put_contents($dir . '/workflows/hlasite.json', json_encode([
-	'name' => 'hlasite',
-	'description' => 'Zvětší, co dostane.',
-	'inputs' => ['kdo' => ['required' => true]],
+file_put_contents($dir . '/workflows/loud.json', json_encode([
+	'name' => 'loud',
+	'description' => 'Amplifies what it gets.',
+	'inputs' => ['who' => ['required' => true]],
 	'steps' => [
 		[
 			'type' => 'run', 'block' => 'echo',
-			'in' => ['text' => 'ahoj {%kdo%}'],
-			'out' => ['result' => 'pozdrav'],
+			'in' => ['text' => 'hello {%who%}'],
+			'out' => ['result' => 'greeting'],
 		],
 		[
 			'type' => 'run', 'block' => 'upper',
-			'in' => ['stdin' => '{%pozdrav%}'],
+			'in' => ['stdin' => '{%greeting%}'],
 		],
 	],
 ]));
@@ -43,19 +43,21 @@ file_put_contents($dir . '/workflows/hlasite.json', json_encode([
 $bin = escapeshellarg(__DIR__ . '/../../bin/donut');
 
 /**
- * Definice se berou z profilu (DONUT_HOME/DONUT_PROFILE), pracovní adresář
- * zůstává fixtura — z něj běží kroky a z něj je klíč CWD.
+ * Definitions are taken from the profile (DONUT_HOME/DONUT_PROFILE), the
+ * working directory stays the fixture — steps run from it and CWD is
+ * keyed off it.
  *
- * Prostředí se procesu předává celé, ne přidáním k zděděnému: PATH tam musí
- * být kvůli `php` i kvůli příkazům kroků (echo, tr).
+ * The environment is passed to the process whole, not appended to the
+ * inherited one: PATH has to be there both for `php` and for the steps'
+ * commands (echo, tr).
  *
  * @return array{int, string, string}
  */
 function donut(string $dir, string $bin, string $args): array
 {
-	// deskriptor 0 je připnutý schválně: donut si stdin čte, když to není
-	// terminál. Bez toho by závisel na tom, co proces zdědil, a mohl by se
-	// na čtení zaseknout.
+	// descriptor 0 is pinned on purpose: donut reads its stdin when it's
+	// not a terminal. Without this it would depend on what the process
+	// inherited, and could get stuck reading.
 	$descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
 	$env = [
 		'PATH' => (string) getenv('PATH'),
@@ -74,37 +76,38 @@ function donut(string $dir, string $bin, string $args): array
 }
 
 
-// skutečný proces: běh projde a poslední krok vypíše na stdout
-[$code, $out] = donut($dir, $bin, 'hlasite --kdo=svete');
+// a real process: the run succeeds and the last step prints to stdout
+[$code, $out] = donut($dir, $bin, 'loud --who=world');
 Assert::same(0, $code);
-Assert::contains('AHOJ SVETE', $out);
+Assert::contains('HELLO WORLD', $out);
 
-// seznam
+// listing
 [$code, $out] = donut($dir, $bin, '--list');
 Assert::same(0, $code);
-Assert::contains('hlasite', $out);
-Assert::contains('Zvětší, co dostane.', $out);
+Assert::contains('loud', $out);
+Assert::contains('Amplifies what it gets.', $out);
 
-// nápověda
-[$code, $out] = donut($dir, $bin, 'hlasite --help');
+// help
+[$code, $out] = donut($dir, $bin, 'loud --help');
 Assert::same(0, $code);
-Assert::contains('--kdo=', $out);
+Assert::contains('--who=', $out);
 
-// chybějící povinný vstup: kód 2, hláška na stderr, na stdout nic
-[$code, $out, $err] = donut($dir, $bin, 'hlasite');
+// a missing required input: code 2, message on stderr, nothing on stdout
+[$code, $out, $err] = donut($dir, $bin, 'loud');
 Assert::same(2, $code);
 Assert::same('', $out);
-Assert::contains('kdo', $err);
+Assert::contains('who', $err);
 
-// neznámý argument: kód 2
-[$code, , $err] = donut($dir, $bin, 'hlasite --kdo=x --neznamy=y');
+// an unknown argument: code 2
+[$code, , $err] = donut($dir, $bin, 'loud --who=x --unknown=y');
 Assert::same(2, $code);
-Assert::contains('neznamy', $err);
+Assert::contains('unknown', $err);
 
-// Pracovní adresář o definicích nerozhoduje: běh z /tmp najde workflow
-// stejně, protože profil je v prostředí.
-$jinde = TEMP_DIR . '/jinde';
-FileSystem::createDir($jinde);
+// The working directory doesn't decide the definitions: a run from /tmp
+// finds the workflow the same way, because the profile is in the
+// environment.
+$elsewhere = TEMP_DIR . '/elsewhere';
+FileSystem::createDir($elsewhere);
 
 $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
 $env = [
@@ -112,7 +115,7 @@ $env = [
 	'DONUT_HOME' => dirname($dir),
 	'DONUT_PROFILE' => basename($dir),
 ];
-$process = proc_open("php {$bin} --list", $descriptors, $pipes, $jinde, $env);
+$process = proc_open("php {$bin} --list", $descriptors, $pipes, $elsewhere, $env);
 Assert::type('resource', $process);
 fclose($pipes[0]);
 $out = (string) stream_get_contents($pipes[1]);
@@ -120,6 +123,6 @@ fclose($pipes[1]);
 fclose($pipes[2]);
 
 Assert::same(0, proc_close($process));
-Assert::contains('hlasite', $out);
+Assert::contains('loud', $out);
 
 FileSystem::delete(TEMP_DIR);
