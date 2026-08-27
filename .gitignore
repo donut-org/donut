@@ -1,6 +1,7 @@
 /vendor/
 composer.lock
 *.sublime-project
+*.sublime-workspace
 /tests/tmp
 /tests/**/output
 
