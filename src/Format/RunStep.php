@@ -10,7 +10,7 @@ use Donut\Template;
 final class RunStep implements Step
 {
 	/** Channels that may appear in out. */
-	public const Channels = ['result', 'stderr', 'exit_code'];
+	public const Channels = ['stdout', 'stderr', 'exit_code'];
 
 	/**
 	 * @param array<string, Template> $in  block input => template; the stdin key feeds standard input

@@ -93,7 +93,7 @@ $map = $run([
 	'steps' => [[
 		'type' => 'run', 'block' => 'echo',
 		'in' => ['text' => '{%t%}'],
-		'out' => ['result' => 'r', 'exit_code' => 'rc'],
+		'out' => ['stdout' => 'r', 'exit_code' => 'rc'],
 	]],
 ], $procs, ['t' => 'hi']);
 
@@ -126,7 +126,7 @@ $map = $run([
 ], $procs, ['t' => 'x']);
 Assert::same(['t' => 'x', 'STDIN' => '', 'CWD' => getcwd()], $map);
 
-// a step without result in out doesn't capture stdout
+// a step without stdout in out doesn't capture stdout
 $procs = new FakeProcesses([new ProcessResult(null, null, 0)]);
 $run([
 	'name' => 'w',
@@ -135,7 +135,7 @@ $run([
 ], $procs, ['t' => 'x']);
 Assert::false($procs->calls[0][3]);
 
-// a step with result in out captures it
+// a step with stdout in out captures it
 $procs = new FakeProcesses([new ProcessResult('v', null, 0)]);
 $run([
 	'name' => 'w',
@@ -143,7 +143,7 @@ $run([
 	'steps' => [[
 		'type' => 'run', 'block' => 'echo',
 		'in' => ['text' => '{%t%}'],
-		'out' => ['result' => 'r'],
+		'out' => ['stdout' => 'r'],
 	]],
 ], $procs, ['t' => 'x']);
 Assert::true($procs->calls[0][3]);

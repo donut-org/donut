@@ -38,7 +38,7 @@ $workflow = $parser->parseArray([
 		[
 			'type' => 'run', 'block' => 'echo',
 			'in' => ['text' => '{%fromSet%}'],
-			'out' => ['result' => 'fromOutput'],
+			'out' => ['stdout' => 'fromOutput'],
 		],
 		// write via foreach.as, read in over
 		[

@@ -27,7 +27,7 @@
       "type": "run", "name": "načíst boardy",
       "block": "curl-get",
       "in":  { "url": "https://api.trello.com/1/members/me/boards?fields=id,name", "curlrc": "{%curlrc%}" },
-      "out": { "result": "boardsJson" }
+      "out": { "stdout": "boardsJson" }
     },
 
     {
@@ -46,29 +46,29 @@
         {
           "type": "run", "block": "jq",
           "in":  { "flags": "-r", "filter": ".[] | select(.name == \"{%board%}\") | .id", "stdin": "{%boardsJson%}" },
-          "out": { "result": "boardId" }
+          "out": { "stdout": "boardId" }
         },
         {
           "type": "run", "block": "curl-get",
           "in":  { "url": "https://api.trello.com/1/boards/{%boardId%}/lists?fields=id,name", "curlrc": "{%curlrc%}" },
-          "out": { "result": "listsJson" }
+          "out": { "stdout": "listsJson" }
         },
 
         {
           "type": "run", "name": "ToSpec → tech lead",
           "block": "jq",
           "in":  { "flags": "-r", "filter": ".[] | select(.name == \"ToSpec\") | .id", "stdin": "{%listsJson%}" },
-          "out": { "result": "listId" }
+          "out": { "stdout": "listId" }
         },
         {
           "type": "run", "block": "curl-get",
           "in":  { "url": "https://api.trello.com/1/lists/{%listId%}/cards?fields=shortLink", "curlrc": "{%curlrc%}" },
-          "out": { "result": "cardsJson" }
+          "out": { "stdout": "cardsJson" }
         },
         {
           "type": "run", "block": "jq",
           "in":  { "flags": "-r", "filter": ".[].shortLink", "stdin": "{%cardsJson%}" },
-          "out": { "result": "cards" }
+          "out": { "stdout": "cards" }
         },
         {
           "type": "foreach", "over": "{%cards%}", "as": "shortId",
@@ -91,17 +91,17 @@
           "type": "run", "name": "ReadyToDev → developer",
           "block": "jq",
           "in":  { "flags": "-r", "filter": ".[] | select(.name == \"ReadyToDev\") | .id", "stdin": "{%listsJson%}" },
-          "out": { "result": "listId" }
+          "out": { "stdout": "listId" }
         },
         {
           "type": "run", "block": "curl-get",
           "in":  { "url": "https://api.trello.com/1/lists/{%listId%}/cards?fields=shortLink", "curlrc": "{%curlrc%}" },
-          "out": { "result": "cardsJson" }
+          "out": { "stdout": "cardsJson" }
         },
         {
           "type": "run", "block": "jq",
           "in":  { "flags": "-r", "filter": ".[].shortLink", "stdin": "{%cardsJson%}" },
-          "out": { "result": "cards" }
+          "out": { "stdout": "cards" }
         },
         {
           "type": "foreach", "over": "{%cards%}", "as": "shortId",
@@ -124,17 +124,17 @@
           "type": "run", "name": "ReadyToDev-Haiku → developer na haiku",
           "block": "jq",
           "in":  { "flags": "-r", "filter": ".[] | select(.name == \"ReadyToDev-Haiku\") | .id", "stdin": "{%listsJson%}" },
-          "out": { "result": "listId" }
+          "out": { "stdout": "listId" }
         },
         {
           "type": "run", "block": "curl-get",
           "in":  { "url": "https://api.trello.com/1/lists/{%listId%}/cards?fields=shortLink", "curlrc": "{%curlrc%}" },
-          "out": { "result": "cardsJson" }
+          "out": { "stdout": "cardsJson" }
         },
         {
           "type": "run", "block": "jq",
           "in":  { "flags": "-r", "filter": ".[].shortLink", "stdin": "{%cardsJson%}" },
-          "out": { "result": "cards" }
+          "out": { "stdout": "cards" }
         },
         {
           "type": "foreach", "over": "{%cards%}", "as": "shortId",
@@ -162,29 +162,29 @@
         {
           "type": "run", "block": "jq",
           "in":  { "flags": "-r", "filter": ".[] | select(.name == \"{%board%}\") | .id", "stdin": "{%boardsJson%}" },
-          "out": { "result": "boardId" }
+          "out": { "stdout": "boardId" }
         },
         {
           "type": "run", "block": "curl-get",
           "in":  { "url": "https://api.trello.com/1/boards/{%boardId%}/lists?fields=id,name", "curlrc": "{%curlrc%}" },
-          "out": { "result": "listsJson" }
+          "out": { "stdout": "listsJson" }
         },
 
         {
           "type": "run", "name": "Assistent",
           "block": "jq",
           "in":  { "flags": "-r", "filter": ".[] | select(.name == \"Assistent\") | .id", "stdin": "{%listsJson%}" },
-          "out": { "result": "listId" }
+          "out": { "stdout": "listId" }
         },
         {
           "type": "run", "block": "curl-get",
           "in":  { "url": "https://api.trello.com/1/lists/{%listId%}/cards?fields=shortLink", "curlrc": "{%curlrc%}" },
-          "out": { "result": "cardsJson" }
+          "out": { "stdout": "cardsJson" }
         },
         {
           "type": "run", "block": "jq",
           "in":  { "flags": "-r", "filter": ".[].shortLink", "stdin": "{%cardsJson%}" },
-          "out": { "result": "cards" }
+          "out": { "stdout": "cards" }
         },
         {
           "type": "foreach", "over": "{%cards%}", "as": "shortId",
@@ -207,17 +207,17 @@
           "type": "run", "name": "Assistent-Haiku",
           "block": "jq",
           "in":  { "flags": "-r", "filter": ".[] | select(.name == \"Assistent-Haiku\") | .id", "stdin": "{%listsJson%}" },
-          "out": { "result": "listId" }
+          "out": { "stdout": "listId" }
         },
         {
           "type": "run", "block": "curl-get",
           "in":  { "url": "https://api.trello.com/1/lists/{%listId%}/cards?fields=shortLink", "curlrc": "{%curlrc%}" },
-          "out": { "result": "cardsJson" }
+          "out": { "stdout": "cardsJson" }
         },
         {
           "type": "run", "block": "jq",
           "in":  { "flags": "-r", "filter": ".[].shortLink", "stdin": "{%cardsJson%}" },
-          "out": { "result": "cards" }
+          "out": { "stdout": "cards" }
         },
         {
           "type": "foreach", "over": "{%cards%}", "as": "shortId",

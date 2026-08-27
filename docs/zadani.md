@@ -31,7 +31,7 @@ Formát souborů: viz `format-specifikace.md`.
 | Čtení neexistujícího klíče | Tvrdá chyba, konec běhu |
 | `if` větev | Nemá vlastní scope. Zápis ve větvi je vidět i za `if`. |
 | Chyba kroku | Default stop. `allow_failure: [0,1]` pro `grep`/`test`. |
-| Výstup kroku | `result` (stdout), `stderr`, `exit_code` |
+| Výstup kroku | `stdout`, `stderr`, `exit_code` |
 | Soubory | Engine žádné nevytváří. Cesty jsou vstupy zvenčí. |
 | Velká data | Stdin/stdout přes mapu. |
 | Vstup 1. kroku | STDIN CLI volání, v mapě jako `STDIN` |

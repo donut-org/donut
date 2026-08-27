@@ -11,7 +11,7 @@
       "type": "run", "name": "najít repozitář",
       "block": "repo-find",
       "in":  { "project": "{%project%}" },
-      "out": { "result": "repo" }
+      "out": { "stdout": "repo" }
     },
     {
       "type": "if", "name": "prázdný výstup znamená, že se nic nenašlo",

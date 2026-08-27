@@ -127,7 +127,7 @@ $assertFails(
 );
 
 $assertFails(
-	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'out' => ['result' => 5]]]],
+	['name' => 'w', 'steps' => [['type' => 'run', 'block' => 'x', 'out' => ['stdout' => 5]]]],
 	'w.json: steps[0].out must be an object of string => string.'
 );
 

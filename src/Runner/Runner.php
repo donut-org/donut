@@ -189,7 +189,7 @@ final class Runner
 
 		$commandLine = CommandLine::build($block, $step->in, $map, $at);
 		$stdin = isset($step->in['stdin']) ? $step->in['stdin']->render($map) : '';
-		$captureStdout = isset($step->out['result']);
+		$captureStdout = isset($step->out['stdout']);
 		$captureStderr = isset($step->out['stderr']);
 		$timeout = $step->timeout ?? $block->timeout ?? self::DefaultTimeout;
 
@@ -222,7 +222,7 @@ final class Runner
 		// decides based on exit_code in `if`.
 		foreach ($step->out as $channel => $key) {
 			$map[$key] = match ($channel) {
-				'result' => $result->stdout ?? '',
+				'stdout' => $result->stdout ?? '',
 				'stderr' => $result->stderr ?? '',
 				'exit_code' => (string) $result->exitCode,
 				default => throw new RunFailedException("{$at}: unknown channel \"{$channel}\"."),
