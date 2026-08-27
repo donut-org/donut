@@ -24,7 +24,7 @@ $wf = (new WorkflowParser)->parseArray([
 			'name' => 'download',
 			'block' => 'curl-get',
 			'in' => ['url' => 'https://x/{%env%}'],
-			'out' => ['result' => 'body', 'exit_code' => 'rc'],
+			'out' => ['stdout' => 'body', 'exit_code' => 'rc'],
 			'timeout' => 5,
 			'allow_failure' => [0, 1],
 		],
@@ -61,7 +61,7 @@ Assert::same('download', $run->name);
 Assert::same('curl-get', $run->block);
 Assert::same(['url'], array_keys($run->in));
 Assert::same(['env'], $run->in['url']->getKeys());
-Assert::same(['result' => 'body', 'exit_code' => 'rc'], $run->out);
+Assert::same(['stdout' => 'body', 'exit_code' => 'rc'], $run->out);
 Assert::same(5, $run->timeout);
 Assert::same([0, 1], $run->allowFailure);
 

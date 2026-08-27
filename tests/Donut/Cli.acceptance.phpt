@@ -31,7 +31,7 @@ file_put_contents($dir . '/workflows/loud.json', json_encode([
 		[
 			'type' => 'run', 'block' => 'echo',
 			'in' => ['text' => 'hello {%who%}'],
-			'out' => ['result' => 'greeting'],
+			'out' => ['stdout' => 'greeting'],
 		],
 		[
 			'type' => 'run', 'block' => 'upper',

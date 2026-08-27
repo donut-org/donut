@@ -32,7 +32,7 @@ Assert::same(
 		'name' => 'named',
 		'block' => 'jq',
 		'in' => ['stdin' => '{%input%}', 'filter' => '.id'],
-		'out' => ['result' => 'result', 'exit_code' => 'code'],
+		'out' => ['stdout' => 'result', 'exit_code' => 'code'],
 		'timeout' => 90,
 		'allow_failure' => [0, 1],
 	],
@@ -40,7 +40,7 @@ Assert::same(
 		new RunStep(
 			block: 'jq',
 			in: ['stdin' => Template::parse('{%input%}'), 'filter' => Template::parse('.id')],
-			out: ['result' => 'result', 'exit_code' => 'code'],
+			out: ['stdout' => 'result', 'exit_code' => 'code'],
 			timeout: 90,
 			allowFailure: [0, 1],
 			name: 'named',

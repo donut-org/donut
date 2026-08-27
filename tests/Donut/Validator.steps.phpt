@@ -163,9 +163,11 @@ Assert::same(
 	])
 );
 
-// unknown channel in out
+// unknown channel in out. "result" is the old name of the stdout channel:
+// a workflow written before the rename must not pass silently, or its author
+// would be left waiting for a key that nothing ever writes.
 Assert::same(
-	['w.json:steps[0]: unknown channel "stdout"'],
+	['w.json:steps[0]: unknown channel "result"'],
 	$messages([
 		'name' => 'w',
 		'inputs' => ['t' => []],
@@ -173,7 +175,23 @@ Assert::same(
 			'type' => 'run',
 			'block' => 'greet',
 			'in' => ['text' => '{%t%}'],
-			'out' => ['stdout' => 'x'],
+			'out' => ['result' => 'x'],
+		]],
+	])
+);
+
+// all three channels pass. Without this the assertion above would hold even
+// if every name were unknown.
+Assert::same(
+	[],
+	$messages([
+		'name' => 'w',
+		'inputs' => ['t' => []],
+		'steps' => [[
+			'type' => 'run',
+			'block' => 'greet',
+			'in' => ['text' => '{%t%}'],
+			'out' => ['stdout' => 'a', 'stderr' => 'b', 'exit_code' => 'c'],
 		]],
 	])
 );

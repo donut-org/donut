@@ -18,41 +18,41 @@
       "type": "run", "name": "zjistit vlastní ID v Trellu",
       "block": "curl-get",
       "in":  { "url": "https://api.trello.com/1/members/me?fields=id", "curlrc": "{%curlrc%}" },
-      "out": { "result": "meJson" }
+      "out": { "stdout": "meJson" }
     },
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".id", "stdin": "{%meJson%}" },
-      "out": { "result": "myId" }
+      "out": { "stdout": "myId" }
     },
 
     {
       "type": "run", "name": "stáhnout kartu včetně komentářů, příloh a checklistů",
       "block": "curl-get",
       "in":  { "url": "https://api.trello.com/1/cards/{%shortId%}?list=true&actions=commentCard&attachments=true&checklists=all", "curlrc": "{%curlrc%}" },
-      "out": { "result": "cardJson" }
+      "out": { "stdout": "cardJson" }
     },
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".id", "stdin": "{%cardJson%}" },
-      "out": { "result": "cardId" }
+      "out": { "stdout": "cardId" }
     },
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".idBoard", "stdin": "{%cardJson%}" },
-      "out": { "result": "boardId" }
+      "out": { "stdout": "boardId" }
     },
     {
       "type": "run", "name": "převést kartu na task JSON",
       "block": "trello-to-task",
       "in":  { "myId": "{%myId%}", "stdin": "{%cardJson%}" },
-      "out": { "result": "task" }
+      "out": { "stdout": "task" }
     },
 
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".status", "stdin": "{%task%}" },
-      "out": { "result": "status" }
+      "out": { "stdout": "status" }
     },
     {
       "type": "if", "name": "karta už není ve stavu {%expectStatus%} — mezitím se přesunula",
@@ -67,52 +67,52 @@
         "filter": "if (.title | test(\"^[^ ]+ - \")) then (.project = (.title | sub(\" - .*\"; \"\")) | .title = (.title | sub(\"^[^ ]* - \"; \"\"))) else . end",
         "stdin": "{%task%}"
       },
-      "out": { "result": "task" }
+      "out": { "stdout": "task" }
     },
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".project", "stdin": "{%task%}" },
-      "out": { "result": "project" }
+      "out": { "stdout": "project" }
     },
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".branch", "stdin": "{%task%}" },
-      "out": { "result": "branch" }
+      "out": { "stdout": "branch" }
     },
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".title", "stdin": "{%task%}" },
-      "out": { "result": "title" }
+      "out": { "stdout": "title" }
     },
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".description", "stdin": "{%task%}" },
-      "out": { "result": "description" }
+      "out": { "stdout": "description" }
     },
 
     {
       "type": "run", "name": "najít repozitář; prázdný výstup = pracuje se bez repozitáře",
       "block": "repo-find",
       "in":  { "project": "{%project%}" },
-      "out": { "result": "repo" }
+      "out": { "stdout": "repo" }
     },
     {
       "type": "run", "name": "připravit workspace",
       "block": "workspace-init",
       "in":  { "workRoot": "{%workRoot%}", "project": "{%project%}", "repo": "{%repo%}", "branch": "{%branch%}" },
-      "out": { "result": "workDir" }
+      "out": { "stdout": "workDir" }
     },
 
     {
       "type": "run", "block": "format-prompt",
       "in":  { "stdin": "{%task%}" },
-      "out": { "result": "prompt" }
+      "out": { "stdout": "prompt" }
     },
     {
       "type": "run", "name": "spustit agenta",
       "block": "agent",
       "in":  { "model": "{%model%}", "systemPrompt": "{%systemPrompt%}", "workDir": "{%workDir%}", "stdin": "{%prompt%}" },
-      "out": { "result": "agentResult" }
+      "out": { "stdout": "agentResult" }
     },
 
     {
@@ -124,7 +124,7 @@
       "type": "run", "name": "založit pull request",
       "block": "workspace-pr",
       "in":  { "workDir": "{%workDir%}", "repo": "{%repo%}", "title": "{%title%}", "stdin": "{%description%}" },
-      "out": { "result": "prUrl" }
+      "out": { "stdout": "prUrl" }
     },
 
     {
@@ -140,7 +140,7 @@
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-Rs", "filter": "{text: .}", "stdin": "{%comment%}" },
-      "out": { "result": "commentJson" }
+      "out": { "stdout": "commentJson" }
     },
     {
       "type": "run", "name": "přidat komentář ke kartě",
@@ -151,12 +151,12 @@
     {
       "type": "run", "block": "curl-get",
       "in":  { "url": "https://api.trello.com/1/boards/{%boardId%}/lists?fields=id,name", "curlrc": "{%curlrc%}" },
-      "out": { "result": "listsJson" }
+      "out": { "stdout": "listsJson" }
     },
     {
       "type": "run", "block": "jq",
       "in":  { "flags": "-r", "filter": ".[] | select(.name == \"{%targetList%}\") | .id", "stdin": "{%listsJson%}" },
-      "out": { "result": "targetListId" }
+      "out": { "stdout": "targetListId" }
     },
     {
       "type": "set", "key": "moveBody", "value": "{\"idList\": \"{%targetListId%}\"}"
