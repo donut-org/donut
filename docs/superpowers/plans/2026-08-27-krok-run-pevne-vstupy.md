@@ -24,6 +24,7 @@
   4. `$nullable?->prop ?? $default` je `nullsafe.neverNull`, když je `prop` sama nenullable. Rozděl do meziproměnné: `$x = $obj?->prop;` a pak `$x ?? $default`.
   5. `.phpt` soubory PHPStan **neanalyzuje** (`paths: [src, tests]`, ale jen `.php`). Na typech záleží jen v `tests/inc/*.php`.
 - **Jména komponent v Nette musí odpovídat `[a-zA-Z0-9_]+`.** Jméno vstupu kamene je libovolný string, proto se jím nikdy neklíčuje kontejner.
+- **`git add` vždy s konkrétními cestami, nikdy `git add -A` ani `git add .`.** V pracovním stromu jsou nesledované položky, které do commitu nepatří: `.github/workflows/frontbot.yml`, `docs/logo.png`, `rss`, `donut-org_donut.sublime-workspace`. Pozor i na `git add <adresář>` — svezl by nesledovaný soubor uvnitř. Před každým commitem zkontroluj `git status --short`.
 - **Kanály jsou `stdout`, `stderr`, `exit_code`** — `Donut\Format\RunStep::Channels`. Nikdy je nepiš ručně, ber je z konstanty.
 
 ---
