@@ -47,12 +47,12 @@ $map = $run([
 		[
 			'type' => 'run', 'block' => 'echo',
 			'in' => ['text' => 'hi {%name%}'],
-			'out' => ['result' => 'greeting'],
+			'out' => ['stdout' => 'greeting'],
 		],
 		[
 			'type' => 'run', 'block' => 'upper',
 			'in' => ['stdin' => '{%greeting%}'],
-			'out' => ['result' => 'loud'],
+			'out' => ['stdout' => 'loud'],
 		],
 		[
 			'type' => 'if',
@@ -75,7 +75,7 @@ $map = $run([
 		[
 			'type' => 'run', 'block' => 'echo',
 			'in' => ['text' => '{%lines%}'],
-			'out' => ['result' => 'list'],
+			'out' => ['stdout' => 'list'],
 		],
 		[
 			'type' => 'foreach', 'over' => '{%list%}', 'as' => 'r',
@@ -90,7 +90,7 @@ Assert::same('line-third', $map['last']);
 $map = $run([
 	'name' => 'w',
 	'steps' => [
-		['type' => 'run', 'block' => 'echo', 'in' => ['text' => 'x'], 'out' => ['result' => 'v']],
+		['type' => 'run', 'block' => 'echo', 'in' => ['text' => 'x'], 'out' => ['stdout' => 'v']],
 		['type' => 'set', 'key' => 'url', 'value' => 'https://api/{%v%}/end'],
 	],
 ]);
@@ -115,7 +115,7 @@ $map = $run([
 	'steps' => [[
 		'type' => 'run', 'block' => 'echo',
 		'in' => ['text' => 'a; rm -rf /tmp/missing'],
-		'out' => ['result' => 'v'],
+		'out' => ['stdout' => 'v'],
 	]],
 ]);
 Assert::same('a; rm -rf /tmp/missing', $map['v']);

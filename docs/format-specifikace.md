@@ -177,7 +177,7 @@ Cesta je relativní k profilu, viz sekci 1.
       "type": "run",
       "block": "curl-get",
       "in":  { "url": "https://api.example.com/{%env%}/status" },
-      "out": { "result": "status", "exit_code": "rc" }
+      "out": { "stdout": "status", "exit_code": "rc" }
     },
     {
       "type": "if",
@@ -187,7 +187,7 @@ Cesta je relativní k profilu, viz sekci 1.
           "type": "run",
           "block": "jq",
           "in":  { "flags": "-r", "filter": ".version", "stdin": "{%status%}" },
-          "out": { "result": "verze" }
+          "out": { "stdout": "verze" }
         }
       ],
       "else": [
@@ -219,23 +219,23 @@ je **tvrdá chyba a konec běhu**.
 
 | kanál | obsah |
 |---|---|
-| `result` | standardní výstup procesu |
+| `stdout` | standardní výstup procesu |
 | `stderr` | chybový výstup |
 | `exit_code` | návratový kód jako text (`"0"`) |
 
-U `result` a `stderr` se **odřezává koncové odřádkování**, stejně jako to
+U `stdout` a `stderr` se **odřezává koncové odřádkování**, stejně jako to
 dělá `$(...)` v shellu. Bez toho by `jq -r '.id'` vrátil `5f2abc\n` a ta
 hodnota by se pak vlepila doprostřed URL. Vnitřní odřádkování zůstává
 nedotčené — odřezává se jen konec.
 
-Kanál, který krok v `out` neuvede, se zahodí — krok mapující jen `result`
+Kanál, který krok v `out` neuvede, se zahodí — krok mapující jen `stdout`
 zahazuje `stderr` i `exit_code`. Krok bez `out` mapu nemění.
 
 Standardní výstup se řídí stejným pravidlem jako chybový: **zachytí se, jen
 když si ho krok vyžádá do `out`**. Jinak teče na terminál. Bez toho by krok
 nad `echo` nevypsal nic a workflow by nemělo jak dát člověku vědět.
 
-Něco jiného je jméno, které kanál **vůbec není** (`stdout`, `retcode`).
+Něco jiného je jméno, které kanál **vůbec není** (`result`, `retcode`).
 Takový klíč by nikdo nikdy nezapsal, zatímco autor workflow počítá s tím,
 že vznikne. To je překlep a validace ho odmítne, viz sekce 5.
 
@@ -377,7 +377,7 @@ je chyba před spuštěním prvního kroku.
   vycouvat
 - `{%STDIN%}` použito v `args`
 - `args` kamene odkazuje proměnnou, kterou kámen nedeklaruje jako `inputs`
-- `out` uvádí jméno, které není kanál (`result`, `stderr`, `exit_code`)
+- `out` uvádí jméno, které není kanál (`stdout`, `stderr`, `exit_code`)
 - neznámý operátor v podmínce
 - binární operátor v podmínce nemá `right`
 - objekt obsahuje klíč, který formát nezná — a to na **každé** úrovni, ne
@@ -425,6 +425,7 @@ v obou větvích `if`. `repo-check` tu cestu pokrývá.
 | `allow_failure` bere i pole exit kódů | `jptq task` vrací 1 pro „už ve frontě" a jiné kódy pro selhání |
 | **zrušen rozdíl mezi „nevyplněno" a `""`** | viz níže |
 | **odložen `output` a souborové výstupy** | přechod na stdin/stdout je učinil nepotřebnými |
+| **kanál `result` přejmenován na `stdout`** | `result` neříkalo, co v něm teče, a specifikace sama uváděla `stdout` jako příklad překlepu; po přejmenování je překlepem `result` a validace ho odmítne |
 | do mapy přibylo `CWD`, nic jiného z prostředí | cesty patří na příkazovou řádku |
 
 ### Zrušení rozdílu „nevyplněno" vs `""`
@@ -468,7 +469,7 @@ analýza posledního použití klíče, mazání ve `finally` i výjimka pro deb
 režim. Z v1 tím vypadává celý podsystém.
 
 Klíč `output` se tím scvrkl na jedinou legální hodnotu, a proto z formátu
-zmizel úplně. `result` je vždycky standardní výstup procesu. Až budou
+zmizel úplně. `stdout` je vždycky standardní výstup procesu. Až budou
 souborové výstupy potřeba, klíč se vrátí.
 
 ### Co přepis neověřil
