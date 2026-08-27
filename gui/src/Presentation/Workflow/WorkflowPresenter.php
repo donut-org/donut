@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Donut\Gui\Presentation\Workflow;
 
 use Donut\BlockRepository;
+use Donut\Format\Block;
 use Donut\Format\Condition;
 use Donut\Format\RunStep;
 use Donut\Format\Step;
 use Donut\Format\Workflow;
+use Donut\Gui\BlockInputs;
+use Donut\Gui\BlockInputSlot;
 use Donut\Gui\FormFactory;
 use Donut\Gui\KeyMap;
 use Donut\Gui\Presentation\LayoutTemplate;
@@ -44,6 +47,11 @@ final class WorkflowPresenter extends Presenter
 	private ?StepPath $stepAt = null;
 
 	private string $stepType = '';
+
+	private ?Block $block = null;
+
+	/** @var array<int, BlockInputSlot> */
+	private array $slots = [];
 
 	private ?Workflow $editedWorkflow = null;
 
@@ -121,7 +129,7 @@ final class WorkflowPresenter extends Presenter
 
 		} catch (ParseException $e) {
 			// Missing or broken blocks aren't a reason to hide the whole detail —
-			// same rule as in blockNames(). Without the validator only the
+			// same rule as on the block picker. Without the validator only the
 			// error itself is reported, but the header, the link to the
 			// envelope and the step tree stay; otherwise a fresh project
 			// without blocks/ would have a workflow that nothing more can be
@@ -173,10 +181,16 @@ final class WorkflowPresenter extends Presenter
 	}
 
 
-	public function actionStep(string $name, string $at, ?string $type = null): void
+	public function actionStep(string $name, string $at, ?string $type = null, ?string $block = null): void
 	{
 		/** @var WorkflowStepTemplate $template */
 		$template = $this->template;
+		// basename() same as in renderDetail() and the rest of this file: the
+		// name comes from the query string. It is checked against the path's
+		// own workflow name below, and WorkflowRepository::get() looks it up
+		// among the files that exist — basename() keeps both true even if a
+		// file path is ever assembled by hand again.
+		$name = \basename($name);
 
 		try {
 			$this->stepAt = StepPath::parse($at);
@@ -198,6 +212,42 @@ final class WorkflowPresenter extends Presenter
 				// A new step — not saved anywhere yet, just the type and target
 				// position.
 				$this->stepType = $type;
+			}
+
+			if ($this->stepType === 'run') {
+				// Editing takes the block from the step, same as the type:
+				// the step already says which block it calls, and a forged
+				// `block` in the address must not decide which inputs the
+				// form offers.
+				$blockName = $this->editedStep instanceof RunStep
+					? $this->editedStep->block
+					: ($block ?? '');
+
+				if ($blockName === '') {
+					throw new \InvalidArgumentException(
+						'A new run step needs the block it calls — start from the block picker.'
+					);
+				}
+
+				// A block that cannot be read leaves nothing to render: the
+				// whole input list comes from it. Unlike a broken workflow,
+				// there is no page to keep, so this ends the request.
+				// A local of its own, not $block: that parameter is the
+				// block name from the address, and overwriting it with a
+				// Block object would change the type of the name a reader is
+				// tracing.
+				$resolved = (new BlockRepository($this->blockDir()))->get($blockName);
+				$this->block = $resolved;
+
+				// The slots are built here, not in createComponentStepForm():
+				// the template needs them too, and Latte builds the form only
+				// at {form stepForm} — that is, after renderStep(). Built
+				// here they exist before both, and the order of rendering
+				// stops mattering.
+				$this->slots = BlockInputs::slots(
+					$resolved,
+					$this->editedStep instanceof RunStep ? $this->editedStep : null,
+				);
 			}
 
 		// Everything below arrives from the query string, so each failure is a
@@ -226,32 +276,81 @@ final class WorkflowPresenter extends Presenter
 	{
 		/** @var WorkflowStepTemplate $template */
 		$template = $this->template;
-		$template->name = $name;
+		// basename() same as in actionStep(): render gets the name from the
+		// address a second time, and the breadcrumb must name the workflow
+		// the action actually resolved, not the raw parameter.
+		$template->name = \basename($name);
 		$template->at = $at;
 		// The type from the address isn't read again — actionStep() already
 		// resolved it, and for editing an existing step derived it from the
 		// step itself, not from the address.
 		$template->type = $this->stepType;
-		$template->blocks = $this->blockNames();
+
+		// Split into a variable: $this->block?->name ?? '' reports
+		// nullsafe.neverNull to PHPStan (level max) — `name` itself is never
+		// null, only the block is.
+		$blockName = $this->block?->name;
+		$template->block = $blockName ?? '';
+		$template->slots = $this->slots;
 	}
 
 
 	/**
-	 * Block names for the dropdown list. A missing blocks directory isn't
-	 * a reason to crash the page — the list simply stays empty.
-	 *
-	 * @return array<string, string>
+	 * Which block will the new run step call? A run step cannot be created
+	 * without one — the whole input list comes from the block, so the form
+	 * has to know it before it is built.
 	 */
-	private function blockNames(): array
+	public function renderPickBlock(string $name, string $at): void
 	{
-		try {
-			$names = (new BlockRepository($this->blockDir()))->getNames();
+		/** @var WorkflowPickBlockTemplate $template */
+		$template = $this->template;
+		// basename() same as in renderDetail() and the rest of this file: the
+		// name comes from the query string. The page only builds links, so
+		// nothing here touches the disk — but the links it builds should name
+		// the same workflow every other entry point would resolve.
+		$name = \basename($name);
+		$template->name = $name;
+		$template->at = $at;
+		$template->dir = $this->blockDir();
 
-		} catch (ParseException) {
-			return [];
+		// The page only builds links, but a path that belongs elsewhere would
+		// produce links that fail one click later — with the message about
+		// the step form, not about the address that was wrong.
+		try {
+			if (StepPath::parse($at)->workflowName() !== $name) {
+				throw new \InvalidArgumentException("Path \"{$at}\" does not belong to workflow \"{$name}\".");
+			}
+		} catch (\InvalidArgumentException $e) {
+			$this->error($e->getMessage(), IResponse::S400_BadRequest);
 		}
 
-		return \array_combine($names, $names);
+		try {
+			$repository = new BlockRepository($this->blockDir());
+
+		} catch (ParseException $e) {
+			// The only error the constructor lets through is a missing
+			// directory, same as on Block:default — so the hint always applies.
+			$template->blocks = [];
+			$template->error = $e->getMessage() . ' ' . ProfileDir::hint();
+
+			return;
+		}
+
+		$blocks = [];
+
+		foreach ($repository->getNames() as $blockName) {
+			try {
+				$blocks[$blockName] = $repository->get($blockName);
+
+			} catch (ParseException $e) {
+				// A broken file must not hide the others — the same rule as
+				// `donut --list`.
+				$blocks[$blockName] = $e->getMessage();
+			}
+		}
+
+		$template->blocks = $blocks;
+		$template->error = null;
 	}
 
 
@@ -262,34 +361,64 @@ final class WorkflowPresenter extends Presenter
 		$form->addText('name', 'Step name');
 
 		if ($this->stepType === 'run') {
-			$form->addSelect('block', 'Block', $this->blockNames())
-				->setRequired('Choose a block.');
+			$block = $this->block;
 
-			$shape = $this->rowShape();
+			if ($block === null) {
+				// Reachable, even though actionStep() has already answered:
+				// its ParseException arm keeps the page (a broken block file
+				// or a missing blocks/ has to stay readable, or the message
+				// saying what to fix would be the thing that disappears) and
+				// only leaves $template->error behind.
+				//
+				// On a GET that is enough — step.latte wraps the form in
+				// {if !$error} and never asks for it. A POST never reaches
+				// the template: processSignal() resolves this component
+				// first, so the request has to end here instead. Same answer
+				// as for a block that isn't there at all — from the form's
+				// side the two are one case, there is nothing to build from.
+				$this->error('The block this step calls cannot be read, so the step form cannot be built.');
+			}
 
 			$in = $form->addContainer('in');
 
-			foreach ($shape['in'] as $i) {
+			foreach ($this->slots as $i => $slot) {
 				$row = $in->addContainer((string) $i);
-				// aria-label instead of a caption: the table header says what
-				// belongs in the column, but <th> names the cell, not the
-				// <input> inside it — a screen reader would otherwise just read
-				// "textbox". This also matches where labels live in this GUI
-				// (at addText()). A checkbox needs it set this way: {input,
-				// 'aria-label' => …} puts the attribute on the wrapping
-				// <label>, where it gets lost.
-				$row->addText('key')->setHtmlAttribute('aria-label', 'Block input');
-				$row->addText('value')->setHtmlAttribute('aria-label', 'Value');
+
+				// aria-label instead of a caption: the table's first column
+				// names the input, but <th> names the cell, not the <input>
+				// inside it — a screen reader would otherwise just read
+				// "textbox".
+				$value = $row->addText('value')
+					->setHtmlAttribute('aria-label', $slot->name)
+					->setDefaultValue($slot->value);
+
+				if ($slot->default !== null) {
+					$value->setHtmlAttribute('placeholder', $slot->default);
+				}
+
+				if (!$slot->declared) {
+					// Not dropped silently: the value stays visible until the
+					// user clears it themselves. An empty slot is not written
+					// to `in` at all, so clearing the field removes the key.
+					$value->addRule(
+						Form::Blank,
+						"Block \"{$block->name}\" does not declare the input \"{$slot->name}\" — clear the field to drop it."
+					);
+
+				} elseif ($slot->required) {
+					$value->setRequired("Fill in the required input \"{$slot->name}\".");
+				}
 			}
 
 			$out = $form->addContainer('out');
 
-			foreach ($shape['out'] as $i) {
-				$row = $out->addContainer((string) $i);
-				$row->addSelect('channel', null, \array_combine(RunStep::Channels, RunStep::Channels))
-					->setPrompt('—')
-					->setHtmlAttribute('aria-label', 'Block output');
-				$row->addText('value')->setHtmlAttribute('aria-label', 'Map key');
+			// Three channels, three fields. A variable list of dropdowns was
+			// machinery around a set that can never have a fourth member, and
+			// where more than three rows was always a mistake.
+			foreach (RunStep::Channels as $channel) {
+				$out->addText($channel)
+					// aria-label, see the in container above.
+					->setHtmlAttribute('aria-label', $channel);
 			}
 
 			$form->addText('timeout', 'Timeout (s)')
@@ -326,8 +455,9 @@ final class WorkflowPresenter extends Presenter
 		$form->addSubmit('save', 'Save');
 		$form->onSuccess[] = $this->stepFormSucceeded(...);
 
-		// Same question as in rowShape(), and so the same mechanism: not
-		// "is this a POST?", but "does this POST belong to this form?". Today
+		// Same question as for the header form's inputs container below, and
+		// so the same mechanism: not "is this a POST?", but "does this POST
+		// belong to this form?". Today
 		// step.latte has only one form, so a foreign signal can't arrive here —
 		// but one idiom for one question across all three forms is what keeps
 		// a GET with the signal in the address out of play.
@@ -336,30 +466,6 @@ final class WorkflowPresenter extends Presenter
 		}
 
 		return $form;
-	}
-
-
-	/**
-	 * @return array{in: array<int, int>, out: array<int, int>}
-	 */
-	private function rowShape(): array
-	{
-		// A different signal carries no in/out at all — without this
-		// condition the form would be built with zero rows and the page would
-		// show an empty step that in fact isn't empty.
-		$post = $this->isFormPost('stepForm-submit')
-			? $this->getHttpRequest()->getPost()
-			: null;
-
-		$in = \is_array($post) ? ($post['in'] ?? null) : null;
-		$out = \is_array($post) ? ($post['out'] ?? null) : null;
-
-		$step = $this->editedStep;
-
-		return [
-			'in' => RowShape::of($in, $step instanceof RunStep ? \count($step->in) : 0),
-			'out' => RowShape::of($out, $step instanceof RunStep ? \count($step->out) : 0),
-		];
 	}
 
 
@@ -386,6 +492,32 @@ final class WorkflowPresenter extends Presenter
 	{
 		/** @var array<string, mixed> $values */
 		$values = $form->getValues('array');
+
+		if ($this->stepType === 'run') {
+			$block = $this->block;
+
+			if ($block === null) {
+				// Unreachable, unlike its twin in createComponentStepForm():
+				// onSuccess only fires for a form that was built, and
+				// building it is what ends the request when the block cannot
+				// be read. This guard is here for the type, not for the case.
+				throw new \LogicException('unreachable — createComponentStepForm() ends the request without a block');
+			}
+
+			// The block comes from the server, same as the type: the form
+			// stopped offering it when the dropdown went away, so the POST
+			// says nothing about it — and must not. Without this the step
+			// would be written with an empty block and the next edit of it
+			// would be a 400.
+			$values['block'] = $block->name;
+
+			// The name of each input comes from the slots, not from the POST:
+			// $values['in'][$i] belongs to $this->slots[$i]. An empty value is
+			// dropped rather than written as an empty template — see
+			// BlockInputs::rows().
+			$values['in'] = BlockInputs::rows($this->slots, $values['in'] ?? null);
+		}
+
 		$rawName = $this->getParameter('name');
 		$name = \is_string($rawName) ? $rawName : '';
 

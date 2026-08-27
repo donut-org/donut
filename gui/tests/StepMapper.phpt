@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use Donut\BlockRepository;
 use Donut\Format\Condition;
 use Donut\Format\ForeachStep;
 use Donut\Format\IfStep;
 use Donut\Format\RunStep;
 use Donut\Format\SetStep;
+use Donut\Gui\BlockInputs;
 use Donut\Gui\StepMapper;
 use Donut\Parser\WorkflowParser;
 use Donut\Template;
@@ -30,6 +32,16 @@ $checked = 0;
 // from the overview. toStep() therefore returns a step with empty branches,
 // and for these the round-trip must be compared against a step stripped of
 // its children.
+//
+// A RunStep's `in` is the same kind of omission: toValues() deliberately
+// stops building the in rows, because the container they belong to is keyed
+// by position now and its names come from the block (BlockInputs::slots()),
+// not from this method. So the round-trip is compared against a step
+// stripped of its inputs. The two directions are asserted apart from each
+// other: that toValues() really omits `in` under "toValues gives the shape
+// the form expects" further down, and that toStep() still reads in rows
+// under "run: all optional fields" and "the order of keys from POST isn't
+// guaranteed" above it.
 $bare = function (Donut\Format\Step $step): Donut\Format\Step {
 	if ($step instanceof IfStep) {
 		return new IfStep($step->condition, [], [], $step->name);
@@ -37,6 +49,17 @@ $bare = function (Donut\Format\Step $step): Donut\Format\Step {
 
 	if ($step instanceof ForeachStep) {
 		return new ForeachStep($step->over, $step->as, [], $step->name);
+	}
+
+	if ($step instanceof RunStep) {
+		return new RunStep(
+			$step->block,
+			[],
+			$step->out,
+			$step->timeout,
+			$step->allowFailure,
+			$step->name,
+		);
 	}
 
 	return $step;
@@ -68,6 +91,64 @@ foreach ($files === false ? [] : $files as $file) {
 
 Assert::same(96, $checked, 'the reference workload has 96 steps');
 
+// --- the reference workload through the slots, not just through the mapper ---
+//
+// toValues() no longer carries `in`, so $bare() strips it from the round trip
+// above — and with it the only place `in` met the whole corpus. That breadth
+// is restored here: every real run step's inputs go out through
+// BlockInputs::slots() and come back through rows(), the way the form moves
+// them. Two things this buys that the hand-written fixtures
+// cannot: it is the only whole-corpus proof that opening and re-saving an
+// existing workflow through the new form is lossless, and it fails loudly the
+// day a block stops declaring an input that a workflow still passes it.
+
+$blocks = new BlockRepository(__DIR__ . '/../../docs/workflows/donut/blocks');
+$runs = 0;
+
+$walkIn = function (array $steps) use (&$walkIn, $blocks, &$runs): void {
+	foreach ($steps as $step) {
+		if ($step instanceof RunStep) {
+			$runs++;
+			$slots = BlockInputs::slots($blocks->get($step->block), $step);
+			$post = [];
+
+			foreach ($slots as $i => $slot) {
+				$post[$i] = ['value' => $slot->value];
+			}
+
+			$rebuilt = StepMapper::toStep([
+				'type' => 'run', 'name' => '', 'block' => $step->block,
+				'in' => BlockInputs::rows($slots, $post),
+				'out' => [], 'timeout' => '',
+				'allowFailure' => 'inherit', 'allowFailureCodes' => '',
+			]);
+
+			Assert::same(
+				\serialize($step->in),
+				\serialize($rebuilt->in),
+				"in round-trip through the slots, block {$step->block}"
+			);
+		}
+
+		if ($step instanceof IfStep) {
+			$walkIn($step->then);
+			$walkIn($step->else);
+		}
+
+		if ($step instanceof ForeachStep) {
+			$walkIn($step->steps);
+		}
+	}
+};
+
+foreach ($files === false ? [] : $files as $file) {
+	$walkIn($parser->parseFile($file)->steps);
+}
+
+// The guard that makes the walk fail loudly if the corpus stops being walked
+// at all — 75 of the 96 steps above are run steps.
+Assert::same(75, $runs, 'the reference workload has 75 run steps');
+
 // --- run: all optional fields ---
 $run = StepMapper::toStep([
 	'type' => 'run',
@@ -78,7 +159,7 @@ $run = StepMapper::toStep([
 		0 => ['key' => 'stdin', 'value' => '{%payload%}'],
 		2 => ['key' => 'filter', 'value' => '.id'],
 	],
-	'out' => [1 => ['channel' => 'stdout', 'value' => 'cardId']],
+	'out' => ['stdout' => 'cardId'],
 	'timeout' => '90',
 	'allowFailure' => 'list',
 	'allowFailureCodes' => '0, 1',
@@ -114,14 +195,44 @@ $withEmpty = StepMapper::toStep([
 	// valid input, format spec section 6: an empty string and unfilled are
 	// the same thing.
 	'in' => [0 => ['key' => '', 'value' => 'nowhere'], 1 => ['key' => 'a', 'value' => 'x'], 2 => ['key' => 'b', 'value' => '']],
-	'out' => [0 => ['channel' => 'stdout', 'value' => '']],
+	'out' => ['stdout' => ''],
 ] + $base);
 
 Assert::same(['a', 'b'], \array_keys($withEmpty->in));
 Assert::same('', $withEmpty->in['b']->getSource(), 'a filled-in key with an empty value is not dropped');
 Assert::same([], $withEmpty->out);
 
-// --- the order of keys from POST isn't guaranteed, and order matters for both in and out ---
+// --- out: three named fields, not rows ---
+//
+// An empty field means the channel is not mapped; there is no such thing as
+// a row with a channel and no key.
+$run2 = StepMapper::toStep([
+	'type' => 'run', 'name' => '', 'block' => 'jq',
+	'in' => [],
+	'out' => ['stdout' => 'cardId', 'stderr' => '', 'exit_code' => 'rc'],
+	'timeout' => '', 'allowFailure' => 'inherit', 'allowFailureCodes' => '',
+]);
+
+Assert::type(RunStep::class, $run2);
+Assert::same(['stdout' => 'cardId', 'exit_code' => 'rc'], $run2->out, 'an empty field is not a mapping');
+
+// a channel the form cannot offer is ignored — the fields are built from
+// RunStep::Channels, so anything else came from a hand-built POST
+$forged = StepMapper::toStep([
+	'type' => 'run', 'name' => '', 'block' => 'jq',
+	'in' => [], 'out' => ['result' => 'x', 'stdout' => 'ok'],
+	'timeout' => '', 'allowFailure' => 'inherit', 'allowFailureCodes' => '',
+]);
+
+Assert::same(['stdout' => 'ok'], $forged->out);
+
+// and back: every channel is present, unmapped ones as an empty string, so
+// setDefaults() has something to put in each of the three fields
+$roundTrip = StepMapper::toValues(new RunStep(block: 'jq', out: ['stdout' => 'id']));
+
+Assert::same(['stdout' => 'id', 'stderr' => '', 'exit_code' => ''], $roundTrip['out']);
+
+// --- the order of keys from POST isn't guaranteed, and order matters for in ---
 //
 // Without ksort() in rows(), a descending key order would show up as a
 // reversed row order — the index hole tested elsewhere in the file is
@@ -132,14 +243,13 @@ $reversed = StepMapper::toStep([
 		1 => ['key' => 'second', 'value' => 'b'],
 		0 => ['key' => 'first', 'value' => 'a'],
 	],
-	'out' => [
-		1 => ['channel' => 'stderr', 'value' => 'err'],
-		0 => ['channel' => 'stdout', 'value' => 'res'],
-	],
+	// out is looked up by channel name now, not by position — its raw key
+	// order can't affect anything, scrambled here on purpose.
+	'out' => ['exit_code' => 'ec', 'stdout' => 'res', 'stderr' => 'err'],
 ] + $base);
 
 Assert::same(['first', 'second'], \array_keys($reversed->in));
-Assert::same(['stdout' => 'res', 'stderr' => 'err'], $reversed->out);
+Assert::same(['stdout' => 'res', 'stderr' => 'err', 'exit_code' => 'ec'], $reversed->out, 'out is keyed by channel, its raw order is irrelevant');
 
 // --- '' means unfilled ---
 
@@ -194,8 +304,11 @@ $values = StepMapper::toValues(new RunStep(
 
 Assert::same('run', $values['type']);
 Assert::same('jq', $values['block']);
-Assert::same([['key' => 'stdin', 'value' => '{%p%}']], $values['in']);
-Assert::same([['channel' => 'stdout', 'value' => 'id']], $values['out']);
+// `in` is not among the values any more: the inputs travel with the slots,
+// see BlockInputs. Asserting its absence is what keeps a half-finished
+// revert from passing.
+Assert::false(array_key_exists('in', $values), 'toValues() does not build the in rows');
+Assert::same(['stdout' => 'id', 'stderr' => '', 'exit_code' => ''], $values['out']);
 Assert::same('30', $values['timeout']);
 Assert::same('list', $values['allowFailure']);
 Assert::same('0, 1', $values['allowFailureCodes']);

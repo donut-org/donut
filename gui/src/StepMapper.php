@@ -21,8 +21,9 @@ use Donut\Template;
  * why toStep() returns an if or foreach step with empty branches, and the
  * caller fills them in itself.
  *
- * Indexes in in and out can have holes — JS never renumbers rows. The
- * sorting happens here, same as in BlockMapper.
+ * Indexes in in can have holes — JS never renumbers rows. The sorting
+ * happens here, same as in BlockMapper. out has no such thing any more: it
+ * is three named fields, one per RunStep::Channels entry.
  */
 final class StepMapper
 {
@@ -74,23 +75,32 @@ final class StepMapper
 	public static function toValues(Step $step): array
 	{
 		if ($step instanceof RunStep) {
-			$in = [];
-
-			foreach ($step->in as $key => $template) {
-				$in[] = ['key' => $key, 'value' => $template->getSource()];
-			}
-
 			$out = [];
 
-			foreach ($step->out as $channel => $value) {
-				$out[] = ['channel' => $channel, 'value' => $value];
+			// Every channel is present, unmapped ones as an empty string:
+			// setDefaults() has to have something for each of the three
+			// fields, and an absent key would leave the last value standing
+			// after a failed submit.
+			foreach (RunStep::Channels as $channel) {
+				$out[$channel] = $step->out[$channel] ?? '';
 			}
 
+			// `in` is not returned, and leaving it out is load-bearing, not
+			// tidiness. `in` is a real control — a Container — so
+			// Container::setValues() recurses into it instead of ignoring it,
+			// and createComponentStepForm() calls setDefaults() *after* every
+			// slot's own setDefaultValue(), so a stale `in` would win over the
+			// values BlockInputs::slots() put there. The two shapes are keyed
+			// differently as well: the rows this method used to build are
+			// keyed by insertion order, the container by slot position, and
+			// the two do not line up. A stale `in` would therefore write
+			// values into the wrong inputs — a right-looking field showing a
+			// wrong value, which the user then saves. StepMapper.phpt pins
+			// the absence, and this is why.
 			return [
 				'type' => 'run',
 				'name' => $step->name ?? '',
 				'block' => $step->block,
-				'in' => $in,
 				'out' => $out,
 				'timeout' => $step->timeout === null ? '' : (string) $step->timeout,
 				'allowFailure' => match (true) {
@@ -204,6 +214,13 @@ final class StepMapper
 
 
 	/**
+	 * The three channels as three named fields. An empty field means the
+	 * channel is not mapped — that is the only way to say it, so a row with a
+	 * channel and no key no longer exists as a concept.
+	 *
+	 * Anything outside RunStep::Channels is ignored: the form offers exactly
+	 * those three, so a different key came from a hand-built POST.
+	 *
 	 * @param  mixed $raw
 	 * @return array<string, string>
 	 */
@@ -211,12 +228,10 @@ final class StepMapper
 	{
 		$out = [];
 
-		foreach (self::rows($raw) as $row) {
-			$channel = self::text($row['channel'] ?? '');
-			$value = self::text($row['value'] ?? '');
+		foreach (RunStep::Channels as $channel) {
+			$value = self::text(\is_array($raw) ? ($raw[$channel] ?? '') : '');
 
-			// A channel without a key writes nowhere — it's an unfinished row.
-			if ($channel !== '' && $value !== '') {
+			if ($value !== '') {
 				$out[$channel] = $value;
 			}
 		}
@@ -227,7 +242,7 @@ final class StepMapper
 
 	/**
 	 * Rows sorted by index. The order of keys from POST isn't guaranteed,
-	 * and order matters for both in and out.
+	 * and order matters for in.
 	 *
 	 * @param  mixed $raw
 	 * @return list<array<array-key, mixed>>
