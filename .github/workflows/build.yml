@@ -21,3 +21,15 @@ jobs:
 
     static-analysis:
         uses: janpecha/actions/.github/workflows/phpstan.yml@master
+
+    gui-tests:
+        uses: janpecha/actions/.github/workflows/nette-tester-project.yml@master
+        with:
+            phpVersions: '["8.3", "8.4"]'
+            workingDirectory: gui
+
+    gui-static-analysis:
+        uses: janpecha/actions/.github/workflows/phpstan.yml@master
+        with:
+            phpVersions: '["8.3"]'
+            workingDirectory: gui
