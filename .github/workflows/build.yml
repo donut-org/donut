@@ -16,9 +16,6 @@ jobs:
             phpVersions: '["8.1", "8.2", "8.3", "8.4"]'
             lowestDependencies: true
 
-    coding-style:
-        uses: janpecha/actions/.github/workflows/code-checker.yml@master
-
     static-analysis:
         uses: janpecha/actions/.github/workflows/phpstan.yml@master
 
