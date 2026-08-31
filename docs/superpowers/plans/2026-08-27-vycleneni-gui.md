@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Jádro `donut-org/donut`: `type: library`, PHP `>=8.1`, matice 8.1–8.4.
+- Jádro `donut-org/donut`: `type: library`, PHP `>=8.2`, matice 8.2–8.4.
 - GUI `donut-org/donut-gui`: `type: project`, PHP `>=8.3`, matice 8.3–8.4.
 - Obojí vychází jako verze **1.0.0**.
 - `composer.lock` GUI **zůstává sledovaný** — u `type: project` rozdávaného přes `create-project` dostane uživatel reprodukovatelné prostředí.

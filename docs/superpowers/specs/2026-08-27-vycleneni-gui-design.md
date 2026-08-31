@@ -26,7 +26,7 @@ odpovídajícího zisku.
 
 Rozdělení sedí i na to, co už dnes platí: dva composer projekty, dvě sady
 závislostí (jádro `nette/utils`, GUI Nette application, latte, tracy,
-forms), dvě minimální verze PHP (8.1 vs 8.3), a vazba jen jedním směrem —
+forms), dvě minimální verze PHP (8.2 vs 8.3), a vazba jen jedním směrem —
 GUI sahá na 24 tříd jádra, jádro o GUI neví nic.
 
 Co **není** argumentem pro vyčlenění, i když to tak vypadá: že testy GUI
@@ -39,7 +39,7 @@ spuštění — ale opravit se to dá bez rozdělení, viz „CI" níže.
 | | `donut-org/donut` | `donut-org/donut-gui` |
 |---|---|---|
 | typ | `library` | `project` |
-| PHP | `>=8.1`, matice 8.1–8.4 | `>=8.3`, matice 8.3–8.4 |
+| PHP | `>=8.2`, matice 8.2–8.4 | `>=8.3`, matice 8.3–8.4 |
 | instalace | `composer require` | `composer create-project` |
 | vazba | neví o GUI | `"donut-org/donut": "^1.0"` |
 
