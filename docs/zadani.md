@@ -51,7 +51,9 @@ Formát souborů: viz `format-specifikace.md`.
    sada testuje jednotlivé příkazy, ne to, že si s donutem sedí argumenty.
    To prověří teprve `donut card-dev` na skutečné kartě.
 5. ~~GUI~~ — hotovo, autorské prostředí, stavělo se po vrstvách,
-   viz `superpowers/specs/2026-08-05-gui-design.md` a `gui/`
+   viz `superpowers/specs/2026-08-05-gui-design.md` a `gui/`. Návrhové
+   dokumenty vrstev 1–3 (kromě serializéru) i bývalý adresář `gui/`
+   jsou teď v repozitáři `donut-org/donut-gui`.
    - ~~vrstva 1: validace u kroku a přehled kamenů~~ — hotovo, jen pro čtení
    - ~~vrstva 2: tok klíčů~~ — hotovo,
      viz `superpowers/specs/2026-08-06-gui-vrstva2-design.md`
