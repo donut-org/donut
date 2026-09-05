@@ -130,6 +130,7 @@ In Czech:
 | [`docs/zadani.md`](docs/zadani.md) | what this is for and what is left to build |
 | [`docs/workflows/donut/`](docs/workflows/donut/) | a real workload — 15 blocks and 4 workflows |
 | [`docs/superpowers/specs/`](docs/superpowers/specs/) | the design document behind each part |
+| [`donut-org/donut-gui`](https://github.com/donut-org/donut-gui) | authoring environment for workflows and blocks |
 
 ------------------------------
 

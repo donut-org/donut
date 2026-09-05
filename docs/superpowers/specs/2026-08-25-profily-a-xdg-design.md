@@ -10,7 +10,8 @@ proměnnými prostředí.
 
 Nahrazuje sekci „Kde hledá kameny a workflow" v
 `2026-08-03-cli-design.md` a rozhodnutí „server běží v tom pracovním
-adresáři, ze kterého ho někdo spustil" v `2026-08-05-gui-design.md`.
+adresáři, ze kterého ho někdo spustil" v `2026-08-05-gui-design.md`
+(nově v repozitáři `donut-org/donut-gui`).
 
 ## Proč
 

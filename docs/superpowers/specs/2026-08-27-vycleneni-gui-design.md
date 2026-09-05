@@ -210,6 +210,15 @@ i odpovídající plán, pokud oba existují.
 Subtree split je nepřenese; leží mimo `gui/`, takže jdou zvlášť běžným
 commitem. Historii dokumentace tím ztratí, kód ne.
 
+Stejný osud stihl i ukázkovou sadu workflow v `docs/workflows/donut/`
+(`readme.md`, `blocks/*.json`, `workflows/*.json`, 20 souborů) — devět
+testů GUI k ní přistupuje relativní cestou a `readme.md` i `Makefile`
+ji vydávají za demo data, takže musela jít s dokumentací stejným běžným
+commitem. Na rozdíl od dokumentace se ale **kopíruje, ne přesouvá** —
+donut si vlastní kopii ponechává, protože ji používají i tři jeho
+vlastní testy (`tests/Donut/Writer.roundTrip.phpt`,
+`acceptance.rewrite.phpt`, `acceptance.negative.phpt`).
+
 **Zůstávají v donutu** tři dokumenty, které patří oběma stranám,
 protože všechny tři měnily jádro a GUI je jen následovalo:
 
