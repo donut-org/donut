@@ -6,14 +6,14 @@
 
 **Architecture:** Kód se přenese `git subtree split --prefix=gui`, takže si vezme svých 148 commitů historie. V novém repu nahradí path repozitář tagovaný constraint `"donut-org/donut": "^1.0"`; souběžný vývoj nad jádrem obstará druhý manifest `composer-dev.json`. Dokumentace GUI jde s ním, křížové odkazy se opraví na pět konkrétních míst.
 
-**Tech Stack:** PHP 8.3+, Composer 2, Nette (application, bootstrap, forms, latte), Tracy, Nette Tester, PHPStan, GitHub Actions (`janpecha/actions`).
+**Tech Stack:** PHP 8.4+, Composer 2, Nette (application, bootstrap, forms, latte), Tracy, Nette Tester, PHPStan, GitHub Actions (`janpecha/actions`).
 
 **Spec:** `docs/superpowers/specs/2026-08-27-vycleneni-gui-design.md`
 
 ## Global Constraints
 
-- Jádro `donut-org/donut`: `type: library`, PHP `>=8.2`, matice 8.2–8.4.
-- GUI `donut-org/donut-gui`: `type: project`, PHP `>=8.3`, matice 8.3–8.4.
+- Jádro `donut-org/donut`: `type: library`, PHP `>=8.4`, matice 8.4–8.5.
+- GUI `donut-org/donut-gui`: `type: project`, PHP `>=8.4`, matice 8.4–8.5.
 - Obojí vychází jako verze **1.0.0**.
 - `composer.lock` GUI **zůstává sledovaný** — u `type: project` rozdávaného přes `create-project` dostane uživatel reprodukovatelné prostředí.
 - PHPStan `level: max`, nula chyb, nad `src` a `tests`.
@@ -74,13 +74,13 @@ Do `.github/workflows/build.yml` za stávající job `static-analysis`:
     gui-tests:
         uses: janpecha/actions/.github/workflows/nette-tester-project.yml@master
         with:
-            phpVersions: '["8.3", "8.4"]'
+            phpVersions: '["8.4", "8.5"]'
             workingDirectory: gui
 
     gui-static-analysis:
         uses: janpecha/actions/.github/workflows/phpstan.yml@master
         with:
-            phpVersions: '["8.3"]'
+            phpVersions: '["8.4"]'
             workingDirectory: gui
 ```
 
@@ -101,7 +101,7 @@ git commit -m "Run the GUI test suite and PHPStan in CI"
 
 - [ ] **Step 7: Ověřit zelený build**
 
-Po pushi zkontroluj běh na GitHubu. Expected: joby `gui-tests` (8.3, 8.4) a `gui-static-analysis` proběhnou zeleně. Dokud nejsou zelené, další tasky nezačínej — od Tasku 3 už se `gui/` stěhuje a rozbité testy by se hledaly ve špatném repu.
+Po pushi zkontroluj běh na GitHubu. Expected: joby `gui-tests` (8.4, 8.5) a `gui-static-analysis` proběhnou zeleně. Dokud nejsou zelené, další tasky nezačínej — od Tasku 3 už se `gui/` stěhuje a rozbité testy by se hledaly ve špatném repu.
 
 ---
 
@@ -276,7 +276,7 @@ Tři změny: pryč `repositories`, `"*"` → `"^1.0"`, pryč `minimum-stability`
 		{"type": "other", "url": "https://www.janpecha.cz/donate/"}
 	],
 	"require": {
-		"php": ">=8.3",
+		"php": ">=8.4",
 		"donut-org/donut": "^1.0",
 		"nette/application": "^3.2",
 		"nette/bootstrap": "^3.2",
@@ -308,7 +308,7 @@ Stejný obsah, ale s path repem a volným constraintem. Duplicita seznamu závis
 		{"type": "path", "url": "../donut", "options": {"symlink": true}}
 	],
 	"require": {
-		"php": ">=8.3",
+		"php": ">=8.4",
 		"donut-org/donut": "*",
 		"nette/application": "^3.2",
 		"nette/bootstrap": "^3.2",
@@ -402,7 +402,7 @@ git commit -m "Depend on the released core instead of a path repository"
 
 - [ ] **Step 1: Vytvořit workflow**
 
-Stejná sestava jako u jádra, jen matice 8.3/8.4 a bez `workingDirectory` — GUI je teď v kořeni.
+Stejná sestava jako u jádra, jen bez `workingDirectory` — GUI je teď v kořeni.
 
 ```yaml
 name: Build
@@ -420,7 +420,7 @@ jobs:
     tests:
         uses: janpecha/actions/.github/workflows/nette-tester-project.yml@master
         with:
-            phpVersions: '["8.3", "8.4"]'
+            phpVersions: '["8.4", "8.5"]'
 
     coding-style:
         uses: janpecha/actions/.github/workflows/code-checker.yml@master
@@ -428,7 +428,7 @@ jobs:
     static-analysis:
         uses: janpecha/actions/.github/workflows/phpstan.yml@master
         with:
-            phpVersions: '["8.3"]'
+            phpVersions: '["8.4"]'
 ```
 
 - [ ] **Step 2: Ověřit syntaxi**
@@ -449,7 +449,7 @@ git push
 
 - [ ] **Step 4: Ověřit zelený build**
 
-Expected: `tests` na 8.3 i 8.4, `coding-style` a `static-analysis` zeleně. Kdyby `coding-style` hlásil nálezy, oprav je v samostatném commitu — z donutu se přenesla nastavení, která tenhle job dosud na `gui/` nikdy nespustil.
+Expected: `tests` na 8.4 i 8.5 a `static-analysis` zeleně. Kdyby `coding-style` hlásil nálezy, oprav je v samostatném commitu — z donutu se přenesla nastavení, která tenhle job dosud na `gui/` nikdy nespustil.
 
 ---
 

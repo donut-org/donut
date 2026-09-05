@@ -26,7 +26,7 @@ odpovídajícího zisku.
 
 Rozdělení sedí i na to, co už dnes platí: dva composer projekty, dvě sady
 závislostí (jádro `nette/utils`, GUI Nette application, latte, tracy,
-forms), dvě minimální verze PHP (8.2 vs 8.3), a vazba jen jedním směrem —
+forms), stejná minimální verze PHP (8.4), a vazba jen jedním směrem —
 GUI sahá na 24 tříd jádra, jádro o GUI neví nic.
 
 Co **není** argumentem pro vyčlenění, i když to tak vypadá: že testy GUI
@@ -39,7 +39,7 @@ spuštění — ale opravit se to dá bez rozdělení, viz „CI" níže.
 | | `donut-org/donut` | `donut-org/donut-gui` |
 |---|---|---|
 | typ | `library` | `project` |
-| PHP | `>=8.2`, matice 8.2–8.4 | `>=8.3`, matice 8.3–8.4 |
+| PHP | `>=8.4`, matice 8.4–8.5 | `>=8.4`, matice 8.4–8.5 |
 | instalace | `composer require` | `composer create-project` |
 | vazba | neví o GUI | `"donut-org/donut": "^1.0"` |
 
@@ -166,7 +166,7 @@ disku.
 `janpecha/actions` nabízí `nette-tester-library.yml`,
 **`nette-tester-project.yml`**, `code-checker.yml`, `phpstan.yml`
 a `frontbot.yml`. GUI je `type: project`, takže mu sedí
-`nette-tester-project.yml`; matice PHP **8.3 a 8.4**. `phpstan.neon`
+`nette-tester-project.yml`; matice PHP **8.4 a 8.5**. `phpstan.neon`
 zůstává na `level: max` nad `src` a `tests`, i s `bootstrapFiles`.
 
 **CI GUI ale nemá čekat na vyčlenění.** Obě potřebná workflow —
@@ -178,13 +178,13 @@ přidáním dvou jobů do `.github/workflows/build.yml`:
     gui-tests:
         uses: janpecha/actions/.github/workflows/nette-tester-project.yml@master
         with:
-            phpVersions: '["8.3", "8.4"]'
+            phpVersions: '["8.4", "8.5"]'
             workingDirectory: gui
 
     gui-static-analysis:
         uses: janpecha/actions/.github/workflows/phpstan.yml@master
         with:
-            phpVersions: '["8.3"]'
+            phpVersions: '["8.4"]'
             workingDirectory: gui
 ```
 
@@ -249,7 +249,7 @@ Tento dokument zůstává v donutu — popisuje operaci na donutu.
    vyrobí symlink ve `vendor/donut-org/donut`.
 4. `vendor/bin/tester tests -C` i `vendor/bin/phpstan analyse` v novém
    repu projdou na nulu.
-5. CI nového repa proběhne zeleně na 8.3 i 8.4.
+5. CI nového repa proběhne zeleně na 8.4 i 8.5.
 6. V donutu `make test` a `make phpstan` projdou po odstranění `gui/`.
 7. `composer create-project donut-org/donut-gui` v prázdném adresáři
    dá spustitelné GUI — ověřit `make server` proti profilu.

@@ -30,7 +30,7 @@ check.
 composer require donut-org/donut
 ```
 
-Donut requires PHP 8.2 or later.
+Donut requires PHP 8.4 or later.
 
 Donut reads blocks and workflows from a profile, not from the current
 directory. Create the default one:
