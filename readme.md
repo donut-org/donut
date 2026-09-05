@@ -131,7 +131,7 @@ In Czech:
 | [`docs/workflows/donut/`](docs/workflows/donut/) | a real workload — 15 blocks and 4 workflows |
 | [`docs/superpowers/specs/`](docs/superpowers/specs/) | the design document behind each part |
 
-Also see [`donut-org/donut-gui`](https://github.com/donut-org/donut-gui) — authoring environment for workflows and blocks.
+Also see [`donut-org/donut-ui`](https://github.com/donut-org/donut-ui) — authoring environment for workflows and blocks.
 
 ------------------------------
 

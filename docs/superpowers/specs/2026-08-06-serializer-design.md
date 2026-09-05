@@ -14,7 +14,7 @@ Referenční pravda formátu je `docs/format-specifikace.md` verze 0.3.
 
 ## Kam patří ve vrstvě 3
 
-Vrstva 3 podle `2026-08-05-gui-design.md` v repozitáři `donut-org/donut-gui`
+Vrstva 3 podle `2026-08-05-gui-design.md` v repozitáři `donut-org/donut-ui`
 je na jeden
 spec příliš velká. Rozpadá se na tři projekty, každý s vlastním návrhem,
 plánem a použitelným výsledkem:

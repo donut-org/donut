@@ -5,7 +5,7 @@ Datum: 2026-08-27
 ## Cíl
 
 `gui/` opustí repozitář `donut-org/donut` a stane se samostatným
-repozitářem a balíčkem `donut-org/donut-gui`, instalovatelným přes
+repozitářem a balíčkem `donut-org/donut-ui`, instalovatelným přes
 `composer create-project`. Jádro zůstává knihovnou, GUI se stává
 projektem, který ji požaduje jako běžnou závislost.
 
@@ -14,7 +14,7 @@ projektem, který ji požaduje jako běžnou závislost.
 Rozhodla distribuce, ne velikost adresáře. **Packagist umí publikovat jen
 balíček, který má `composer.json` v kořeni repozitáře** — podadresář
 publikovat neumí. Jakmile má být GUI instalovatelné přes
-`composer create-project donut-org/donut-gui`, musí `gui/composer.json`
+`composer create-project donut-org/donut-ui`, musí `gui/composer.json`
 skončit v kořeni nějakého repozitáře. Zůstat jak je a zároveň být na
 Packagistu nejde.
 
@@ -36,7 +36,7 @@ spuštění — ale opravit se to dá bez rozdělení, viz „CI" níže.
 
 ## Cílový stav
 
-| | `donut-org/donut` | `donut-org/donut-gui` |
+| | `donut-org/donut` | `donut-org/donut-ui` |
 |---|---|---|
 | typ | `library` | `project` |
 | PHP | `>=8.4`, matice 8.4–8.5 | `>=8.4`, matice 8.4–8.5 |
@@ -79,7 +79,7 @@ Vznikne větev, kde je obsah `gui/` v kořeni a historie jen těch commitů,
 které se GUI dotkly. Do prázdného nového repozitáře:
 
 ```bash
-mkdir ../donut-gui && cd ../donut-gui && git init
+mkdir ../donut-ui && cd ../donut-ui && git init
 git remote add source ../donut
 git fetch source gui-only
 git checkout -b master FETCH_HEAD
@@ -132,7 +132,7 @@ používaný jen lokálně:
 
 ```json
 {
-	"name": "donut-org/donut-gui",
+	"name": "donut-org/donut-ui",
 	"repositories": [
 		{"type": "path", "url": "../donut", "options": {"symlink": true}}
 	],
@@ -199,7 +199,7 @@ Návrhové dokumenty a plány GUI jdou s ním. Rozsah je větší, než vypadá
 na první pohled — nejde o jeden design a šest plánů, ale zhruba
 o **dvacet dokumentů**.
 
-**Jdou do `donut-org/donut-gui/docs/`** (deset specifikací a deset
+**Jdou do `donut-org/donut-ui/docs/`** (deset specifikací a deset
 plánů):
 
 `gui-design`, `gui-vrstva1`, `gui-vrstva2`, `editace-kamene`,
@@ -243,7 +243,7 @@ Tento dokument zůstává v donutu — popisuje operaci na donutu.
 - `git rm -r gui`
 - z `.github/workflows/build.yml` odejdou joby `gui-tests`
   a `gui-static-analysis`, přidané mezitím podle sekce „CI"
-- readme dostane odkaz na `donut-org/donut-gui` místo mlčení o GUI
+- readme dostane odkaz na `donut-org/donut-ui` místo mlčení o GUI
 - kořenový `.gitignore` ztratí pravidla, která platila jen pro GUI
 - `gui/readme.md` dnes končí větou „CI matice donutu `gui/` zatím
   nespouští — je to jiný composer projekt a chystá se do vlastního
@@ -260,7 +260,7 @@ Tento dokument zůstává v donutu — popisuje operaci na donutu.
    repu projdou na nulu.
 5. CI nového repa proběhne zeleně na 8.4 i 8.5.
 6. V donutu `make test` a `make phpstan` projdou po odstranění `gui/`.
-7. `composer create-project donut-org/donut-gui` v prázdném adresáři
+7. `composer create-project donut-org/donut-ui` v prázdném adresáři
    dá spustitelné GUI — ověřit `make server` proti profilu.
 
 ## Co se vědomě neřeší

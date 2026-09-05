@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Přesunout `gui/` z repozitáře `donut-org/donut` do samostatného repozitáře a balíčku `donut-org/donut-gui`, instalovatelného přes `composer create-project`.
+**Goal:** Přesunout `gui/` z repozitáře `donut-org/donut` do samostatného repozitáře a balíčku `donut-org/donut-ui`, instalovatelného přes `composer create-project`.
 
 **Architecture:** Kód se přenese `git subtree split --prefix=gui`, takže si vezme svých 148 commitů historie. V novém repu nahradí path repozitář tagovaný constraint `"donut-org/donut": "^1.0"`; souběžný vývoj nad jádrem obstará druhý manifest `composer-dev.json`. Dokumentace GUI jde s ním, křížové odkazy se opraví na pět konkrétních míst.
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Jádro `donut-org/donut`: `type: library`, PHP `>=8.4`, matice 8.4–8.5.
-- GUI `donut-org/donut-gui`: `type: project`, PHP `>=8.4`, matice 8.4–8.5.
+- GUI `donut-org/donut-ui`: `type: project`, PHP `>=8.4`, matice 8.4–8.5.
 - Obojí vychází jako verze **1.0.0**.
 - `composer.lock` GUI **zůstává sledovaný** — u `type: project` rozdávaného přes `create-project` dostane uživatel reprodukovatelné prostředí.
 - PHPStan `level: max`, nula chyb, nad `src` a `tests`.
@@ -160,12 +160,12 @@ Expected: mezi verzemi je `v1.0.0`. Packagist se aktualizuje přes webhook; poku
 ### Task 3: Split kódu a založení nového repozitáře
 
 **Files:**
-- Create: nový repozitář `donut-org/donut-gui` (lokálně `../donut-gui`)
+- Create: nový repozitář `donut-org/donut-ui` (lokálně `../donut-ui`)
 - Modify: nic v donutu (větev `gui-only` je pomocná)
 
 **Interfaces:**
 - Consumes: tag `v1.0.0` z Tasku 2.
-- Produces: repozitář `../donut-gui` s obsahem dnešního `gui/` v kořeni a jeho historií. Tasky 4–6 pracují v něm.
+- Produces: repozitář `../donut-ui` s obsahem dnešního `gui/` v kořeni a jeho historií. Tasky 4–6 pracují v něm.
 
 - [ ] **Step 1: Zaznamenat kontrolní čísla PŘED splitem**
 
@@ -198,7 +198,7 @@ Expected: v kořeni větve jsou `composer.json`, `src`, `tests`, `www`, `Makefil
 - [ ] **Step 4: Založit nový lokální repozitář z větve**
 
 ```bash
-mkdir ../donut-gui && cd ../donut-gui && git init
+mkdir ../donut-ui && cd ../donut-ui && git init
 git remote add source ../donut
 git fetch source gui-only
 git checkout -b master FETCH_HEAD
@@ -224,8 +224,8 @@ cd ../donut && git branch -D gui-only
 - [ ] **Step 7: Založit vzdálený repozitář a pushnout**
 
 ```bash
-cd ../donut-gui
-gh repo create donut-org/donut-gui --public --source=. --remote=origin --description "Authoring environment for Donut workflows and blocks"
+cd ../donut-ui
+gh repo create donut-org/donut-ui --public --source=. --remote=origin --description "Authoring environment for Donut workflows and blocks"
 git push -u origin master
 ```
 
@@ -236,7 +236,7 @@ Expected: repozitář vznikne a master se pushne se 148 commity.
 ### Task 4: Závislost na vydaném jádru místo path repozitáře
 
 **Files:**
-- Modify: `composer.json` (v `../donut-gui`)
+- Modify: `composer.json` (v `../donut-ui`)
 - Create: `composer-dev.json`
 - Modify: `.gitignore`
 
@@ -262,7 +262,7 @@ Tři změny: pryč `repositories`, `"*"` → `"^1.0"`, pryč `minimum-stability`
 
 ```json
 {
-	"name": "donut-org/donut-gui",
+	"name": "donut-org/donut-ui",
 	"description": "Authoring environment for Donut workflows and blocks",
 	"license": "BSD-3-Clause",
 	"type": "project",
@@ -300,7 +300,7 @@ Stejný obsah, ale s path repem a volným constraintem. Duplicita seznamu závis
 
 ```json
 {
-	"name": "donut-org/donut-gui",
+	"name": "donut-org/donut-ui",
 	"description": "Authoring environment for Donut workflows and blocks",
 	"license": "BSD-3-Clause",
 	"type": "project",
@@ -356,7 +356,7 @@ Expected: `composer validate` projde; instalace stáhne `donut-org/donut` z Pack
 - [ ] **Step 6: Ověřit, že dev režim vyrobí symlink na sousední jádro**
 
 ```bash
-cd ../donut-gui
+cd ../donut-ui
 COMPOSER=composer-dev.json composer install --no-interaction 2>&1 | tail -3
 test -L vendor/donut-org/donut && echo SYMLINK || echo REALNY
 ```
@@ -394,7 +394,7 @@ git commit -m "Depend on the released core instead of a path repository"
 ### Task 5: CI nového repozitáře
 
 **Files:**
-- Create: `.github/workflows/build.yml` (v `../donut-gui`)
+- Create: `.github/workflows/build.yml` (v `../donut-ui`)
 
 **Interfaces:**
 - Consumes: instalovatelný `composer.json` z Tasku 4.
@@ -456,8 +456,8 @@ Expected: `tests` na 8.4 i 8.5 a `static-analysis` zeleně. Kdyby `coding-style`
 ### Task 6: Dokumentace nového repozitáře
 
 **Files:**
-- Create: `docs/superpowers/specs/` a `docs/superpowers/plans/` (v `../donut-gui`) — 20 souborů
-- Modify: `readme.md` (v `../donut-gui`)
+- Create: `docs/superpowers/specs/` a `docs/superpowers/plans/` (v `../donut-ui`) — 20 souborů
+- Modify: `readme.md` (v `../donut-ui`)
 
 **Interfaces:**
 - Consumes: repozitář z Tasku 3.
@@ -600,7 +600,7 @@ git commit -m "Move the GUI design documents in and describe the two-repository 
 Mazat se smí až po tomhle. Nové repo musí být pushnuté a zelené.
 
 ```bash
-cd ../donut-gui && git status --short && git log origin/master..HEAD --oneline
+cd ../donut-ui && git status --short && git log origin/master..HEAD --oneline
 ```
 
 Expected: čistý strom a **žádný** nepushnutý commit.
@@ -643,7 +643,7 @@ Vrstva 3 podle `docs/superpowers/specs/2026-08-05-gui-design.md` je na jeden
 ```
 →
 ```
-Vrstva 3 podle `2026-08-05-gui-design.md` v repozitáři `donut-org/donut-gui`
+Vrstva 3 podle `2026-08-05-gui-design.md` v repozitáři `donut-org/donut-ui`
 je na jeden
 ```
 
@@ -659,7 +659,7 @@ adresáři, ze kterého ho někdo spustil" v `2026-08-05-gui-design.md`.
 Nahrazuje sekci „Kde hledá kameny a workflow" v
 `2026-08-03-cli-design.md` a rozhodnutí „server běží v tom pracovním
 adresáři, ze kterého ho někdo spustil" v `2026-08-05-gui-design.md`
-(nově v repozitáři `donut-org/donut-gui`).
+(nově v repozitáři `donut-org/donut-ui`).
 ```
 
 Třetí výskyt je v `docs/superpowers/specs/2026-08-27-vycleneni-gui-design.md` — tam se `gui-design.md` **jen jmenuje** jako nejcitovanější dokument, není to odkaz ke čtení. Nechej ho být.
@@ -683,7 +683,7 @@ Expected: `zadne pravidlo pro gui`.
 V `readme.md` do tabulky v sekci „Documentation" přidej řádek:
 
 ```markdown
-| [`donut-org/donut-gui`](https://github.com/donut-org/donut-gui) | authoring environment for workflows and blocks |
+| [`donut-org/donut-ui`](https://github.com/donut-org/donut-ui) | authoring environment for workflows and blocks |
 ```
 
 - [ ] **Step 8: Ověřit, že donut bez GUI stojí**
@@ -713,27 +713,27 @@ Před commitem zkontroluj výpis `git status --short`: `rss`, `docs/logo.png` a 
 ### Task 8: Publikace na Packagistu
 
 **Files:**
-- Modify: `readme.md` (v `../donut-gui`) — odznaky
+- Modify: `readme.md` (v `../donut-ui`) — odznaky
 
 **Interfaces:**
 - Consumes: zelený build z Tasku 5, hotový úklid z Tasku 7.
-- Produces: `composer create-project donut-org/donut-gui` funguje.
+- Produces: `composer create-project donut-org/donut-ui` funguje.
 
 - [ ] **Step 1: Otagovat v1.0.0**
 
 ```bash
-cd ../donut-gui
+cd ../donut-ui
 git tag v1.0.0 && git push origin v1.0.0
 ```
 
 - [ ] **Step 2: Zaregistrovat balíček na Packagistu**
 
-Přidej `https://github.com/donut-org/donut-gui` na packagist.org a zapni webhook (u jádra už funguje).
+Přidej `https://github.com/donut-org/donut-ui` na packagist.org a zapni webhook (u jádra už funguje).
 
 - [ ] **Step 3: Ověřit instalaci z Packagistu — hlavní test celého projektu**
 
 ```bash
-rm -rf /tmp/gui-install && composer create-project donut-org/donut-gui /tmp/gui-install --no-interaction
+rm -rf /tmp/gui-install && composer create-project donut-org/donut-ui /tmp/gui-install --no-interaction
 cd /tmp/gui-install && ls src www Makefile composer.json
 test -L vendor/donut-org/donut && echo CHYBA-SYMLINK || echo OK-REALNY
 ```
@@ -750,12 +750,12 @@ Expected: server naběhne na `127.0.0.1:8000`, stránka ukáže seznam workflow 
 
 - [ ] **Step 5: Doplnit odznaky do readme**
 
-Po vzoru jádra přidej na začátek `readme.md` nového repa odznaky Build, Downloads, Latest Stable Version a License, s cestami na `donut-org/donut-gui`.
+Po vzoru jádra přidej na začátek `readme.md` nového repa odznaky Build, Downloads, Latest Stable Version a License, s cestami na `donut-org/donut-ui`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd ../donut-gui
+cd ../donut-ui
 git add readme.md
 git commit -m "Add the status badges" && git push
 ```
